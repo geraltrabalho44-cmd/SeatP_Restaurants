@@ -26,6 +26,13 @@ through Resend, usability sessions with real users.
   (`backend/app/payments/READ_ME_FIRST.md`). Hosted Checkout only, so no card data reaches SeatPlan and the
   Content-Security-Policy is unchanged; webhooks are signature-checked, deduplicated and re-read from Stripe.
 - Staff see each booking's deposit on the floor. New owner page "Deposits".
+- Phone messages (SMS and WhatsApp) for restaurant bookings. The owner switches a channel on per restaurant
+  ("Guest messages" page), chooses what to send and a monthly limit. A diner ticks "Send me booking messages",
+  proves a Portuguese mobile with a 6-digit code, and gets a confirmation (optional), reminders 24 h and 3 h
+  before and a cancellation notice; each message links to a page (`/m/...`) to confirm, cancel or stop. Numbers
+  are deleted 30 days after the visit. The default provider is a demo one that only writes a masked line to the
+  log; Twilio (SMS) and Meta's WhatsApp Cloud API are wired in behind environment variables
+  (`backend/app/messaging/READ_ME_FIRST.md`). Replies and delivery receipts are not built yet.
 
 ### Added (2026-11-10 to 11)
 

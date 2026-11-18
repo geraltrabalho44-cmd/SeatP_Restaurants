@@ -63,6 +63,8 @@ SeatPicker.tsx is the chair map and list used by ChooseSeat (while booking) and 
 sends `PATCH /b/{token} {seat_id}` on its own). BookingEmbed (BookingPage.tsx) is the booking flow without its page frame,
 used by the public restaurant page; useLinkedTime.ts starts it from a ?date=&time=&party= link.
 
+PhoneOptIn.tsx is the optional "Reminders on your phone" block of the details form: it appears only when the restaurant sends phone messages (`messages` in `GET /r/{vid}`), is never pre-ticked, and the number must be verified with a code before the booking can be sent (`phone_verification_id`). The link a message carries opens `pages/messages/MessageActionPage.tsx` (`/m/:token`).
+
 money.ts has the deposit words and euro formatting (`formatEuros`, `depositStatus`, `cancelNote`, `staffDepositLabel`), so the diner's
 pages, the staff floor and the tests all say the same thing. DepositNotice.tsx is the terms box the diner must tick; StepDetails asks
 `GET /r/{vid}/policy` for them and sends `accept_policy` only when a deposit applies, so a restaurant without one books exactly as before.

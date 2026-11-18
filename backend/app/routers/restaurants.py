@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from app import db
 from app.core.errors import ApiError, SeatTaken
 from app.core.text import PlainText
+from app.messaging.phone import mask
 from app.models import Venue
 from app.restaurant_service import (
     ambience_view,
@@ -26,6 +27,7 @@ from app.restaurant_service import (
     holding,
     map_view,
     occupancy,
+    phone_messages,
     policies,
     schedule,
 )
@@ -104,6 +106,8 @@ class BookingIn(Strict):
     seat_id: int | None = Field(default=None, ge=1)
     # True when the diner ticked the deposit terms. Required only when a deposit applies.
     accept_policy: bool = False
+    # The id of a phone number the diner verified (POST /r/{vid}/phone/verify), to get reminders.
+    phone_verification_id: str | None = Field(default=None, min_length=10, max_length=100)
 
 
 def _limit(session: db.SessionDep, request: Request, name: str, limit: int) -> None:
@@ -128,6 +132,8 @@ def restaurant(venue_public_id: str, request: Request, session: db.SessionDep) -
         "height": venue.height,
         "zones": map_view.zones_payload(session, venue),
         "schedule": read_schedule(session, venue, upcoming_only=True),
+        # Which phone channels the restaurant offers for reminders (none unless it turned one on).
+        "messages": phone_messages.public_view(session, venue),
     }
 
 
@@ -279,6 +285,11 @@ def book(
     venue = load_published(session, venue_public_id)
     held = holding.read_hold(session, venue, body.hold_id)
     deposit = _deposit_terms(session, venue, held, body)
+    proof = (
+        phone_messages.take_proof(session, venue, body.phone_verification_id)
+        if body.phone_verification_id
+        else None
+    )
     # After read_hold, so a dead or made-up hold_id never counts against the
     # daily cap; before confirm_booking, because the cap commits its count.
     check_booking_caps(session, venue, str(body.email), client_ip(request))
@@ -307,6 +318,16 @@ def book(
         "manage_path": f"/b/{token}",
         "manage_link": manage_link(token),
     }
+    if proof is not None:
+        consent = phone_messages.link_consent(session, venue, booking, proof)
+        session.commit()
+        answer["messages"] = {
+            "channel": consent.channel,
+            "phone": mask(consent.phone_e164),
+            "planned": phone_messages.planned(session, venue, consent),
+        }
+        if booking.status == "confirmed":
+            phone_messages.send_confirmation(session, venue, booking)
     if deposit:
         payment = booking_payments.payment_of(session, booking.id)
         assert payment is not None  # confirm_booking just created it

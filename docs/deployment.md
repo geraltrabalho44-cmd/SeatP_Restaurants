@@ -101,6 +101,10 @@ Set these for **Production** in the Vercel project. Every name is read by
 | `STRIPE_SECRET_KEY` | Empty until Stripe is set up. `sk_test_...` first | Needed only for `stripe`. The app refuses to start without it, and with a live key on a non-https `PUBLIC_BASE_URL` |
 | `STRIPE_WEBHOOK_SECRET` | Empty until Stripe is set up. `whsec_...` | Needed only for `stripe`. Checks that webhooks really come from Stripe. Endpoint: `/api/payments/webhooks/stripe` |
 | `STRIPE_ACCOUNT_ID`, `STRIPE_API_VERSION` | Optional, usually empty | Charge a connected account instead of your own; pin Stripe's API version |
+| `SMS_PROVIDER`, `WHATSAPP_PROVIDER` | Unset (or `demo`) until Twilio / Meta are set up, then `twilio` / `meta` | `demo` sends nothing: messages go to the log. Each real provider needs its keys, and the app refuses to start without them |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM` | Empty until Twilio is set up | Needed only for `SMS_PROVIDER=twilio` |
+| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Empty until Meta's WhatsApp Business Platform is set up | Needed only for `WHATSAPP_PROVIDER=meta`; the message templates must be approved first |
+| `MESSAGE_ALLOWLIST` | The team's own mobile numbers | With a real provider, demo restaurants only message these numbers |
 
 Variables you set in Vercel apply to the next deployment, so redeploy after
 changing one.

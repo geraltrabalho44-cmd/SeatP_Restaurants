@@ -13,6 +13,8 @@ import { DepositNotice } from "./DepositNotice";
 import { errorMessage } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
 import { formatEuros } from "./money";
+import { NO_PHONE, PhoneOptIn } from "./PhoneOptIn";
+import type { PhoneChoice } from "./PhoneOptIn";
 import type { Hold } from "./StepTable";
 import { StepHeading } from "./StepHeading";
 import { validateContact } from "./validation";
@@ -60,6 +62,9 @@ export function StepDetails(props: StepDetailsProps) {
   const [accepted, setAccepted] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
   const [termsRound, setTermsRound] = useState(0);
+  // Reminders on the phone: only used when the restaurant offers them and the diner ticks the box.
+  const [phone, setPhone] = useState<PhoneChoice>(NO_PHONE);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
     setTerms(null);
@@ -92,13 +97,25 @@ export function StepDetails(props: StepDetailsProps) {
       document.getElementById("rb-accept-deposit")?.focus();
       return;
     }
+    if (phone.wanted && !phone.verificationId) {
+      setPhoneError("Verify your number, or untick the box to book without phone messages.");
+      document.getElementById("rb-phone-code")?.focus();
+      return;
+    }
+    setPhoneError(null);
     setBusy(true);
     onSubmittingChange?.(true);
     setProblem(null);
     try {
       // The acceptance is only sent when a deposit applies, so a booking without one is exactly as before.
-      onBooked(terms ? await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId, true) : await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId));
+      onBooked(terms || phone.verificationId ? await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId, terms !== null, phone.verificationId) : await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId));
     } catch (error) {
+      if (error instanceof ApiError && (error.code === "phone_not_verified" || error.code === "code_expired")) {
+        // The proof ran out (it lasts 30 minutes): ask for a new code, and keep the hold.
+        setPhone({ wanted: true, verificationId: null });
+        setPhoneError(error.message);
+        return;
+      }
       if (error instanceof ApiError && error.code === "policy_not_accepted") {
         // The terms did not load or changed: show them again, and keep the hold.
         setTermsRound((round) => round + 1);
@@ -155,6 +172,7 @@ export function StepDetails(props: StepDetailsProps) {
       <Field label="Dietary preferences (optional)" maxLength={500} placeholder="Vegetarian, vegan…" value={contact.dietary_requirements ?? ""} onChange={event => onContactChange({ ...contact, dietary_requirements: event.target.value })} />
       <Field label="Food allergies (optional)" maxLength={500} hint="The staff will see this. Please confirm safe preparation directly with the restaurant." placeholder="Tell us about any food allergies" value={contact.allergies ?? ""} onChange={event => onContactChange({ ...contact, allergies: event.target.value })} />
       {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} disabled={busy} />}
+      <PhoneOptIn venueId={venueId} value={phone} onChange={(value) => { setPhone(value); setPhoneError(null); }} disabled={busy} error={phoneError} />
       {terms && <DepositNotice terms={terms} accepted={accepted} disabled={busy} error={termsError} onChange={(value) => { setAccepted(value); if (value) setTermsError(null); }} />}
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">

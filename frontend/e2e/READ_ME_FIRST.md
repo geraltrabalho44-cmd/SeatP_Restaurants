@@ -35,6 +35,7 @@ Use distinct E2E_API_PORT/E2E_WEB_PORT when running alongside another worktree.
 | `owner.spec.ts` | Owner publishes/unpublishes at 1440/390, drafts reject diner access, existing booked chair/manage link survives, axe on review/draft/manage; discovery itself awaits tasks 25/26/29 |
 | `accessibility.spec.ts` | axe-core scan (WCAG 2.1 A and AA) of nine pages, including the visitor page, the create-account form and the guest sign-in page |
 | `restaurant-deposit.spec.ts` | Deposits with the demo provider: terms must be accepted, the booking is pending until paid on the demo page, staff see the deposit, cancelling in time refunds it, giving up frees the table, the owner sets the rules |
+| `restaurant-phone-messages.spec.ts` | Phone reminders with the demo provider: the box is not pre-ticked, a landline and a wrong code are refused, the right code verifies, the owner's log shows the masked message; a restaurant with no phone messages shows no block |
 | `fixtures.ts` | Demo links, sign-in, and the rule that fails a test on a page error or a CSP violation |
 | `attendee-steps.ts` | Attendee steps shared by the desktop and phone tests |
 

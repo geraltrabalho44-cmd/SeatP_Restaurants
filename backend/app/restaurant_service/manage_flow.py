@@ -22,6 +22,7 @@ from app.restaurant_service import (
     chosen_seat,
     emails,
     occupancy,
+    phone_messages,
     schedule,
     waitlist,
 )
@@ -148,8 +149,10 @@ def cancel_booking(
     session.flush()  # the freed slots must be gone before we look for free tables
     # A paid deposit is refunded or kept, per the terms the diner accepted. Only the
     # diner's own cancellation can lose it: the restaurant cancelling refunds in full.
-    booking_payments.on_cancel(session, venue, booking, actor == "diner", utc_now())
+    booking_payments.on_cancel(session, venue, booking, actor.startswith("diner"), utc_now())
     emails.queue_cancellation(session, venue, booking, token)
+    # Only a diner who was messaged by phone is told by phone; sent by the next cron run.
+    phone_messages.on_cancel(session, venue, booking)
     offered = waitlist.offer_freed_tables(session, venue, booking, freed)
     record_change(
         session,

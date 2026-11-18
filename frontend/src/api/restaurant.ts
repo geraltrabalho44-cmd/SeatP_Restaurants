@@ -10,6 +10,7 @@
 //   difference between server and screen is visible in this one file.
 // Field names are snake_case, exactly as the Python backend sends them.
 import { api } from "./client";
+import type { MessageOptions } from "./messages";
 import type { MapRoomSun, MapTable, MapZone, RoomLight, SeatMapPayload, SeatState } from "./types";
 
 // ---------- Shared small shapes ----------
@@ -43,6 +44,8 @@ export interface RestaurantInfo {
   max_party: number;
   services: ServiceSummary[];
   blackout_dates: BlackoutDate[];
+  /** Which phone channels the restaurant offers for reminders; none unless it turned one on. */
+  messages?: MessageOptions;
 }
 
 export type SlotStatus = "available" | "limited" | "full";
@@ -242,6 +245,16 @@ export interface BookingConfirmation {
   email: string;
   /** Present when a deposit is due: the booking is "pending" until it is paid. */
   payment?: PaymentRequired | null;
+  /** Present when the diner chose phone reminders: where they go and which ones to expect. */
+  messages?: BookingMessages | null;
+}
+
+export interface BookingMessages {
+  channel: "sms" | "whatsapp";
+  /** Masked: "+351 9•• ••• 678". */
+  phone: string;
+  /** In words: "a reminder the day before". */
+  planned: string[];
 }
 
 /** Body of POST /r/{vid}/waitlist, exactly as the backend reads it. */
@@ -465,6 +478,7 @@ export interface ServerRestaurant {
   height: number;
   zones: MapZone[];
   schedule: ServerSchedule;
+  messages?: MessageOptions;
 }
 
 /** GET /r/{vid}/slots. */
@@ -539,6 +553,8 @@ export interface ServerConfirmation {
   manage_link: string;
   /** Only when a deposit is due. */
   payment?: PaymentRequired & { required: true };
+  /** Only when the diner verified a phone for reminders. */
+  messages?: BookingMessages;
 }
 
 /** GET /staff/{vid}/floor. */
@@ -587,6 +603,7 @@ export function toRestaurantInfo(server: ServerRestaurant): RestaurantInfo {
     max_party: server.max_party,
     services: server.schedule.service_periods,
     blackout_dates: server.schedule.blackout_dates,
+    messages: server.messages,
   };
 }
 
@@ -764,12 +781,13 @@ export async function createBooking(
   needs: PartyNeeds,
   seatId: number | null = null,
   acceptPolicy = false,
+  phoneVerificationId: string | null = null,
 ): Promise<BookingConfirmation> {
   // The backend checks the party size against the hold, so it is sent again here.
   const wishes = needs.prefs?.length ? { prefs: needs.prefs } : {};
-  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}) };
+  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}), ...(phoneVerificationId ? { phone_verification_id: phoneVerificationId } : {}) };
   const server = await api.post<ServerConfirmation>(`${diner(vid)}/bookings`, body);
-  return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email, payment: server.payment ?? null };
+  return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email, payment: server.payment ?? null, messages: server.messages ?? null };
 }
 
 /** The deposit this date, time and party would owe, or null when the restaurant asks for none. */

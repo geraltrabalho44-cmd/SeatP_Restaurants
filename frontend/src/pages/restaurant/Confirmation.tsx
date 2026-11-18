@@ -5,6 +5,7 @@ import type { BookingConfirmation } from "../../api/restaurant";
 import { BookingRows } from "./BookingSummary";
 import { CopyLink, absoluteUrl } from "./CopyLink";
 import { cancelNote, depositStatus } from "./money";
+import { CHANNEL_NAME } from "./PhoneOptIn";
 import { StepHeading } from "./StepHeading";
 import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 
@@ -26,6 +27,11 @@ export function Confirmation({ confirmation }: { confirmation: BookingConfirmati
         {booking.payment && booking.payment.status === "paid" && (
           <p className="rb-muted" role="note">
             {depositStatus(booking.payment)}, taken off your bill. {cancelNote(booking.payment)}
+          </p>
+        )}
+        {confirmation.messages && (
+          <p className="rb-muted" role="note" data-testid="phone-line">
+            Reminders by {CHANNEL_NAME[confirmation.messages.channel]} to {confirmation.messages.phone}: {confirmation.messages.planned.join(", ")}.
           </p>
         )}
         <div className="rb5-actions">

@@ -727,3 +727,92 @@ class PaymentEvent(Base):
     event_id: Mapped[str] = mapped_column(String(255))
     type: Mapped[str] = mapped_column(String(60))
     received_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+
+
+class VenueMessageSettings(Base):
+    """What a restaurant sends by phone. No row means everything is off."""
+
+    __tablename__ = "venue_message_settings"
+
+    venue_id: Mapped[int] = mapped_column(
+        ForeignKey("venues.id", ondelete="CASCADE"), primary_key=True
+    )
+    sms_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("FALSE"))
+    whatsapp_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("FALSE")
+    )
+    send_confirmation: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("FALSE")
+    )
+    reminder_24h: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("TRUE"))
+    reminder_3h: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("TRUE"))
+    monthly_cap: Mapped[int] = mapped_column(Integer, default=300, server_default=text("300"))
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+
+
+class PhoneCode(Base):
+    """A 6-digit code sent to a phone so a diner proves the number is theirs.
+
+    Only keyed hashes are kept: the code and the id the browser holds are never
+    stored, so a database leak cannot be turned into a verified number.
+    """
+
+    __tablename__ = "phone_codes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    verification_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id", ondelete="CASCADE"), index=True)
+    channel: Mapped[str] = mapped_column(String(10))
+    phone_e164: Mapped[str] = mapped_column(String(16))
+    code_hash: Mapped[str] = mapped_column(String(64))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    sends: Mapped[int] = mapped_column(Integer, default=1)
+    verified_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    consumed_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+
+
+class MessageConsent(Base):
+    """One diner's yes to phone messages for one booking, with the proof."""
+
+    __tablename__ = "message_consents"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id", ondelete="CASCADE"), index=True)
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("bookings.id", ondelete="CASCADE"), unique=True
+    )
+    channel: Mapped[str] = mapped_column(String(10))
+    # NULL once the number is forgotten (stopped, or 30 days after the visit).
+    phone_e164: Mapped[str | None] = mapped_column(String(16))
+    consent_version: Mapped[str] = mapped_column(String(20))
+    consent_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+    verified_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    withdrawn_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    confirmed_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    confirmed_via: Mapped[str | None] = mapped_column(String(10))
+
+
+class MessageOutbox(Base):
+    """A phone message to send. Written first, sent after, like the email outbox."""
+
+    __tablename__ = "message_outbox"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(200), unique=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id", ondelete="CASCADE"), index=True)
+    consent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("message_consents.id", ondelete="SET NULL")
+    )
+    channel: Mapped[str] = mapped_column(String(10))
+    kind: Mapped[str] = mapped_column(String(20))
+    to_phone: Mapped[str] = mapped_column(String(16))
+    body_preview: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(10), default="queued")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_attempt_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    provider_message_id: Mapped[str | None] = mapped_column(String(100))
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)

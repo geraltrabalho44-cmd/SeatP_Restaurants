@@ -20,7 +20,7 @@ from app.core.privacy import mask_email
 from app.mail.outbox import process_due, redact_links, scrub_expired
 from app.mail.providers import provider_from_settings
 from app.models import EmailCode, EmailOutbox, utc_now
-from app.restaurant_service import booking_payments
+from app.restaurant_service import booking_payments, phone_messages
 from app.security import CurrentOrganiser, client_ip, rate_limit, tokens_match
 
 router = APIRouter(tags=["emails"])
@@ -71,6 +71,18 @@ def _sweep_deposits(session: db.SessionDep, now: datetime) -> None:
         logging.getLogger("seatplan.payments").exception("deposit sweep failed")
 
 
+def _sweep_phone_messages(session: db.SessionDep, now: datetime) -> None:
+    """Send the phone reminders and notices that are due, and forget old numbers.
+
+    Same rule as the deposits: it runs last and can never make the call fail.
+    """
+    try:
+        phone_messages.sweep(session, now)
+    except Exception:
+        session.rollback()
+        logging.getLogger("seatplan.messages").exception("phone message sweep failed")
+
+
 @router.post("/internal/email/process")
 def process_outbox(
     request: Request,
@@ -90,6 +102,7 @@ def process_outbox(
     session.execute(delete(EmailCode).where(EmailCode.expires_at <= now))
     session.commit()
     _sweep_deposits(session, now)
+    _sweep_phone_messages(session, now)
     return ProcessResult(
         sent=report.sent, skipped=report.skipped, retrying=report.retrying, failed=report.failed
     )

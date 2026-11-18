@@ -7,7 +7,7 @@ import { PageShell } from "../../design/components";
 import "./owner.css";
 import "./owner-v5.css";
 
-export type OwnerSection = "restaurants" | "profile" | "photos" | "hours" | "rooms" | "review" | "menu" | "payments";
+export type OwnerSection = "restaurants" | "profile" | "photos" | "hours" | "rooms" | "review" | "menu" | "payments" | "messages";
 
 interface OwnerShellProps {
   /** The browser tab title. */
@@ -28,6 +28,7 @@ const STEPS: { key: Exclude<OwnerSection, "restaurants">; label: string; path: s
   { key: "hours", label: "Opening hours", path: "hours" },
   { key: "menu", label: "Menu and prices", path: "menu" },
   { key: "payments", label: "Deposits", path: "payments" },
+  { key: "messages", label: "Guest messages", path: "messages" },
   { key: "rooms", label: "Floor plan", path: "rooms" },
   { key: "review", label: "Review and publish", path: "review" },
 ];

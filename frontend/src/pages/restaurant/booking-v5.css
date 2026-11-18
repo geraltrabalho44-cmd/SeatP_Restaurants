@@ -1014,3 +1014,46 @@
   font-weight: 800;
   color: var(--c-primary);
 }
+
+/* ---------- Phone reminders: the optional block of the details form ---------- */
+
+.rb-phone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border);
+}
+
+.rb-phone-title {
+  margin: 0;
+  font-size: var(--fs-md);
+}
+
+.rb-phone-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.rb-phone-body p {
+  margin: 0;
+}
+
+.rb-phone-channels {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.rb-phone-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+}
+
+.rb-phone-verified {
+  color: var(--c-primary);
+  font-weight: 600;
+}

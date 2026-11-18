@@ -46,6 +46,18 @@ class Settings:
     stripe_account_id: str = ""
     # Empty: use the Stripe account's own API version.
     stripe_api_version: str = ""
+    # Phone messages. "demo" writes to the log and sends nothing; "twilio" (SMS) and
+    # "meta" (WhatsApp Cloud API) need their keys. All hidden from repr().
+    sms_provider: str = "demo"
+    whatsapp_provider: str = "demo"
+    twilio_account_sid: str = field(default="", repr=False)
+    twilio_auth_token: str = field(default="", repr=False)
+    # A sender name ("SeatPlan") or a Twilio number ("+1...").
+    twilio_sms_from: str = ""
+    whatsapp_access_token: str = field(default="", repr=False)
+    whatsapp_phone_number_id: str = ""
+    # With a real provider, demo restaurants only message these numbers (E.164).
+    message_allowlist: tuple[str, ...] = ()
 
     @property
     def is_postgres(self) -> bool:
@@ -154,6 +166,24 @@ def _check_payment_settings(provider: str, key: str, webhook_secret: str, base_u
             raise RuntimeError("A live Stripe key needs an https:// PUBLIC_BASE_URL.")
 
 
+def _check_message_settings(
+    sms: str, whatsapp: str, sid: str, token: str, sender: str, wa_token: str, wa_phone_id: str
+) -> None:
+    """Refuse to start with a half-set phone messaging set-up (demo needs nothing)."""
+    if sms not in ("demo", "twilio"):
+        raise RuntimeError("SMS_PROVIDER must be 'demo' or 'twilio'.")
+    if whatsapp not in ("demo", "meta"):
+        raise RuntimeError("WHATSAPP_PROVIDER must be 'demo' or 'meta'.")
+    if sms == "twilio" and not (sid and token and sender):
+        raise RuntimeError(
+            "SMS_PROVIDER=twilio needs TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_SMS_FROM."
+        )
+    if whatsapp == "meta" and not (wa_token and wa_phone_id):
+        raise RuntimeError(
+            "WHATSAPP_PROVIDER=meta needs WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID."
+        )
+
+
 def load_settings() -> Settings:
     """Build a fresh Settings object from the current environment."""
     database_url = _choose_database_url()
@@ -163,6 +193,22 @@ def load_settings() -> Settings:
     stripe_webhook = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
     public_base_url = os.environ.get("PUBLIC_BASE_URL", "http://localhost:5173")
     _check_payment_settings(payment_provider, stripe_key, stripe_webhook, public_base_url)
+    sms_provider = os.environ.get("SMS_PROVIDER", "demo").strip().lower() or "demo"
+    whatsapp_provider = os.environ.get("WHATSAPP_PROVIDER", "demo").strip().lower() or "demo"
+    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
+    twilio_token = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
+    twilio_from = os.environ.get("TWILIO_SMS_FROM", "").strip()
+    wa_token = os.environ.get("WHATSAPP_ACCESS_TOKEN", "").strip()
+    wa_phone_id = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "").strip()
+    _check_message_settings(
+        sms_provider,
+        whatsapp_provider,
+        twilio_sid,
+        twilio_token,
+        twilio_from,
+        wa_token,
+        wa_phone_id,
+    )
     return Settings(
         database_url=database_url,
         secret_key=_choose_secret_key(is_postgres),
@@ -182,6 +228,14 @@ def load_settings() -> Settings:
         stripe_webhook_secret=stripe_webhook,
         stripe_account_id=os.environ.get("STRIPE_ACCOUNT_ID", "").strip(),
         stripe_api_version=os.environ.get("STRIPE_API_VERSION", "").strip(),
+        sms_provider=sms_provider,
+        whatsapp_provider=whatsapp_provider,
+        twilio_account_sid=twilio_sid,
+        twilio_auth_token=twilio_token,
+        twilio_sms_from=twilio_from,
+        whatsapp_access_token=wa_token,
+        whatsapp_phone_number_id=wa_phone_id,
+        message_allowlist=_read_list("MESSAGE_ALLOWLIST"),
     )
 
 
