@@ -31,6 +31,7 @@ import StaffPage from "./pages/restaurant/StaffPage";
 import HoursPage from "./pages/owner/HoursPage";
 import MenuPage from "./pages/owner/MenuPage";
 import PublishReview from "./pages/owner/PublishReview";
+import InsightsPage from "./pages/owner/InsightsPage";
 import MessagesPage from "./pages/owner/MessagesPage";
 import PaymentsPage from "./pages/owner/PaymentsPage";
 import DemoCheckoutPage from "./pages/pay/DemoCheckoutPage";
@@ -55,6 +56,7 @@ export default function App() {
       <Route path="/owner/:venueId/menu" element={<MenuPage />} />
       <Route path="/owner/:venueId/payments" element={<PaymentsPage />} />
       <Route path="/owner/:venueId/messages" element={<MessagesPage />} />
+      <Route path="/owner/:venueId/insights" element={<InsightsPage />} />
       <Route path="/m/:token" element={<MessageActionPage />} />
       <Route path="/owner/:venueId/review" element={<PublishReview />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />

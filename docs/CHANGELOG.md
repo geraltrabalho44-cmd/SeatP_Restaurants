@@ -26,6 +26,11 @@ through Resend, usability sessions with real users.
   (`backend/app/payments/READ_ME_FIRST.md`). Hosted Checkout only, so no card data reaches SeatPlan and the
   Content-Security-Policy is unchanged; webhooks are signature-checked, deduplicated and re-read from Stripe.
 - Staff see each booking's deposit on the floor. New owner page "Deposits".
+- Owner "Insights" page: totals (bookings, guests, no-show and cancellation rates, returning guests, busiest
+  weekdays and hours), the tables guests book most (ranked, and drawn on the floor plan in one purple ramp with
+  the count on every table), and a guest book (visits, last visit, no-shows, usual party, allergies; filters for
+  new, regular, lapsed and repeat no-shows). Worked out from the bookings the restaurant already has: no new
+  table, nothing stored twice, only the owner of that restaurant can read it.
 - Phone messages (SMS and WhatsApp) for restaurant bookings. The owner switches a channel on per restaurant
   ("Guest messages" page), chooses what to send and a monthly limit. A diner ticks "Send me booking messages",
   proves a Portuguese mobile with a 6-digit code, and gets a confirmation (optional), reminders 24 h and 3 h

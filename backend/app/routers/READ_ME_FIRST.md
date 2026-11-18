@@ -28,6 +28,7 @@ who is calling and what they sent, calls a helper (in `events_service/`,
 | `bookings.py` | `/b/{manage_token}`, waitlist | Whoever holds the manage link; rate limited |
 | `payments.py` | `/payments/{id}` (status), `/payments/demo/{id}` (pretend payment, demo provider only), `/payments/{id}/retry`, `/abandon`, `POST /payments/webhooks/stripe` | Whoever holds the random payment id, rate limited. The webhook proves itself with Stripe's signature and is closed (404) unless `PAYMENT_PROVIDER=stripe` |
 | `phone_messages.py` | `/r/{vid}/phone/start` and `/verify`, `/m/{token}` (view, confirm, cancel, stop) | Anyone may ask for a code (rate limited per browser, number and app); `/m/` needs the signed token from a message, every wrong one is a 404 |
+| `owner_insights.py` | `/owner/restaurants/{vid}/insights` (totals and busiest tables), `/guests` (the guest book) | The restaurant's owner (`CurrentOrganiser`); another owner gets 404 |
 | `owner_messages.py` | `/owner/restaurants/{vid}/messages` (settings, usage, recent messages) | The restaurant's owner (`CurrentOrganiser`); another owner gets 404 |
 | `owner_payments.py` | `/owner/restaurants/{vid}/payments` (read and replace the deposit rules) | The restaurant's owner (`CurrentOrganiser`); another owner gets 404 |
 | `staff.py` | `/staff/{vid}/...` (floor, walk-ins, dashboard, schedule) | A logged-in user |
