@@ -47,7 +47,13 @@ def test_lisbon_demo_is_bookable_and_repeatable(session: Session) -> None:
     assert isinstance(held, dict)
     booking = book(
         venue.public_id,
-        BookingIn(hold_id=held["hold_id"], party=2, name="Demo guest", email="guest@example.com"),
+        BookingIn(
+            hold_id=held["hold_id"],
+            party=2,
+            name="Demo guest",
+            email="guest@example.com",
+            accept_terms=True,
+        ),
         request,
         session,
     )

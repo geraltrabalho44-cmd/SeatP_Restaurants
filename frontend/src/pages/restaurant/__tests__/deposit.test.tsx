@@ -66,6 +66,7 @@ async function holdTable7(): Promise<HTMLElement> {
 function fillIn(panel: HTMLElement): void {
   fireEvent.change(within(panel).getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
   fireEvent.change(within(panel).getByLabelText("Email"), { target: { value: "ana@example.com" } });
+  fireEvent.click(within(panel).getByRole("checkbox", { name: /accept the terms/ }));
 }
 
 beforeEach(() => sessionStorage.clear());
@@ -91,7 +92,7 @@ describe("The deposit terms", () => {
     fireEvent.click(within(panel).getByRole("button", { name: /Pay €40 deposit/ }));
     expect(await within(panel).findByText("Please accept the deposit terms to book this table.")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/bookings`)).toHaveLength(0);
-    expect(document.activeElement).toBe(within(panel).getByRole("checkbox"));
+    expect(document.activeElement).toBe(within(panel).getByRole("checkbox", { name: /agree to pay the deposit/ }));
   });
 
   it("accepted: the booking asks for the deposit and the diner is taken to the payment page", async () => {
@@ -99,7 +100,7 @@ describe("The deposit terms", () => {
     const panel = await holdTable7();
     await within(panel).findByRole("region", { name: "Deposit" });
     fillIn(panel);
-    fireEvent.click(within(panel).getByRole("checkbox"));
+    fireEvent.click(within(panel).getByRole("checkbox", { name: /agree to pay the deposit/ }));
     fireEvent.click(within(panel).getByRole("button", { name: /Pay €40 deposit/ }));
     expect(await screen.findByText("The demo payment page")).toBeTruthy();
     const body = callsTo(calls, "POST", `${API}/bookings`)[0]?.body as Record<string, unknown>;

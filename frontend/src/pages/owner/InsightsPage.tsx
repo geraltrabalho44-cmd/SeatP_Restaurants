@@ -206,7 +206,7 @@ function TablesTab({ data }: { data: TablesView }) {
   );
 }
 
-const SEGMENT_NAME: Record<Segment, string> = { new: "New", regular: "Regulars", lapsed: "Haven't been in 60 days", no_shows: "Repeat no-shows" };
+const SEGMENT_NAME: Record<Segment, string> = { new: "New", regular: "Regulars", lapsed: "Haven't been in 60 days", no_shows: "Repeat no-shows", offers: "Accept offers" };
 
 function GuestsTab({ venueId }: { venueId: string }) {
   const [query, setQuery] = useState<GuestQuery>({ q: "", sort: "recent", segment: null, offset: 0 });
@@ -283,8 +283,8 @@ function GuestTable({ rows }: { rows: GuestRow[] }) {
             <td>{row.usual_party ?? "–"}</td>
             <td>
               {row.segments.map((name) => (
-                <Badge key={name} tone={name === "no_shows" ? "warning" : name === "regular" ? "success" : "neutral"}>
-                  {name === "no_shows" ? "No-shows" : name === "lapsed" ? "Lapsed" : name === "regular" ? "Regular" : "New"}
+                <Badge key={name} tone={name === "no_shows" ? "warning" : name === "regular" || name === "offers" ? "success" : "neutral"}>
+                  {name === "no_shows" ? "No-shows" : name === "lapsed" ? "Lapsed" : name === "regular" ? "Regular" : name === "offers" ? "Offers" : "New"}
                 </Badge>
               ))}
               {row.allergies && <span className="rb-muted"> Allergies: {row.allergies}</span>}

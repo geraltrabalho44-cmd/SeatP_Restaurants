@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Booking, Room, TableSlot, Venue, VenueTable
+from app.restaurant_service import consents
 from app.restaurant_service.clock import now_local, venue_zone
 
 PERIODS = (30, 90, 365)
@@ -30,7 +31,7 @@ LAPSED_DAYS = 60
 TOP_TABLES = 5
 PAGE_SIZE = 50
 SORTS = ("recent", "visits", "name")
-SEGMENTS = ("new", "regular", "lapsed", "no_shows")
+SEGMENTS = ("new", "regular", "lapsed", "no_shows", "offers")
 
 
 def _since(venue: Venue, days: int) -> date:
@@ -205,6 +206,8 @@ def _segment_flags(entry: dict[str, Any], today: date) -> list[str]:
         flags.append("lapsed")
     if entry["no_shows"] >= 2:
         flags.append("no_shows")
+    if entry["offers"]:
+        flags.append("offers")
     return flags
 
 
@@ -214,6 +217,7 @@ def guest_book(session: Session, venue: Venue) -> list[dict[str, Any]]:
     groups: dict[str, list[Booking]] = defaultdict(list)
     for row in session.scalars(select(Booking).where(Booking.venue_id == venue.id)):
         groups[row.email.lower()].append(row)
+    takers = consents.consenting_emails(session, venue)
     book = []
     for email, rows in groups.items():
         rows.sort(key=lambda r: r.start_at)
@@ -238,6 +242,7 @@ def guest_book(session: Session, venue: Venue) -> list[dict[str, Any]]:
             "allergies": _latest_text(rows, "allergies"),
             "dietary": _latest_text(rows, "dietary_requirements"),
         }
+        entry["offers"] = email in takers
         entry["segments"] = _segment_flags(entry, today)
         book.append(entry)
     return book

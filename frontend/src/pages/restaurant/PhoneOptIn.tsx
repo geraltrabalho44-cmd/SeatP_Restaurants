@@ -17,6 +17,9 @@ export interface PhoneChoice {
   wanted: boolean;
   /** Set once the code was typed correctly. */
   verificationId: string | null;
+  /** The number as the server shows it, and the channel, so the form can say "Verified" after a remount. */
+  masked?: string;
+  channel?: MessageChannel;
 }
 
 export const NO_PHONE: PhoneChoice = { wanted: false, verificationId: null };
@@ -60,11 +63,11 @@ export function PhoneOptIn({ venueId, value, onChange, disabled = false, error =
 }
 
 function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptInProps & { options: MessageOptions }) {
-  const [channel, setChannel] = useState<MessageChannel>(options.channels[0] ?? "sms");
+  const [channel, setChannel] = useState<MessageChannel>(value.channel ?? options.channels[0] ?? "sms");
   const [number, setNumber] = useState("");
   const [sent, setSent] = useState<{ id: string; phone: string; demoCode?: string } | null>(null);
   const [code, setCode] = useState("");
-  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(value.verificationId ? (value.masked ?? null) : null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -95,7 +98,7 @@ function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptI
     try {
       const checked = await verifyPhoneCode(venueId, sent.id, code.trim());
       setVerifiedPhone(checked.phone);
-      onChange({ wanted: true, verificationId: sent.id });
+      onChange({ wanted: true, verificationId: sent.id, masked: checked.phone, channel });
     } catch (failure) {
       setProblem(errorMessage(failure, "We could not check the code. Please try again."));
     } finally {

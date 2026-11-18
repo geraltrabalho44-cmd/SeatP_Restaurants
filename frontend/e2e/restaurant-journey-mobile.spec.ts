@@ -44,6 +44,7 @@ test("on a phone, from a discovery time to a confirmed booking without a chair",
   await expect(page.getByRole("navigation", { name: "Booking steps" }).locator('[aria-current="step"]')).toContainText("Details");
   await page.getByLabel("Name for the booking").fill("Journey Diner");
   await page.getByLabel("Email", { exact: true }).fill("journey.diner@example.com");
+  await page.getByRole("checkbox", { name: /accept the terms/ }).check();
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Manage booking" })).toBeVisible();
@@ -60,6 +61,7 @@ test("on a phone, from a discovery time to a confirmed booking with a chair requ
   await expect(page.getByText(/Chair requested/)).toBeVisible();
   await page.getByLabel("Name for the booking").fill("Chair Journey");
   await page.getByLabel("Email", { exact: true }).fill("chair.journey@example.com");
+  await page.getByRole("checkbox", { name: /accept the terms/ }).check();
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
   await expect(page.getByText("Chair request", { exact: true })).toBeVisible();

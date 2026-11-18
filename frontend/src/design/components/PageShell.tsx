@@ -6,7 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 import seatPlanLogo from "../seatplan-logo.png";
 
 // /pay is where a diner pays a restaurant deposit and returns from the payment page.
-const RESTAURANT_ROOTS = ["/restaurants", "/r", "/b", "/owner", "/staff", "/pay", "/m"];
+const RESTAURANT_ROOTS = ["/restaurants", "/r", "/b", "/owner", "/staff", "/pay", "/m", "/u"];
 
 /** The routes of the Restaurants product (diner, owner, staff). Events and their sign-ins are not in it. */
 export function isRestaurantRoute(pathname: string, search = ""): boolean {

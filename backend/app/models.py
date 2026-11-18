@@ -816,3 +816,46 @@ class MessageOutbox(Base):
     provider_message_id: Mapped[str | None] = mapped_column(String(100))
     last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+
+
+class VenueTerms(Base):
+    """Extra words a restaurant adds to the terms its diners accept (its own rules, a contact)."""
+
+    __tablename__ = "venue_terms"
+
+    venue_id: Mapped[int] = mapped_column(
+        ForeignKey("venues.id", ondelete="CASCADE"), primary_key=True
+    )
+    extra_text: Mapped[str] = mapped_column(Text, default="", server_default=text("''"))
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+
+
+class BookingConsent(Base):
+    """What the diner ticked on the last step of one booking, and which words they saw."""
+
+    __tablename__ = "booking_consents"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("bookings.id", ondelete="CASCADE"), unique=True
+    )
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id", ondelete="CASCADE"), index=True)
+    terms_version: Mapped[str] = mapped_column(String(20))
+    terms_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+    offers_opt_in: Mapped[bool] = mapped_column(Boolean, default=False)
+    offers_version: Mapped[str | None] = mapped_column(String(20))
+
+
+class OffersConsent(Base):
+    """A guest's yes to offers from one restaurant. Only guests with a row and no
+    withdrawal may be sent an offer. One row per restaurant and email address."""
+
+    __tablename__ = "offers_consents"
+    __table_args__ = (UniqueConstraint("venue_id", "email", name="uq_offers_consent"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(254))
+    version: Mapped[str] = mapped_column(String(20))
+    opted_in_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+    withdrawn_at: Mapped[datetime | None] = mapped_column(UtcDateTime)

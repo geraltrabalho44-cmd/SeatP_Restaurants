@@ -14,6 +14,7 @@ import { errorMessage, formatDate, people } from "./format";
 import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 import { useLoad } from "./useLoad";
 import { ArrivalNotice } from "./ArrivalNotice";
+import { OffersChoice } from "./OffersChoice";
 import { cancelNote, depositStatus } from "./money";
 import "./restaurant.css";
 
@@ -100,6 +101,7 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
         <div className="rb5-manage-side">
           <VenueCard booking={booking} venue={venue} />
           {renderActions()}
+          {booking.offers !== undefined && booking.status !== "cancelled" && <OffersChoice token={token} restaurant={booking.venue_name} initial={booking.offers} />}
           {booking.status === "confirmed" && <ArrivalNotice token={token} booking={booking} onUpdate={update} />}
         </div>
       </div>

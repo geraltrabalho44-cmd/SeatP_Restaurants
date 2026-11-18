@@ -23,6 +23,7 @@ from app.restaurant_service import (
     ambience_view,
     booking_payments,
     chosen_seat,
+    consents,
     diner_flow,
     holding,
     map_view,
@@ -108,6 +109,9 @@ class BookingIn(Strict):
     accept_policy: bool = False
     # The id of a phone number the diner verified (POST /r/{vid}/phone/verify), to get reminders.
     phone_verification_id: str | None = Field(default=None, min_length=10, max_length=100)
+    # The last step: the terms and privacy notice (required) and, separately, offers (optional).
+    accept_terms: bool = False
+    accept_offers: bool = False
 
 
 def _limit(session: db.SessionDep, request: Request, name: str, limit: int) -> None:
@@ -283,6 +287,8 @@ def book(
     """
     _limit(session, request, "book", BOOK_LIMIT)
     venue = load_published(session, venue_public_id)
+    # First, so a diner who did not accept is refused before a hold or a cap is touched.
+    consents.require_terms(body.accept_terms)
     held = holding.read_hold(session, venue, body.hold_id)
     deposit = _deposit_terms(session, venue, held, body)
     proof = (
@@ -318,6 +324,8 @@ def book(
         "manage_path": f"/b/{token}",
         "manage_link": manage_link(token),
     }
+    consents.record(session, venue, booking, body.accept_offers)
+    session.commit()
     if proof is not None:
         consent = phone_messages.link_consent(session, venue, booking, proof)
         session.commit()

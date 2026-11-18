@@ -18,6 +18,7 @@ test("a diner proves a phone number and books, and the owner sees the masked mes
   const panel = page.getByRole("form", { name: "Your details" });
   await panel.getByLabel("Name for the booking").fill("Phone Diner");
   await panel.getByLabel("Email", { exact: true }).fill("phone.diner@example.com");
+  await panel.getByRole("checkbox", { name: /accept the terms/ }).check();
 
   // Nothing is pre-ticked. Ticking without verifying blocks the booking, and says why.
   const box = panel.getByRole("checkbox", { name: /Send me booking messages/ });

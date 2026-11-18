@@ -67,7 +67,7 @@ describe("The phone reminders block", () => {
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByText(/Verified: \+351 9•• ••• 678 · SMS/)).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/phone/verify`)[0]?.body).toEqual({ verification_id: "verify-id-123456", code: "482913" });
-    expect(seen.at(-1)).toEqual({ wanted: true, verificationId: "verify-id-123456" });
+    expect(seen.at(-1)).toEqual({ wanted: true, verificationId: "verify-id-123456", masked: "+351 9•• ••• 678", channel: "sms" });
   });
 
   it("shows the server's reason for a wrong code and does not mark the number verified", async () => {

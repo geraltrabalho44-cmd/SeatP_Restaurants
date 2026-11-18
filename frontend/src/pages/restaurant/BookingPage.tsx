@@ -125,7 +125,7 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
           onBack={() => flow.go(STEP.time)}
           details={{
             seatId: flow.seatId, seatLabel: flow.seatLabel, onClearSeat: flow.clearSeat,
-            contact: flow.contact, onContactChange: flow.setContact, onBooked: flow.booked,
+            contact: flow.contact, onContactChange: flow.setContact, agreements: flow.agreements, onAgreementsChange: flow.setAgreements, onBooked: flow.booked,
             onHoldLost: flow.holdLost, onSubmittingChange: flow.setSubmitting,
           }}
         />
@@ -140,6 +140,8 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
           secondsLeft={flow.secondsLeft ?? 0}
           contact={flow.contact}
           onContactChange={flow.setContact}
+          agreements={flow.agreements}
+          onAgreementsChange={flow.setAgreements}
           onBooked={flow.booked}
           onHoldLost={flow.holdLost}
           onSubmittingChange={flow.setSubmitting}

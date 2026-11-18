@@ -17,10 +17,10 @@ const OVERVIEW = {
 const table = (id: number, label: string, bookings: number, heat: number, room = 1) => ({ id, label, room_id: room, shape: "rect", x: id * 60, y: 20, w: 50, h: 50, rotation: 0, seats: 4, bookings, covers: bookings * 2, share: bookings / 30, heat });
 const TABLES = { days: 90, total: 30, rooms: [{ id: 1, name: "Main room" }], tables: [table(1, "T1", 20, 1), table(2, "T2", 10, 0.5), table(3, "T3", 0, 0)], top: [1, 2] };
 const GUESTS = {
-  total: 2, segments: { new: 1, regular: 1, lapsed: 0, no_shows: 0 }, offset: 0, limit: 50,
+  total: 2, segments: { new: 1, regular: 1, lapsed: 0, no_shows: 0, offers: 1 }, offset: 0, limit: 50,
   guests: [
-    { email: "rita@example.com", name: "Rita Regular", phone: null, bookings: 5, visits: 4, no_shows: 0, cancellations: 1, covers: 12, first_booking: "2030-01-01", last_visit: "2030-04-01", next_booking: null, usual_party: 3, allergies: "peanuts", dietary: "", segments: ["regular"] },
-    { email: "olga@example.com", name: "Olga Once", phone: null, bookings: 1, visits: 1, no_shows: 0, cancellations: 0, covers: 2, first_booking: "2030-04-10", last_visit: "2030-04-10", next_booking: null, usual_party: 2, allergies: "", dietary: "", segments: ["new"] },
+    { email: "rita@example.com", name: "Rita Regular", phone: null, bookings: 5, visits: 4, no_shows: 0, cancellations: 1, covers: 12, first_booking: "2030-01-01", last_visit: "2030-04-01", next_booking: null, usual_party: 3, allergies: "peanuts", dietary: "", offers: true, segments: ["regular", "offers"] },
+    { email: "olga@example.com", name: "Olga Once", phone: null, bookings: 1, visits: 1, no_shows: 0, cancellations: 0, covers: 2, first_booking: "2030-04-10", last_visit: "2030-04-10", next_booking: null, usual_party: 2, allergies: "", dietary: "", offers: false, segments: ["new"] },
   ],
 };
 

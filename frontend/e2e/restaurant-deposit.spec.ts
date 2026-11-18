@@ -33,13 +33,14 @@ test("a diner accepts a deposit, pays on the demo page, and cancelling in time r
   await expect(panel.getByRole("region", { name: "Deposit" })).toContainText("€20");
   await panel.getByLabel("Name for the booking").fill("Deposit Diner");
   await panel.getByLabel("Email", { exact: true }).fill("deposit.diner@example.com");
+  await panel.getByRole("checkbox", { name: /accept the terms/ }).check();
 
   // The terms must be accepted: without the tick nothing is booked.
   await panel.getByRole("button", { name: /Pay €20 deposit/ }).click();
   await expect(panel.getByText("Please accept the deposit terms to book this table.")).toBeVisible();
   expect(await floorBookings(request, venue)).toHaveLength(0);
 
-  await panel.getByRole("checkbox").check();
+  await panel.getByRole("checkbox", { name: /agree to pay the deposit/ }).check();
   await panel.getByRole("button", { name: /Pay €20 deposit/ }).click();
 
   // The booking is saved and holds the table, but it is not confirmed until the deposit is paid.
@@ -72,7 +73,8 @@ test("giving up on the payment page frees the table straight away", async ({ pag
   const panel = page.getByRole("form", { name: "Your details" });
   await panel.getByLabel("Name for the booking").fill("Give Up Diner");
   await panel.getByLabel("Email", { exact: true }).fill("giveup.diner@example.com");
-  await panel.getByRole("checkbox").check();
+  await panel.getByRole("checkbox", { name: /accept the terms/ }).check();
+  await panel.getByRole("checkbox", { name: /agree to pay the deposit/ }).check();
   await panel.getByRole("button", { name: /Pay €20 deposit/ }).click();
   await expect(page).toHaveURL(/\/pay\/demo\//);
   expect(await floorBookings(request, venue)).toHaveLength(1);

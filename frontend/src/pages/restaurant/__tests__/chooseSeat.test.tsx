@@ -44,6 +44,7 @@ async function fillDetailsAndBook(): Promise<void> {
   await screen.findByRole("heading", { name: "Your details" });
   fireEvent.change(screen.getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ana@example.com" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: /accept the terms/ }));
   fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
 }
 

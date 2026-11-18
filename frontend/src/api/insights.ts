@@ -57,7 +57,7 @@ export interface InsightsView {
   tables: TablesView;
 }
 
-export type Segment = "new" | "regular" | "lapsed" | "no_shows";
+export type Segment = "new" | "regular" | "lapsed" | "no_shows" | "offers";
 export type GuestSort = "recent" | "visits" | "name";
 
 export interface GuestRow {
@@ -75,6 +75,8 @@ export interface GuestRow {
   usual_party: number | null;
   allergies: string;
   dietary: string;
+  /** Said yes to offers from this restaurant and has not withdrawn. */
+  offers: boolean;
   segments: Segment[];
 }
 

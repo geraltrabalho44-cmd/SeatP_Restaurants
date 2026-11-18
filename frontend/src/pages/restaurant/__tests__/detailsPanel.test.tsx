@@ -59,6 +59,7 @@ describe("The details form beside the map", () => {
     expect(screen.getByRole("option", { name: /Table 7,/ })).toBeTruthy();
     fireEvent.change(within(panel).getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(within(panel).getByLabelText("Email"), { target: { value: "ana@example.com" } });
+    fireEvent.click(within(panel).getByRole("checkbox", { name: /accept the terms/ }));
     fireEvent.click(within(panel).getByRole("button", { name: "Confirm booking" }));
     expect(await screen.findByRole("heading", { name: "Booking confirmed." })).toBeTruthy();
     const body = callsTo(calls, "POST", `${API}/bookings`)[0]?.body as Record<string, unknown>;
@@ -81,6 +82,7 @@ describe("The details form beside the map", () => {
     const panel = screen.getByRole("form", { name: "Your details" });
     fireEvent.change(within(panel).getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(within(panel).getByLabelText("Email"), { target: { value: "ana@example.com" } });
+    fireEvent.click(within(panel).getByRole("checkbox", { name: /accept the terms/ }));
     fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
     fireEvent.click(await screen.findByLabelText(/Seat 1 · Facing the window/));
     fireEvent.click(screen.getByRole("button", { name: "Save chair request" }));
@@ -98,6 +100,7 @@ describe("The details form beside the map", () => {
     const panel = screen.getByRole("form", { name: "Your details" });
     fireEvent.change(within(panel).getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(within(panel).getByLabelText("Email"), { target: { value: "ana@example.com" } });
+    fireEvent.click(within(panel).getByRole("checkbox", { name: /accept the terms/ }));
     fireEvent.click(within(panel).getByRole("button", { name: "Confirm booking" }));
     expect(await screen.findByText(/Your hold on table 7 ended before we could book it/)).toBeTruthy();
     expect(screen.queryByRole("form", { name: "Your details" })).toBeNull(); // nothing is held any more

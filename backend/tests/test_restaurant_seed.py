@@ -164,6 +164,7 @@ def test_the_showcase_can_be_booked_and_its_email_has_the_map(
             "party": 2,
             "name": "Rui Demo",
             "email": "rui@example.com",
+            "accept_terms": True,
         },
     )
     assert booked.status_code == 201, booked.text

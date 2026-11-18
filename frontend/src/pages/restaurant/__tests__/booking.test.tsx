@@ -59,6 +59,7 @@ describe("Booking page", () => {
     expect(callsTo(calls, "POST", `${API}/bookings`)).toHaveLength(0);
     fireEvent.change(screen.getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ana@example.com" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /accept the terms/ }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
 
     // Step 5: summary, manage link, email note.
@@ -243,6 +244,7 @@ describe("Booking page", () => {
     await screen.findByRole("heading", { name: "Your details" });
     fireEvent.change(screen.getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ana@example.com" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /accept the terms/ }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
     expect((await screen.findByRole("alert")).textContent).toContain(message);
     // The diner stays on the form with the hold, so they can change the email or go back.

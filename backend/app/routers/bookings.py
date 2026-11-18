@@ -18,7 +18,7 @@ from app import db
 from app.core.errors import ApiError, SeatTaken
 from app.core.text import PlainText
 from app.models import Booking, Venue, utc_now
-from app.restaurant_service import booking_payments, booking_rows, manage_flow, waitlist
+from app.restaurant_service import booking_payments, booking_rows, consents, manage_flow, waitlist
 from app.restaurant_service.alternatives import conflict_response
 from app.restaurant_service.availability import MAX_ONLINE_PARTY, check_party_size, max_party
 from app.restaurant_service.changes import record_change
@@ -81,6 +81,8 @@ def view_booking(manage_token: str, request: Request, session: db.SessionDep) ->
     booking = booking_rows.load_by_token(session, manage_token)
     venue = _venue_of(session, booking.venue_id)
     detail = booking_rows.describe(session, venue, booking, with_phrase=True)
+    # Whether this diner takes offers from the restaurant: they can change it on their booking page.
+    detail["offers"] = consents.accepts_offers(session, venue, booking.email)
     local_start = booking.start_at.astimezone(venue_zone(venue)).time()
     detail["can_change"] = booking.status == "confirmed" and not is_past(
         venue, booking.date, local_start

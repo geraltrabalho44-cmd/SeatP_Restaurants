@@ -26,6 +26,7 @@ export type ErrorCode =
   | "policy_not_accepted" // HTTP 422: a deposit applies and its terms were not accepted
   | "payment_unavailable" // HTTP 502: the payment provider could not be reached
   | "payments_not_ready" // HTTP 422: deposits need online payments connected first
+  | "terms_not_accepted" // HTTP 422: the terms and privacy notice were not accepted
   | "messages_off" // HTTP 409: the restaurant does not send phone messages
   | "bad_phone" // HTTP 422: not a Portuguese mobile number
   | "wrong_code" // HTTP 422: the 6-digit code was wrong

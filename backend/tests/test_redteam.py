@@ -95,6 +95,7 @@ def test_s3_booking_on_the_last_day_of_year_9999_is_a_validation_error(
         "name": "Zoe Example",
         "email": "zoe@example.com",
         "party": 2,
+        "accept_terms": True,
     }
     response = client.post(f"/api/r/{place.public_id}/bookings", json=booking)
     # Before the fix: the end of the stay is midnight of year 10000, which

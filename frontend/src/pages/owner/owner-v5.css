@@ -503,3 +503,12 @@
 .ow-table tbody th {
   font-weight: var(--fw-bold);
 }
+
+.ow-textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-border-strong);
+  font: inherit;
+  resize: vertical;
+}

@@ -157,7 +157,12 @@ def test_restaurant_slice(client: TestClient, session: Session, links: dict[str,
     # Hold it, then book it.
     held = client.post(f"/api/r/{venue}/hold", json={**params, "table_id": table_id})
     assert held.status_code == 201, held.text
-    booking = {"hold_id": held.json()["hold_id"], "name": "Iris Lamego", "party": 2}
+    booking = {
+        "hold_id": held.json()["hold_id"],
+        "name": "Iris Lamego",
+        "party": 2,
+        "accept_terms": True,
+    }
     booked = client.post(
         f"/api/r/{venue}/bookings", json={**booking, "email": "iris.lamego@example.com"}
     )

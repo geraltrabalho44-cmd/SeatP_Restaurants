@@ -25,6 +25,7 @@ test("a diner books a table with a chair in a two-room restaurant and changes th
 
   await page.getByLabel("Name for the booking").fill("Ambience Diner");
   await page.getByLabel("Email", { exact: true }).fill("ambience.diner@example.com");
+  await page.getByRole("checkbox", { name: /accept the terms/ }).check();
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
 
@@ -60,6 +61,7 @@ test("a diner confirms from the form beside the plan, without leaving the map", 
   await expect(page.getByRole("listbox").getByRole("option").first()).toBeVisible();
   await panel.getByLabel("Name for the booking").fill("Panel Diner");
   await panel.getByLabel("Email", { exact: true }).fill("panel.diner@example.com");
+  await panel.getByRole("checkbox", { name: /accept the terms/ }).check();
   await panel.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
 });

@@ -9,6 +9,7 @@ import { getDinerMap, holdTable, venueDayScope } from "../../api/restaurant";
 import type { BookingConfirmation, ContactDetails, DinerMap, DinerTable, PartyNeeds } from "../../api/restaurant";
 import { useLive } from "../../api/useLive";
 import { Button, Checkbox, ErrorState, Skeleton } from "../../design/components";
+import type { Agreements } from "./agreements";
 import { FloorPlan } from "./FloorPlan";
 import { errorMessage, guests, shortDate, tableName } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
@@ -57,6 +58,8 @@ export interface DetailsProps {
   onClearSeat: () => void;
   contact: ContactDetails;
   onContactChange: (contact: ContactDetails) => void;
+  agreements: Agreements;
+  onAgreementsChange: (agreements: Agreements) => void;
   onBooked: (confirmation: BookingConfirmation) => void;
   onHoldLost: (message: string) => void;
   onSubmittingChange: (submitting: boolean) => void;
@@ -355,6 +358,8 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
             summary={summary}
             contact={details.contact}
             onContactChange={details.onContactChange}
+            agreements={details.agreements}
+            onAgreementsChange={details.onAgreementsChange}
             onBooked={details.onBooked}
             onHoldLost={details.onHoldLost}
             onSubmittingChange={details.onSubmittingChange}

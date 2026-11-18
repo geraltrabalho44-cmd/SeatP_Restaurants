@@ -10,6 +10,7 @@
 //   difference between server and screen is visible in this one file.
 // Field names are snake_case, exactly as the Python backend sends them.
 import { api } from "./client";
+import type { Consent } from "./legal";
 import type { MessageOptions } from "./messages";
 import type { MapRoomSun, MapTable, MapZone, RoomLight, SeatMapPayload, SeatState } from "./types";
 
@@ -226,6 +227,8 @@ export interface BookingView extends BookingPreferences {
   max_party: number | null;
   /** The deposit, when the booking has one. */
   payment?: PaymentSummary | null;
+  /** Whether this diner takes offers from the restaurant. Only GET /b/{token} sends it. */
+  offers?: boolean;
 }
 
 export interface ContactDetails {
@@ -543,6 +546,8 @@ export interface ServerBooking extends BookingPreferences {
   max_party?: number;
   /** Only when the booking has a deposit. */
   payment?: PaymentSummary;
+  /** Only on GET /b/{token}. */
+  offers?: boolean;
 }
 
 /** POST /r/{vid}/bookings. The token appears only in this one answer. */
@@ -651,6 +656,7 @@ export function toBookingView(server: ServerBooking): BookingView {
     seat: server.seat ?? null,
     max_party: server.max_party ?? null,
     payment: server.payment ?? null,
+    offers: server.offers,
   };
 }
 
@@ -782,10 +788,11 @@ export async function createBooking(
   seatId: number | null = null,
   acceptPolicy = false,
   phoneVerificationId: string | null = null,
+  consent: Consent = { terms: false, offers: false },
 ): Promise<BookingConfirmation> {
   // The backend checks the party size against the hold, so it is sent again here.
   const wishes = needs.prefs?.length ? { prefs: needs.prefs } : {};
-  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}), ...(phoneVerificationId ? { phone_verification_id: phoneVerificationId } : {}) };
+  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}), ...(phoneVerificationId ? { phone_verification_id: phoneVerificationId } : {}), accept_terms: consent.terms, accept_offers: consent.offers };
   const server = await api.post<ServerConfirmation>(`${diner(vid)}/bookings`, body);
   return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email, payment: server.payment ?? null, messages: server.messages ?? null };
 }

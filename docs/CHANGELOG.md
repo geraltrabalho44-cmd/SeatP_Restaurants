@@ -26,6 +26,14 @@ through Resend, usability sessions with real users.
   (`backend/app/payments/READ_ME_FIRST.md`). Hosted Checkout only, so no card data reaches SeatPlan and the
   Content-Security-Policy is unchanged; webhooks are signature-checked, deduplicated and re-read from Stripe.
 - Staff see each booking's deposit on the floor. New owner page "Deposits".
+- Terms, privacy and offers on the last step of a booking (GDPR). Two separate boxes: the terms and privacy
+  notice (required, also enforced by the server: `terms_not_accepted`; the words open in a window and carry a
+  version) and, separately, optional and never pre-ticked, "offers from this restaurant". The terms say the
+  restaurant is responsible for its guests' data (SeatPlan processes it on its behalf) and may use booking data
+  for its own statistics. The consent of each booking is recorded with the version of the words; a guest's yes
+  to offers is kept per restaurant and email, and is withdrawn with the link in any message (`/u/...`) or on
+  the booking page. The owner can add their own words ("Terms and privacy" page). The wording is a draft that
+  needs a lawyer's review. Every booking test and e2e spec now ticks the terms. Nothing sends offers yet.
 - Owner "Insights" page: totals (bookings, guests, no-show and cancellation rates, returning guests, busiest
   weekdays and hours), the tables guests book most (ranked, and drawn on the floor plan in one purple ramp with
   the count on every table), and a guest book (visits, last visit, no-shows, usual party, allergies; filters for

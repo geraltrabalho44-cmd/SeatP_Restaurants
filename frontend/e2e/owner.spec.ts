@@ -27,7 +27,7 @@ for (const width of [1440, 390]) test(`owner publishes and preserves existing bo
   expect(held.status()).toBe(201);
   const { hold_id } = await held.json() as { hold_id: string };
   const booked = await request.post(`/api/r/${venue.id}/bookings`, { data: {
-    hold_id, party: 2, name: "Existing Diner", email: `owner-boundary-${width}@example.com`, seat_id: table.seats[1].id,
+    hold_id, party: 2, name: "Existing Diner", email: `owner-boundary-${width}@example.com`, seat_id: table.seats[1].id, accept_terms: true,
   } });
   expect(booked.status()).toBe(201);
   const { manage_path } = await booked.json() as { manage_path: string };

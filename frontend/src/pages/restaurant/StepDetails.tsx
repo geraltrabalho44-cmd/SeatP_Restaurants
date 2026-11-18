@@ -9,12 +9,13 @@ import { ApiError } from "../../api/client";
 import { createBooking, getDepositTerms } from "../../api/restaurant";
 import type { BookingConfirmation, ContactDetails, DepositTerms, PartyNeeds } from "../../api/restaurant";
 import { Button, Field, Select } from "../../design/components";
+import { ConsentBoxes } from "./ConsentBoxes";
 import { DepositNotice } from "./DepositNotice";
 import { errorMessage } from "./format";
+import type { Agreements } from "./agreements";
 import { HoldCountdown } from "./HoldCountdown";
 import { formatEuros } from "./money";
-import { NO_PHONE, PhoneOptIn } from "./PhoneOptIn";
-import type { PhoneChoice } from "./PhoneOptIn";
+import { PhoneOptIn } from "./PhoneOptIn";
 import type { Hold } from "./StepTable";
 import { StepHeading } from "./StepHeading";
 import { validateContact } from "./validation";
@@ -39,6 +40,9 @@ interface StepDetailsProps {
   /** Kept by the page, so going back to the map does not wipe what was typed. */
   contact: ContactDetails;
   onContactChange: (contact: ContactDetails) => void;
+  /** The boxes the diner ticked, kept by the page like the contact details. */
+  agreements: Agreements;
+  onAgreementsChange: (agreements: Agreements) => void;
   onBooked: (confirmation: BookingConfirmation) => void;
   /** The hold ended before we could book: go back to the map with this message. */
   onHoldLost: (message: string) => void;
@@ -51,7 +55,7 @@ interface StepDetailsProps {
 const FIELD_ORDER: (keyof ContactDetails)[] = ["name", "email", "phone", "notes"];
 
 export function StepDetails(props: StepDetailsProps) {
-  const { venueId, needs, time = null, hold, seatId, seatLabel, summary, secondsLeft, contact, onContactChange, onBooked, onHoldLost, onSubmittingChange, onBack, onChooseSeat, onClearSeat, variant = "step" } = props;
+  const { venueId, needs, time = null, hold, seatId, seatLabel, summary, secondsLeft, contact, onContactChange, agreements, onAgreementsChange, onBooked, onHoldLost, onSubmittingChange, onBack, onChooseSeat, onClearSeat, variant = "step" } = props;
   const panel = variant === "panel";
   const [touched, setTouched] = useState<Partial<Record<keyof ContactDetails, boolean>>>({});
   const [busy, setBusy] = useState(false);
@@ -63,8 +67,12 @@ export function StepDetails(props: StepDetailsProps) {
   const [termsError, setTermsError] = useState<string | null>(null);
   const [termsRound, setTermsRound] = useState(0);
   // Reminders on the phone: only used when the restaurant offers them and the diner ticks the box.
-  const [phone, setPhone] = useState<PhoneChoice>(NO_PHONE);
+  // The last step: terms (required) and, separately, offers (optional, never pre-ticked).
+  const { consent, phone } = agreements;
+  const setPhone = (value: typeof phone): void => onAgreementsChange({ ...agreements, phone: value });
+  const setConsent = (value: typeof consent): void => onAgreementsChange({ ...agreements, consent: value });
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [consentError, setConsentError] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
     setTerms(null);
@@ -97,6 +105,11 @@ export function StepDetails(props: StepDetailsProps) {
       document.getElementById("rb-accept-deposit")?.focus();
       return;
     }
+    if (!consent.terms) {
+      setConsentError("Please accept the terms and conditions to book this table.");
+      document.getElementById("rb-accept-terms")?.focus();
+      return;
+    }
     if (phone.wanted && !phone.verificationId) {
       setPhoneError("Verify your number, or untick the box to book without phone messages.");
       document.getElementById("rb-phone-code")?.focus();
@@ -108,7 +121,7 @@ export function StepDetails(props: StepDetailsProps) {
     setProblem(null);
     try {
       // The acceptance is only sent when a deposit applies, so a booking without one is exactly as before.
-      onBooked(terms || phone.verificationId ? await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId, terms !== null, phone.verificationId) : await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId));
+      onBooked(await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId, terms !== null, phone.verificationId, consent));
     } catch (error) {
       if (error instanceof ApiError && (error.code === "phone_not_verified" || error.code === "code_expired")) {
         // The proof ran out (it lasts 30 minutes): ask for a new code, and keep the hold.
@@ -174,6 +187,7 @@ export function StepDetails(props: StepDetailsProps) {
       {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} disabled={busy} />}
       <PhoneOptIn venueId={venueId} value={phone} onChange={(value) => { setPhone(value); setPhoneError(null); }} disabled={busy} error={phoneError} />
       {terms && <DepositNotice terms={terms} accepted={accepted} disabled={busy} error={termsError} onChange={(value) => { setAccepted(value); if (value) setTermsError(null); }} />}
+      <ConsentBoxes venueId={venueId} value={consent} onChange={(value) => { setConsent(value); if (value.terms) setConsentError(null); }} error={consentError} disabled={busy} />
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
           {problem}

@@ -45,6 +45,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   await page.getByRole("button", { name: "Save chair request" }).click();
   await page.getByLabel("Name for the booking").fill("Acceptance Diner");
   await page.getByLabel("Email", { exact: true }).fill(`acceptance-${width}@example.com`);
+  await page.getByRole("checkbox", { name: /accept the terms/ }).check();
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
   await expect(page.getByText(/Seat 2/).first()).toBeVisible();

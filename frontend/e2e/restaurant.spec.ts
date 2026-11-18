@@ -20,6 +20,7 @@ test("a diner books a table, then cancels through the manage link", async ({ pag
 
   await page.getByLabel("Name for the booking").fill("Tess Diner");
   await page.getByLabel("Email", { exact: true }).fill("tess.diner@example.com");
+  await page.getByRole("checkbox", { name: /accept the terms/ }).check();
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
 
@@ -57,6 +58,7 @@ test("a diner picks a chair and sees it on the confirmation", async ({ page, req
 
   await page.getByLabel("Name for the booking").fill("Chair Diner");
   await page.getByLabel("Email", { exact: true }).fill("chair.diner@example.com");
+  await page.getByRole("checkbox", { name: /accept the terms/ }).check();
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
   await expect(page.getByText(seat, { exact: false }).first()).toBeVisible();

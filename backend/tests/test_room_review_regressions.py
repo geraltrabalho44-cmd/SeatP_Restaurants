@@ -74,6 +74,7 @@ def test_invalid_published_edits_close_new_bookings_but_keep_manage_links(
             "party": 2,
             "name": "Existing Diner",
             "email": "existing@example.com",
+            "accept_terms": True,
         },
     )
     assert booked.status_code == 201, booked.text

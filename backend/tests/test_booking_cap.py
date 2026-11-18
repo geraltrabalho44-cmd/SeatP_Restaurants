@@ -188,7 +188,13 @@ def _book_from(client: TestClient, place: Place, days: int, email: str, **header
         headers=headers,
     )
     assert held.status_code == 201, held.text
-    body = {"hold_id": held.json()["hold_id"], "party": 2, "name": "Lia Moreno", "email": email}
+    body = {
+        "hold_id": held.json()["hold_id"],
+        "party": 2,
+        "name": "Lia Moreno",
+        "email": email,
+        "accept_terms": True,
+    }
     return client.post(f"/api/r/{place.public_id}/bookings", json=body, headers=headers).status_code
 
 

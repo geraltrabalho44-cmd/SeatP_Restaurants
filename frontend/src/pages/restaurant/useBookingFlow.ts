@@ -4,6 +4,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { releaseHold } from "../../api/restaurant";
 import type { BookingConfirmation, ContactDetails, PartyNeeds, RestaurantInfo } from "../../api/restaurant";
+import { NO_AGREEMENTS } from "./agreements";
+import type { Agreements } from "./agreements";
 import { todayIso } from "./format";
 import { useSecondsLeft } from "./HoldCountdown";
 import type { Hold } from "./StepTable";
@@ -52,6 +54,7 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
   const time = picked?.date === needs.date && picked.party === needs.party ? picked.time : null;
   const [hold, setHoldState] = useState<Hold | null>(null);
   const [contact, setContact] = useState<ContactDetails>(NO_CONTACT);
+  const [agreements, setAgreements] = useState<Agreements>(NO_AGREEMENTS);
   const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [carriedNotice, setCarriedNotice] = useState<string | null>(null);
@@ -127,6 +130,8 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
     setSubmitting,
     contact,
     setContact,
+    agreements,
+    setAgreements,
     confirmation,
     carriedNotice,
     choosingSeat,

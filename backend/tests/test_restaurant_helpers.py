@@ -181,6 +181,8 @@ def book(client: TestClient, place: Place, hold_id: str, party: int, **extra: An
         "party": party,
         "name": "Lia Moreno",
         "email": "lia.moreno@example.com",
+        # The last step of every booking: the terms must be accepted.
+        "accept_terms": True,
         **extra,
     }
     return client.post(f"/api/r/{place.public_id}/bookings", json=body)
