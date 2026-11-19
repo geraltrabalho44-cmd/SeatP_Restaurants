@@ -14,7 +14,6 @@ name: email-cron
 # Switched off in this repository until it has a deployed site and the two secrets above.
 # To switch it on again, put back the schedule: cron "*/15 * * * *" trigger (see git history).
 on:
-  workflow_dispatch:
   # Lets a team member press "Run workflow" before a demo.
   workflow_dispatch:
 
