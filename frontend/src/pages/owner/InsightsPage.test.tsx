@@ -1,5 +1,5 @@
 // The owner's insights: heat colours, the three tabs, and what an empty restaurant sees.
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiError, callsTo, mockApi } from "../restaurant/__tests__/mockApi";
@@ -95,6 +95,15 @@ describe("the insights page", () => {
     const last = callsTo(calls, "GET", "/api/owner/restaurants/casa/guests").at(-1);
     expect(last?.query.get("segment")).toBe("regular");
     expect(last?.query.get("q")).toBe("olga");
+  });
+
+  it("the guest list links to sending an offer to the group being looked at", async () => {
+    open();
+    fireEvent.click(await screen.findByRole("tab", { name: "Guests" }));
+    const link = await screen.findByRole("link", { name: "Send an offer to this group" });
+    expect(link.getAttribute("href")).toBe("/owner/casa/offers?send=all");
+    fireEvent.click(await screen.findByRole("button", { name: /Regulars \(1\)/ }));
+    await waitFor(() => expect(screen.getByRole("link", { name: "Send an offer to this group" }).getAttribute("href")).toBe("/owner/casa/offers?send=regular"));
   });
 
   it("an empty restaurant is told what will appear, not shown zeros", async () => {

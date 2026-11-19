@@ -2,7 +2,7 @@
 // many no-shows, when the restaurant fills), the busiest tables on the floor plan, and the guest book
 // (who comes, how often, who stopped coming). It only shows what the restaurant already has.
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { PERIODS, getGuests, getInsights } from "../../api/insights";
 import type { GuestQuery, GuestRow, GuestSort, GuestsView, InsightsView, Overview, Period, Segment, TableDemand, TablesView } from "../../api/insights";
 import { Badge, ErrorState, Field, Select, Skeleton } from "../../design/components";
@@ -241,6 +241,12 @@ function GuestsTab({ venueId }: { venueId: string }) {
               </button>
             ))}
           </div>
+        )}
+        {data && data.guests.length > 0 && (
+          <p>
+            <Link to={`/owner/${encodeURIComponent(venueId)}/offers?send=${query.segment === null || query.segment === "offers" ? "all" : query.segment}`}>Send an offer to this group</Link>
+            <span className="rb-muted"> Only guests who accept offers are emailed.</span>
+          </p>
         )}
         {state.status === "loading" && <Skeleton label="Loading your guests" lines={4} />}
         {state.status === "error" && <ErrorState message="Could not open your guests. Retry." onRetry={() => reload()} />}

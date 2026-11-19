@@ -2,10 +2,11 @@
 // through SeatPlan). An offer is given one of three ways: a shared code and link, sent by the owner to
 // chosen guests, or automatically by a rule. Only guests who said yes to offers are ever emailed.
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { changeOffer, createOffer, listOffers, previewReach, sendOffer, toggleOffer } from "../../api/offers";
 import type { Audience, OfferInput, OfferKind, OfferView, Reach, RuleType, Segment, SendResult } from "../../api/offers";
 import { Badge, Button, Checkbox, ErrorState, Field, Select, Skeleton, useToast } from "../../design/components";
+import { QrImage, downloadQr } from "../../qr/QrImage";
 import { CopyLink } from "../restaurant/CopyLink";
 import { errorMessage, formatDate } from "../restaurant/format";
 import { useLoad } from "../restaurant/useLoad";
@@ -118,6 +119,10 @@ export default function OffersPage() {
   const { venueId = "" } = useParams();
   const { state, reload, setData } = useLoad(() => listOffers(venueId), venueId);
   const [creating, setCreating] = useState(false);
+  // From the guest list: "Send an offer to this group" arrives with ?send=lapsed and so on.
+  const [params] = useSearchParams();
+  const wanted = params.get("send");
+  const firstSegment: Segment = wanted !== null && wanted in SEGMENT_NAME ? (wanted as Segment) : "lapsed";
   return (
     <OwnerShell title="Offers" venueId={venueId} current="offers">
       <div className="ow-page-head">
@@ -144,7 +149,7 @@ export default function OffersPage() {
           )}
           {state.data.offers.length === 0 && !creating && <p>No offers yet. Make one to bring guests back, for example 10% off for guests who have not been in for 60 days.</p>}
           {state.data.offers.map((offer) => (
-            <OfferCard key={offer.id} venueId={venueId} offer={offer} limits={state.data} onChanged={(next) => setData({ ...state.data, offers: state.data.offers.map((o) => (o.id === next.id ? next : o)) })} />
+            <OfferCard key={offer.id} venueId={venueId} offer={offer} limits={state.data} firstSegment={firstSegment} onChanged={(next) => setData({ ...state.data, offers: state.data.offers.map((o) => (o.id === next.id ? next : o)) })} />
           ))}
         </>
       )}
@@ -252,7 +257,7 @@ function ruleText(offer: OfferView): string {
   return "";
 }
 
-function OfferCard({ venueId, offer, limits, onChanged }: { venueId: string; offer: OfferView; limits: { daily_cap: number; guest_cooldown_days: number }; onChanged: (offer: OfferView) => void }) {
+function OfferCard({ venueId, offer, limits, firstSegment, onChanged }: { venueId: string; offer: OfferView; limits: { daily_cap: number; guest_cooldown_days: number }; firstSegment: Segment; onChanged: (offer: OfferView) => void }) {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -298,8 +303,9 @@ function OfferCard({ venueId, offer, limits, onChanged }: { venueId: string; off
           {offer.max_uses !== null ? ` of ${offer.max_uses}` : ""} {offer.uses === 1 ? "time" : "times"}
           {offer.audience !== "link" ? ` · ${offer.codes_issued} ${offer.codes_issued === 1 ? "code" : "codes"} given` : ""}
         </p>
-        {offer.link && <CopyLink url={offer.link} label={`Link with code ${offer.code}`} />}
-        {offer.audience === "send" && offer.active && <SendPanel venueId={venueId} offer={offer} limits={limits} onSent={() => onChanged(offer)} />}
+        {offer.link && <CopyLink url={offer.link} label={`Link with code ${offer.code}`} shared />}
+        {offer.link && <QrBlock link={offer.link} name={offer.name} code={offer.code ?? "offer"} />}
+        {offer.audience === "send" && offer.active && <SendPanel venueId={venueId} offer={offer} limits={limits} first={firstSegment} onSent={() => onChanged(offer)} />}
         <div className="rb-actions">
           <Button variant="secondary" disabled={busy} onClick={() => setEditing(true)}>
             Edit
@@ -313,8 +319,8 @@ function OfferCard({ venueId, offer, limits, onChanged }: { venueId: string; off
   );
 }
 
-function SendPanel({ venueId, offer, limits, onSent }: { venueId: string; offer: OfferView; limits: { daily_cap: number; guest_cooldown_days: number }; onSent: () => void }) {
-  const [segment, setSegment] = useState<Segment>("lapsed");
+function SendPanel({ venueId, offer, limits, first, onSent }: { venueId: string; offer: OfferView; limits: { daily_cap: number; guest_cooldown_days: number }; first: Segment; onSent: () => void }) {
+  const [segment, setSegment] = useState<Segment>(first);
   const [list, setList] = useState("");
   const [reach, setReach] = useState<Reach | null>(null);
   const [result, setResult] = useState<SendResult | null>(null);
@@ -376,6 +382,33 @@ function SendPanel({ venueId, offer, limits, onSent }: { venueId: string; offer:
           {problem}
         </p>
       )}
+    </div>
+  );
+}
+
+/** The shared link as a QR code to print: a poster in the window, a menu, a receipt. */
+function QrBlock({ link, name, code }: { link: string; name: string; code: string }) {
+  const [problem, setProblem] = useState<string | null>(null);
+  return (
+    <div className="ow-qr">
+      <QrImage text={link} label={`QR code for the offer ${name}`} />
+      <div>
+        <p>
+          <strong>QR code</strong>
+        </p>
+        <p className="rb-muted">Print it where guests can scan it. It opens your restaurant&apos;s page with the code already filled in.</p>
+        <Button
+          variant="secondary"
+          onClick={() => setProblem(downloadQr(link, `QR code for the offer ${name}`, `offer-${code}.svg`) ? null : "We could not make the file. Copy the link instead.")}
+        >
+          Download QR code (SVG)
+        </Button>
+        {problem && (
+          <p className="rb-notice rb-notice-error" role="alert">
+            {problem}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

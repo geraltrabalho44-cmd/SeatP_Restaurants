@@ -41,8 +41,9 @@ through Resend, usability sessions with real users.
   emailed; every email says why and has a one-tap stop link; a guest gets at most one offer email in 14 days
   and a restaurant sends at most 200 a day. A guest types the code (or arrives with `?offer=CODE`) on the
   last step; a wrong code and somebody else's code answer the same and checking is rate limited. Cancelling a
-  booking gives the use back. 3 new tables (`offers`, `offer_codes`, `offer_redemptions`). A QR code for the
-  shared link is not built yet.
+  booking gives the use back. 3 new tables (`offers`, `offer_codes`, `offer_redemptions`). The shared link
+  also comes as a QR code to print (a generator written out in full, `frontend/src/qr/`, checked with a real
+  scanner), and the guest list has a "Send an offer to this group" shortcut.
 - Weather, sunset and a rain plan. The booking page shows the day's forecast (a simulated one by default; Open-Meteo
   behind `WEATHER_PROVIDER=open-meteo`, no account needed for the free service, but its commercial terms must be
   reviewed before production) and the table that catches the sunset (worked out locally from the room's windows and

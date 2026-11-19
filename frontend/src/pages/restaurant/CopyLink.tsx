@@ -10,7 +10,8 @@ export function absoluteUrl(path: string): string {
   return path.startsWith("/") ? `${window.location.origin}${path}` : path;
 }
 
-export function CopyLink({ url, label }: { url: string; label: string }) {
+/** `shared` is for a link meant to be handed out (an offer): its words do not call it private. */
+export function CopyLink({ url, label, shared = false }: { url: string; label: string; shared?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [shown, setShown] = useState(false);
@@ -18,7 +19,7 @@ export function CopyLink({ url, label }: { url: string; label: string }) {
   const copy = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(url);
-      setMessage("Link copied. Paste it somewhere safe, like your notes or calendar.");
+      setMessage(shared ? "Link copied. Paste it wherever you want guests to find it." : "Link copied. Paste it somewhere safe, like your notes or calendar.");
     } catch {
       setShown(true);
       window.setTimeout(() => inputRef.current?.select(), 0);
@@ -29,7 +30,7 @@ export function CopyLink({ url, label }: { url: string; label: string }) {
   return (
     <div className="rb-copy">
       <Button variant="secondary" onClick={() => void copy()}>
-        Copy private link
+        {shared ? "Copy link" : "Copy private link"}
       </Button>
       <details className="rb-copy-details" open={shown} onToggle={(event) => setShown(event.currentTarget.open)}>
         <summary>Show the link</summary>

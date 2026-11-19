@@ -184,3 +184,68 @@ describe("sending an offer to guests", () => {
     expect(screen.queryByRole("group", { name: "Send We miss you" })).toBeNull();
   });
 });
+
+describe("the QR code of a shared link", () => {
+  it("is shown for a shared-link offer, with a label and a download, and not for the other kinds", async () => {
+    open([offer(), offer({ id: 2, name: "Sent one", audience: "send", code: null, link: null })]);
+    const shared = await screen.findByRole("region", { name: "Offer: Spring offer" });
+    expect(within(shared).getByRole("img", { name: "QR code for the offer Spring offer" })).toBeTruthy();
+    expect(within(shared).getByText(/opens your restaurant.s page with the code already filled in/)).toBeTruthy();
+    expect(within(shared).getByRole("button", { name: "Download QR code (SVG)" })).toBeTruthy();
+    const other = screen.getByRole("region", { name: "Offer: Sent one" });
+    expect(within(other).queryByRole("img")).toBeNull();
+  });
+
+  it("downloads an SVG file named after the code", async () => {
+    const made: Blob[] = [];
+    const named: string[] = [];
+    Object.defineProperty(URL, "createObjectURL", { value: (blob: Blob) => (made.push(blob), "blob:x"), configurable: true });
+    Object.defineProperty(URL, "revokeObjectURL", { value: () => undefined, configurable: true });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      named.push(this.download);
+    });
+    try {
+      open([offer()]);
+      fireEvent.click(await screen.findByRole("button", { name: "Download QR code (SVG)" }));
+      expect(named).toEqual(["offer-K7M3QX9P.svg"]);
+      expect(made[0]?.type).toBe("image/svg+xml");
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.readAsText(made[0] as Blob);
+      });
+      expect(text).toContain("<svg xmlns=");
+    } finally {
+      click.mockRestore();
+    }
+  });
+});
+
+describe("arriving from the guest list", () => {
+  it("opens the send panel on the group that was being looked at", async () => {
+    mockApi({ [`GET ${BASE}`]: () => LIST([offer({ id: 5, name: "We miss you", audience: "send", code: null, link: null })]) });
+    render(
+      <MemoryRouter initialEntries={["/owner/casa/offers?send=regular"]}>
+        <Routes>
+          <Route path="/owner/:venueId/offers" element={<OffersPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const panel = await screen.findByRole("group", { name: "Send We miss you" });
+    expect((within(panel).getByLabelText("Send this offer to") as HTMLSelectElement).value).toBe("regular");
+  });
+
+  it("ignores a group name it does not know", async () => {
+    mockApi({ [`GET ${BASE}`]: () => LIST([offer({ id: 5, name: "We miss you", audience: "send", code: null, link: null })]) });
+    render(
+      <MemoryRouter initialEntries={["/owner/casa/offers?send=<script>"]}>
+        <Routes>
+          <Route path="/owner/:venueId/offers" element={<OffersPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const panel = await screen.findByRole("group", { name: "Send We miss you" });
+    expect((within(panel).getByLabelText("Send this offer to") as HTMLSelectElement).value).toBe("lapsed");
+  });
+});
+
