@@ -4,11 +4,14 @@
 import type { Consent } from "../../api/legal";
 import { NO_CONSENT } from "../../api/legal";
 import type { PhoneChoice } from "./PhoneOptIn";
+import { NO_OFFER } from "./OfferCodeField";
+import type { OfferChoice } from "./OfferCodeField";
 import { NO_PHONE } from "./PhoneOptIn";
 
 export interface Agreements {
   consent: Consent;
   phone: PhoneChoice;
+  offer: OfferChoice;
 }
 
-export const NO_AGREEMENTS: Agreements = { consent: NO_CONSENT, phone: NO_PHONE };
+export const NO_AGREEMENTS: Agreements = { consent: NO_CONSENT, phone: NO_PHONE, offer: NO_OFFER };

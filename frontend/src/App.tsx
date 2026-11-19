@@ -35,6 +35,7 @@ import PublishReview from "./pages/owner/PublishReview";
 import UnsubscribePage from "./pages/legal/UnsubscribePage";
 import InsightsPage from "./pages/owner/InsightsPage";
 import MessagesPage from "./pages/owner/MessagesPage";
+import OffersPage from "./pages/owner/OffersPage";
 import PaymentsPage from "./pages/owner/PaymentsPage";
 import TermsPage from "./pages/owner/TermsPage";
 import DemoCheckoutPage from "./pages/pay/DemoCheckoutPage";
@@ -60,6 +61,7 @@ export default function App() {
       <Route path="/owner/:venueId/payments" element={<PaymentsPage />} />
       <Route path="/owner/:venueId/messages" element={<MessagesPage />} />
       <Route path="/owner/:venueId/insights" element={<InsightsPage />} />
+      <Route path="/owner/:venueId/offers" element={<OffersPage />} />
       <Route path="/owner/:venueId/terms" element={<TermsPage />} />
       <Route path="/u/:token" element={<UnsubscribePage />} />
       <Route path="/m/:token" element={<MessageActionPage />} />

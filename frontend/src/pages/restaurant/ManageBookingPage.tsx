@@ -90,6 +90,11 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
         <section className="rb-card rb5-details-card" aria-label="Reservation details">
           <h2 className="rb5-card-title">Reservation details</h2>
           <BookingRows booking={booking} />
+          {booking.offer && (
+            <p className="rb-muted" data-testid="offer-line">
+              Offer: {booking.offer.name}, {booking.offer.what}. The restaurant takes it off your bill.
+            </p>
+          )}
           {booking.payment && booking.status !== "pending" && booking.payment.status !== "expired" && (
             <p className="rb-muted" data-testid="deposit-line">
               {depositStatus(booking.payment)}. {booking.payment.policy_text}

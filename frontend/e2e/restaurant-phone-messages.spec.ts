@@ -37,10 +37,10 @@ test("a diner proves a phone number and books, and the owner sees the masked mes
   const code = (await panel.getByText(/Your code is/).locator("strong").textContent()) ?? "";
   expect(code).toMatch(/^\d{6}$/);
 
-  await panel.getByLabel("Code").fill("000000" === code ? "111111" : "000000");
+  await panel.getByLabel("Code", { exact: true }).fill("000000" === code ? "111111" : "000000");
   await panel.getByRole("button", { name: "Verify" }).click();
   await expect(panel.getByText(/That code is not right/)).toBeVisible();
-  await panel.getByLabel("Code").fill(code);
+  await panel.getByLabel("Code", { exact: true }).fill(code);
   await panel.getByRole("button", { name: "Verify" }).click();
   await expect(panel.getByText(/Verified: \+351 9•• ••• 678 · SMS/)).toBeVisible();
 

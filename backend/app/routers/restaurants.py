@@ -28,6 +28,7 @@ from app.restaurant_service import (
     holding,
     map_view,
     occupancy,
+    offers,
     phone_messages,
     policies,
     schedule,
@@ -112,6 +113,8 @@ class BookingIn(Strict):
     # The last step: the terms and privacy notice (required) and, separately, offers (optional).
     accept_terms: bool = False
     accept_offers: bool = False
+    # An offer code the diner typed or arrived with (?offer=CODE). Checked before anything is held.
+    offer_code: str | None = Field(default=None, max_length=40)
 
 
 def _limit(session: db.SessionDep, request: Request, name: str, limit: int) -> None:
@@ -291,6 +294,11 @@ def book(
     consents.require_terms(body.accept_terms)
     held = holding.read_hold(session, venue, body.hold_id)
     deposit = _deposit_terms(session, venue, held, body)
+    offer = (
+        offers.check(session, venue, body.offer_code, str(body.email), held.day, body.party)
+        if body.offer_code
+        else None
+    )
     proof = (
         phone_messages.take_proof(session, venue, body.phone_verification_id)
         if body.phone_verification_id
@@ -325,6 +333,9 @@ def book(
         "manage_link": manage_link(token),
     }
     consents.record(session, venue, booking, body.accept_offers)
+    if offer is not None:
+        offers.redeem(session, offer, booking)
+        answer["offer"] = {"name": offer.name, "what": offers.describe(offer)}
     session.commit()
     if proof is not None:
         consent = phone_messages.link_consent(session, venue, booking, proof)

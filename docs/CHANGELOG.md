@@ -32,6 +32,17 @@ through Resend, usability sessions with real users.
   (`backend/app/payments/READ_ME_FIRST.md`). Hosted Checkout only, so no card data reaches SeatPlan and the
   Content-Security-Policy is unchanged; webhooks are signature-checked, deduplicated and re-read from Stripe.
 - Staff see each booking's deposit on the floor. New owner page "Deposits".
+- Offers (discount coupons). The restaurant bears the cost: SeatPlan records the offer and who used it, and
+  tells the staff what to take off the bill; nothing is paid or refunded through SeatPlan. The owner makes
+  offers (a percentage, an amount or a free item, with dates, weekdays, a smallest party and a limit) and
+  chooses how guests get each one: a shared code and link, sent by the owner to chosen guests (those who have
+  not been in for 60 days, regulars, new guests, everyone, or a list), or automatically by a rule (win-back,
+  a thank-you after the first visit, a reward on the Nth visit). Only guests who said yes to offers are ever
+  emailed; every email says why and has a one-tap stop link; a guest gets at most one offer email in 14 days
+  and a restaurant sends at most 200 a day. A guest types the code (or arrives with `?offer=CODE`) on the
+  last step; a wrong code and somebody else's code answer the same and checking is rate limited. Cancelling a
+  booking gives the use back. 3 new tables (`offers`, `offer_codes`, `offer_redemptions`). A QR code for the
+  shared link is not built yet.
 - Weather, sunset and a rain plan. The booking page shows the day's forecast (a simulated one by default; Open-Meteo
   behind `WEATHER_PROVIDER=open-meteo`, no account needed for the free service, but its commercial terms must be
   reviewed before production) and the table that catches the sunset (worked out locally from the room's windows and

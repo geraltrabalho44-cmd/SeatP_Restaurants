@@ -76,6 +76,11 @@ function BookingDetails({ booking }: { booking: StaffBooking }) {
         {booking.needs_accessible && <Badge tone="info">Accessible table</Badge>}
         {booking.high_chairs > 0 && <Badge>High chairs: {booking.high_chairs}</Badge>}
       </div>
+      {booking.offer && (
+        <p data-testid="staff-offer">
+          <strong>Offer: {booking.offer.name}</strong>, {booking.offer.what}. Take it off the bill.
+        </p>
+      )}
       {booking.payment && (
         <p className="st-note" data-testid="staff-deposit">
           <strong>{depositStatus(booking.payment)}</strong>

@@ -63,6 +63,8 @@ SeatPicker.tsx is the chair map and list used by ChooseSeat (while booking) and 
 sends `PATCH /b/{token} {seat_id}` on its own). BookingEmbed (BookingPage.tsx) is the booking flow without its page frame,
 used by the public restaurant page; useLinkedTime.ts starts it from a ?date=&time=&party= link.
 
+OfferCodeField.tsx is the "Offer code" box of the details form: it fills in from `?offer=CODE`, checks the code before the diner confirms, and the booking carries it (`offer_code`). The owner's side is `pages/owner/OffersPage.tsx`.
+
 ConsentBoxes.tsx is the last step of the details form: the terms box (required; its words open in a window) and, separately, the optional offers box, never pre-ticked. `agreements.ts` keeps what was ticked in the booking flow (with the phone choice), so a trip to the chair step does not make the diner tick again. OffersChoice.tsx is the same offers choice on the booking page.
 
 PhoneOptIn.tsx is the optional "Reminders on your phone" block of the details form: it appears only when the restaurant sends phone messages (`messages` in `GET /r/{vid}`), is never pre-ticked, and the number must be verified with a code before the booking can be sent (`phone_verification_id`). The link a message carries opens `pages/messages/MessageActionPage.tsx` (`/m/:token`).

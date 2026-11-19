@@ -98,6 +98,7 @@ export function ArrivalsList({ arrivals, selectedId, onSelect, services = [], la
             {booking.needs_accessible && <Badge tone="info">Accessible</Badge>}
             {booking.high_chairs > 0 && <Badge>High chair x{booking.high_chairs}</Badge>}
             {booking.notes && <Badge tone="warning">Note</Badge>}
+            {booking.offer && <Badge tone="success">Offer: {booking.offer.what}</Badge>}
             {staffDepositLabel(booking.payment) && <Badge tone="success">{staffDepositLabel(booking.payment)}</Badge>}
           </span>
         </li>

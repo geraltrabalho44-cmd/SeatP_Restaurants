@@ -22,6 +22,7 @@ from app.restaurant_service import (
     chosen_seat,
     map_view,
     occupancy,
+    offers,
     schedule,
 )
 from app.restaurant_service.availability import PartyNeeds, table_specs_for
@@ -112,9 +113,13 @@ def floor(session: Session, venue: Venue, day: date, at: time) -> dict[str, Any]
     )
     active = occupancy.active_bookings(session, venue, day)
     payments = booking_payments.payments_for(session, [booking.id for booking in active])
+    used_offers = offers.for_bookings(session, [booking.id for booking in active])
     bookings = []
     for booking in active:
         row = booking_rows.describe(session, venue, booking)
+        if booking.id in used_offers:
+            # The staff card says what to take off the bill: "Spring offer: 10% off your bill".
+            row["offer"] = used_offers[booking.id]
         if booking.id in payments:
             # Deposit state for the staff card: "Deposit paid", "Waiting for deposit".
             row["payment"] = booking_payments.summary(payments[booking.id], booking)

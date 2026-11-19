@@ -29,6 +29,11 @@ export function Confirmation({ confirmation }: { confirmation: BookingConfirmati
             {depositStatus(booking.payment)}, taken off your bill. {cancelNote(booking.payment)}
           </p>
         )}
+        {confirmation.offer && (
+          <p className="rb-muted" role="note" data-testid="offer-line">
+            Offer applied: {confirmation.offer.name}, {confirmation.offer.what}. The restaurant takes it off your bill.
+          </p>
+        )}
         {confirmation.messages && (
           <p className="rb-muted" role="note" data-testid="phone-line">
             Reminders by {CHANNEL_NAME[confirmation.messages.channel]} to {confirmation.messages.phone}: {confirmation.messages.planned.join(", ")}.

@@ -1082,3 +1082,17 @@
 .rb-terms p {
   margin: 0 0 var(--space-2);
 }
+
+/* ---------- Offer codes on the details form ---------- */
+
+.rb-offer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.rb-offer-applied {
+  margin: 0;
+  color: var(--c-primary);
+}

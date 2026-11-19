@@ -22,6 +22,7 @@ from app.restaurant_service import (
     chosen_seat,
     emails,
     occupancy,
+    offers,
     phone_messages,
     schedule,
     waitlist,
@@ -153,6 +154,8 @@ def cancel_booking(
     emails.queue_cancellation(session, venue, booking, token)
     # Only a diner who was messaged by phone is told by phone; sent by the next cron run.
     phone_messages.on_cancel(session, venue, booking)
+    # An offer the booking used is given back to the restaurant's count.
+    offers.release(session, booking, utc_now())
     offered = waitlist.offer_freed_tables(session, venue, booking, freed)
     record_change(
         session,

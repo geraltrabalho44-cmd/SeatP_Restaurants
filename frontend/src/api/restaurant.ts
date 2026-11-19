@@ -12,6 +12,7 @@
 import { api } from "./client";
 import type { Consent } from "./legal";
 import type { MessageOptions } from "./messages";
+import type { UsedOffer } from "./offers";
 import type { MapRoomSun, MapTable, MapZone, RoomLight, SeatMapPayload, SeatState } from "./types";
 
 // ---------- Shared small shapes ----------
@@ -229,6 +230,8 @@ export interface BookingView extends BookingPreferences {
   payment?: PaymentSummary | null;
   /** Whether this diner takes offers from the restaurant. Only GET /b/{token} sends it. */
   offers?: boolean;
+  /** The offer this booking uses, if any. */
+  offer?: UsedOffer | null;
 }
 
 export interface ContactDetails {
@@ -250,6 +253,8 @@ export interface BookingConfirmation {
   payment?: PaymentRequired | null;
   /** Present when the diner chose phone reminders: where they go and which ones to expect. */
   messages?: BookingMessages | null;
+  /** Present when the booking used an offer code: the staff take it off the bill. */
+  offer?: UsedOffer | null;
 }
 
 export interface BookingMessages {
@@ -318,6 +323,8 @@ export interface StaffBooking extends BookingPreferences {
   seat?: BookingSeat | null;
   /** The deposit state, when the booking has one. */
   payment?: PaymentSummary | null;
+  /** The offer this booking uses: what the staff take off the bill. */
+  offer?: UsedOffer | null;
 }
 
 /** The staff floor. `services` lets the time scrubber know where a service starts and ends. */
@@ -548,6 +555,8 @@ export interface ServerBooking extends BookingPreferences {
   payment?: PaymentSummary;
   /** Only on GET /b/{token}. */
   offers?: boolean;
+  /** The offer the booking uses (manage page and the staff floor). */
+  offer?: UsedOffer;
 }
 
 /** POST /r/{vid}/bookings. The token appears only in this one answer. */
@@ -560,6 +569,8 @@ export interface ServerConfirmation {
   payment?: PaymentRequired & { required: true };
   /** Only when the diner verified a phone for reminders. */
   messages?: BookingMessages;
+  /** Only when an offer code was used. */
+  offer?: UsedOffer;
 }
 
 /** GET /staff/{vid}/floor. */
@@ -657,6 +668,7 @@ export function toBookingView(server: ServerBooking): BookingView {
     max_party: server.max_party ?? null,
     payment: server.payment ?? null,
     offers: server.offers,
+    offer: server.offer ?? null,
   };
 }
 
@@ -678,6 +690,7 @@ export function toStaffBooking(server: ServerBooking): StaffBooking {
     prefs: server.prefs ?? [],
     seat: server.seat ?? null,
     payment: server.payment ?? null,
+    offer: server.offer ?? null,
   };
 }
 
@@ -789,12 +802,13 @@ export async function createBooking(
   acceptPolicy = false,
   phoneVerificationId: string | null = null,
   consent: Consent = { terms: false, offers: false },
+  offerCode: string | null = null,
 ): Promise<BookingConfirmation> {
   // The backend checks the party size against the hold, so it is sent again here.
   const wishes = needs.prefs?.length ? { prefs: needs.prefs } : {};
-  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}), ...(phoneVerificationId ? { phone_verification_id: phoneVerificationId } : {}), accept_terms: consent.terms, accept_offers: consent.offers };
+  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}), ...(phoneVerificationId ? { phone_verification_id: phoneVerificationId } : {}), accept_terms: consent.terms, accept_offers: consent.offers, ...(offerCode ? { offer_code: offerCode } : {}) };
   const server = await api.post<ServerConfirmation>(`${diner(vid)}/bookings`, body);
-  return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email, payment: server.payment ?? null, messages: server.messages ?? null };
+  return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email, payment: server.payment ?? null, messages: server.messages ?? null, offer: server.offer ?? null };
 }
 
 /** The deposit this date, time and party would owe, or null when the restaurant asks for none. */

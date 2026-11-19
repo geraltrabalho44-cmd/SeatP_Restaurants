@@ -887,3 +887,67 @@ class RainOffer(Base):
     token_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
     expires_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class Offer(Base):
+    """A discount a restaurant gives its guests. The restaurant bears the cost: SeatPlan
+    only records the offer and who used it; nothing is paid or refunded through SeatPlan."""
+
+    __tablename__ = "offers"
+    __table_args__ = (UniqueConstraint("venue_id", "code", name="uq_offer_code"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    # "percent" (value = 1..100), "amount" (value = cents off the bill), "gift" (gift_text is free).
+    kind: Mapped[str] = mapped_column(String(10))
+    value: Mapped[int] = mapped_column(Integer, default=0)
+    gift_text: Mapped[str] = mapped_column(String(80), default="", server_default=text("''"))
+    # How guests get it: "link" (one shared code), "send" (the owner sends it to chosen guests)
+    # or "auto" (issued by a rule, for example a guest who has not been in for 60 days).
+    audience: Mapped[str] = mapped_column(String(10))
+    # The shared code of a "link" offer; NULL for the others (they have a code per guest), so the
+    # unique key never makes two offers without a shared code collide.
+    code: Mapped[str | None] = mapped_column(String(16))
+    # An "auto" offer's rule: winback (days), welcome, or nth_visit (visits).
+    rule: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, server_default=text("'{}'"))
+    note: Mapped[str] = mapped_column(String(300), default="", server_default=text("''"))
+    starts_on: Mapped[date | None] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date)
+    max_uses: Mapped[int | None] = mapped_column(Integer)
+    min_party: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"))
+    # Weekdays the booking may be on (0 = Monday); empty means every day.
+    weekdays: Mapped[list[int]] = mapped_column(JSON, default=list, server_default=text("'[]'"))
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("TRUE"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+
+
+class OfferCode(Base):
+    """A code given to one guest (by email address). A "link" offer has no rows here."""
+
+    __tablename__ = "offer_codes"
+    __table_args__ = (UniqueConstraint("offer_id", "email", name="uq_offer_code_guest"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    offer_id: Mapped[int] = mapped_column(ForeignKey("offers.id", ondelete="CASCADE"), index=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(254))
+    code: Mapped[str] = mapped_column(String(16), unique=True)
+    issued_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+    # Set once the email went out (or was skipped); empty means still queued.
+    emailed_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+
+
+class OfferRedemption(Base):
+    """A booking that used an offer. Cancelling the booking gives the use back."""
+
+    __tablename__ = "offer_redemptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    offer_id: Mapped[int] = mapped_column(ForeignKey("offers.id", ondelete="CASCADE"), index=True)
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("bookings.id", ondelete="CASCADE"), unique=True
+    )
+    email: Mapped[str] = mapped_column(String(254))
+    redeemed_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+    released_at: Mapped[datetime | None] = mapped_column(UtcDateTime)

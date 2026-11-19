@@ -20,7 +20,7 @@ from app.core.privacy import mask_email
 from app.mail.outbox import process_due, redact_links, scrub_expired
 from app.mail.providers import provider_from_settings
 from app.models import EmailCode, EmailOutbox, utc_now
-from app.restaurant_service import booking_payments, phone_messages
+from app.restaurant_service import booking_payments, offers, phone_messages
 from app.security import CurrentOrganiser, client_ip, rate_limit, tokens_match
 
 router = APIRouter(tags=["emails"])
@@ -83,6 +83,18 @@ def _sweep_phone_messages(session: db.SessionDep, now: datetime) -> None:
         logging.getLogger("seatplan.messages").exception("phone message sweep failed")
 
 
+def _sweep_offers(session: db.SessionDep, now: datetime) -> None:
+    """Give the automatic offers (win-back, welcome, Nth visit) to guests who said yes to them.
+
+    Same rule as the other sweeps: it runs last and can never make the call fail.
+    """
+    try:
+        offers.sweep_auto(session, now)
+    except Exception:
+        session.rollback()
+        logging.getLogger("seatplan.offers").exception("offer sweep failed")
+
+
 @router.post("/internal/email/process")
 def process_outbox(
     request: Request,
@@ -103,6 +115,7 @@ def process_outbox(
     session.commit()
     _sweep_deposits(session, now)
     _sweep_phone_messages(session, now)
+    _sweep_offers(session, now)
     return ProcessResult(
         sent=report.sent, skipped=report.skipped, retrying=report.retrying, failed=report.failed
     )
