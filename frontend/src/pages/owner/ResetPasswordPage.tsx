@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { chooseNewPassword } from "../../api/identity";
 import { Button, Field, PageShell } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { errorMessage } from "../restaurant/format";
 import "./owner.css";
 
@@ -16,6 +17,7 @@ export function recoveryToken(hash: string): string {
 }
 
 export default function ResetPasswordPage() {
+  const { t } = useT();
   // Read once, then taken out of the address so it is not left in the history.
   const [token] = useState(() => recoveryToken(typeof window === "undefined" ? "" : window.location.hash));
   const [password, setPassword] = useState("");
@@ -31,11 +33,11 @@ export default function ResetPasswordPage() {
     event.preventDefault();
     if (busy) return;
     if (password.length < 10) {
-      setProblem("Use at least 10 characters.");
+      setProblem(t("Use at least 10 characters."));
       return;
     }
     if (password !== again) {
-      setProblem("The two passwords are not the same.");
+      setProblem(t("The two passwords are not the same."));
       return;
     }
     setBusy(true);
@@ -44,7 +46,7 @@ export default function ResetPasswordPage() {
       await chooseNewPassword(token, password);
       setDone(true);
     } catch (error) {
-      setProblem(errorMessage(error, "We could not save the new password. Please ask for a new link."));
+      setProblem(errorMessage(error, t("We could not save the new password. Please ask for a new link.")));
     } finally {
       setBusy(false);
     }
@@ -52,11 +54,11 @@ export default function ResetPasswordPage() {
 
   if (done) {
     return (
-      <PageShell title="Password changed">
+      <PageShell title={t("Password changed")}>
         <div className="owner-auth">
-          <h1>Password changed</h1>
+          <h1>{t("Password changed")}</h1>
           <p role="status">
-            You can now <Link to="/owner/sign-in">sign in</Link> with your new password.
+            {t("You can now")} <Link to="/owner/sign-in">{t("sign in")}</Link> {t("with your new password.")}
           </p>
         </div>
       </PageShell>
@@ -64,23 +66,23 @@ export default function ResetPasswordPage() {
   }
   if (!token) {
     return (
-      <PageShell title="Choose a new password">
+      <PageShell title={t("Choose a new password")}>
         <div className="owner-auth">
-          <h1>This link does not work</h1>
-          <p>It may be old or incomplete. <Link to="/owner/forgot-password">Ask for a new link</Link>.</p>
+          <h1>{t("This link does not work")}</h1>
+          <p>{t("It may be old or incomplete.")} <Link to="/owner/forgot-password">{t("Ask for a new link")}</Link>.</p>
         </div>
       </PageShell>
     );
   }
   return (
-    <PageShell title="Choose a new password">
+    <PageShell title={t("Choose a new password")}>
       <div className="owner-auth">
-        <h1>Choose a new password</h1>
+        <h1>{t("Choose a new password")}</h1>
         <form className="owner-form" onSubmit={(event) => void submit(event)} noValidate>
-          <Field label="New password" type="password" autoComplete="new-password" hint="Use at least 10 characters." required maxLength={200} value={password} onChange={(event) => setPassword(event.target.value)} />
-          <Field label="New password again" type="password" autoComplete="new-password" required maxLength={200} value={again} error={problem || undefined} onChange={(event) => setAgain(event.target.value)} />
+          <Field label={t("New password")} type="password" autoComplete="new-password" hint={t("Use at least 10 characters.")} required maxLength={200} value={password} onChange={(event) => setPassword(event.target.value)} />
+          <Field label={t("New password again")} type="password" autoComplete="new-password" required maxLength={200} value={again} error={problem || undefined} onChange={(event) => setAgain(event.target.value)} />
           <Button type="submit" busy={busy}>
-            Save the new password
+            {t("Save the new password")}
           </Button>
         </form>
       </div>

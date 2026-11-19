@@ -2,6 +2,8 @@
 // laid out as the seven rows the owner reads. Pure, so the rows are tested on
 // their own. The server decides what is wrong; this only groups and words it.
 import type { PublishProblem } from "../../api/owner";
+import type { Message } from "../../i18n/catalogue";
+import { tr } from "../../i18n/locale";
 
 export interface ChecklistRow {
   label: string;
@@ -16,10 +18,10 @@ export interface ChecklistRow {
 }
 
 interface RowSpec {
-  label: string;
+  label: Message;
   codes: string[] | "rest";
   required: boolean;
-  fixLabel: string;
+  fixLabel: Message;
 }
 
 const NAMED = ["identity", "location", "hours", "no_tables", "no_north", "photos"];
@@ -40,12 +42,12 @@ export function checklist(problems: PublishProblem[], tips: PublishProblem[]): C
     const found = all.filter((p) => (row.codes === "rest" ? !NAMED.includes(p.code) : row.codes.includes(p.code)));
     const first = found[0];
     return {
-      label: row.label,
+      label: tr(row.label),
       done: found.length === 0,
       required: row.required,
       messages: found.map((p) => p.message),
       fix: first?.code === "location" ? `${first.fix_url}?section=location` : first?.fix_url ?? null,
-      fixLabel: row.fixLabel,
+      fixLabel: tr(row.fixLabel),
     };
   });
 }

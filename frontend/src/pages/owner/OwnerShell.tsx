@@ -4,6 +4,8 @@
 import { Link } from "react-router-dom";
 import { logout } from "../../api/client";
 import { PageShell } from "../../design/components";
+import type { Message } from "../../i18n/catalogue";
+import { useT } from "../../i18n/I18nProvider";
 import "./owner.css";
 import "./owner-v5.css";
 
@@ -22,7 +24,7 @@ interface OwnerShellProps {
   width?: "normal" | "wide";
 }
 
-const STEPS: { key: Exclude<OwnerSection, "restaurants">; label: string; path: string }[] = [
+const STEPS: { key: Exclude<OwnerSection, "restaurants">; label: Message; path: string }[] = [
   { key: "profile", label: "Profile", path: "profile" },
   { key: "photos", label: "Photos", path: "photos" },
   { key: "hours", label: "Opening hours", path: "hours" },
@@ -38,37 +40,38 @@ const STEPS: { key: Exclude<OwnerSection, "restaurants">; label: string; path: s
 ];
 
 export function OwnerShell({ title, venueId, venueName, current, publicHref, children, width = "wide" }: OwnerShellProps) {
+  const { t } = useT();
   const base = venueId ? `/owner/${encodeURIComponent(venueId)}` : null;
   return (
     <PageShell title={title} width={width}>
       <div className="ow-shell">
-        <nav className="ow-nav" aria-label="Restaurant owner">
-          <p className="rb5-eyebrow">Restaurant owner</p>
+        <nav className="ow-nav" aria-label={t("Restaurant owner")}>
+          <p className="rb5-eyebrow">{t("Restaurant owner")}</p>
           <ul>
             <li>
               <Link to="/owner" aria-current={current === "restaurants" ? "page" : undefined}>
-                My restaurants
+                {t("My restaurants")}
               </Link>
             </li>
             {base &&
               STEPS.map((step) => (
                 <li key={step.key}>
                   <Link to={`${base}/${step.path}`} aria-current={current === step.key ? "page" : undefined}>
-                    {step.label}
+                    {t(step.label)}
                   </Link>
                 </li>
               ))}
           </ul>
           <ul className="ow-nav-more">
-            {base && <li><Link to={`${base}/dashboard`}>Service floor</Link></li>}
+            {base && <li><Link to={`${base}/dashboard`}>{t("Service floor")}</Link></li>}
             {venueId && (
               <li>
-                <Link to={publicHref ?? `/r/${encodeURIComponent(venueId)}`}>Public restaurant</Link>
+                <Link to={publicHref ?? `/r/${encodeURIComponent(venueId)}`}>{t("Public restaurant")}</Link>
               </li>
             )}
             <li>
               <Link to="/owner/sign-in" onClick={() => logout()}>
-                Sign out
+                {t("Sign out")}
               </Link>
             </li>
           </ul>

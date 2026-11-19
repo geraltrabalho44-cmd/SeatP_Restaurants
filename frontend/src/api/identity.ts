@@ -5,6 +5,7 @@
 // one-time token that comes back is checked by SeatPlan, not trusted by the page.
 import { useEffect, useState } from "react";
 import { ApiError, api, login, setSessionToken } from "./client";
+import { tr } from "../i18n/locale";
 import type { LoginResponse } from "./types";
 
 export type IdentityProvider = "local" | "supabase";
@@ -103,7 +104,7 @@ export async function startSocialSignIn(provider: SocialProvider): Promise<void>
   try {
     window.sessionStorage.setItem(NONCE_KEY, nonce);
   } catch {
-    throw new ApiError(0, "unknown", "Your browser blocks what this sign-in needs. Use your email and password instead.");
+    throw new ApiError(0, "unknown", tr("Your browser blocks what this sign-in needs. Use your email and password instead."));
   }
   const { url } = await api.post<{ url: string }>("/identity/owner/oauth/start", { provider, nonce }, "none");
   window.location.assign(url);
@@ -119,10 +120,10 @@ export function readSocialReturn(hash: string, search: string): { token: string 
   } catch {
     // Storage blocked: the nonce cannot be checked, so the sign-in cannot be trusted.
   }
-  if (!kept || sent !== kept) return { problem: "This sign-in was not started from this browser. Please try again." };
+  if (!kept || sent !== kept) return { problem: tr("This sign-in was not started from this browser. Please try again.") };
   const params = new URLSearchParams(hash.replace(/^#/, ""));
   const token = params.get("access_token");
-  if (!token) return { problem: params.get("error_description") ?? "The sign-in was cancelled. Please try again." };
+  if (!token) return { problem: params.get("error_description") ?? tr("The sign-in was cancelled. Please try again.") };
   return { token };
 }
 

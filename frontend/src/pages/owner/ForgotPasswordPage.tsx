@@ -5,10 +5,12 @@ import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { requestPasswordReset } from "../../api/identity";
 import { Button, Field, PageShell } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { errorMessage } from "../restaurant/format";
 import "./owner.css";
 
 export default function ForgotPasswordPage() {
+  const { t } = useT();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -18,7 +20,7 @@ export default function ForgotPasswordPage() {
     event.preventDefault();
     if (busy) return;
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setProblem("Enter a valid email address.");
+      setProblem(t("Enter a valid email address."));
       return;
     }
     setBusy(true);
@@ -27,31 +29,31 @@ export default function ForgotPasswordPage() {
       await requestPasswordReset(email.trim());
       setSent(true);
     } catch (error) {
-      setProblem(errorMessage(error, "We could not send the link. Please try again."));
+      setProblem(errorMessage(error, t("We could not send the link. Please try again.")));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <PageShell title="Forgot your password?">
+    <PageShell title={t("Forgot your password?")}>
       <div className="owner-auth">
-        <h1>{sent ? "Check your email" : "Forgot your password?"}</h1>
+        <h1>{sent ? t("Check your email") : t("Forgot your password?")}</h1>
         {sent ? (
-          <p role="status">If {email.trim()} has a restaurant account, we sent a link to choose a new password. It can take a few minutes; look in your spam folder too.</p>
+          <p role="status">{t("If {email} has a restaurant account, we sent a link to choose a new password. It can take a few minutes; look in your spam folder too.", { email: email.trim() })}</p>
         ) : (
           <>
-            <p>Enter the email of your restaurant account and we will send you a link to choose a new password.</p>
+            <p>{t("Enter the email of your restaurant account and we will send you a link to choose a new password.")}</p>
             <form className="owner-form" onSubmit={(event) => void submit(event)} noValidate>
-              <Field label="Email" type="email" autoComplete="email" required maxLength={254} value={email} error={problem || undefined} onChange={(event) => setEmail(event.target.value)} />
+              <Field label={t("Email")} type="email" autoComplete="email" required maxLength={254} value={email} error={problem || undefined} onChange={(event) => setEmail(event.target.value)} />
               <Button type="submit" busy={busy}>
-                Send the link
+                {t("Send the link")}
               </Button>
             </form>
           </>
         )}
         <p>
-          <Link to="/owner/sign-in">Back to sign in</Link>
+          <Link to="/owner/sign-in">{t("Back to sign in")}</Link>
         </p>
       </div>
     </PageShell>
