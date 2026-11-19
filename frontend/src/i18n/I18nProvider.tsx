@@ -1,7 +1,7 @@
 import {createContext,useContext,useEffect,useState,type ReactNode} from "react";
 import {useLocation,useNavigate} from "react-router-dom";
 import {catalogue,type Message} from "./catalogue";
-import {detect,released,tags,translate,type Locale} from "./locale";
+import {detect,released,setActiveLocale,tags,translate,type Locale} from "./locale";
 
 const key="seatplan:lang";
 const enabled=released(import.meta.env.VITE_I18N_LOCALES ?? "en");
@@ -13,6 +13,7 @@ export function I18nProvider({children}:{children:ReactNode}) {
   const restaurant=pathname==="/" || /^\/(restaurants|r|b|owner|staff|pay|m)(\/|$)/.test(pathname);
   const query=new URLSearchParams(search).get("lang");
   const locale=restaurant?detect(query,saved,navigator.languages,enabled):"en";
+  setActiveLocale(locale);
   function pick(value:Locale) {
     if(!enabled.includes(value)) return;
     setSaved(value);try{localStorage.setItem(key,value);}catch{/* In-memory preference. */}

@@ -1,5 +1,7 @@
 // The ambience wishes a diner may tick on step 1 (spec 8.1). The keys are the
 // ones the server knows; "sunny" and "in the shade" exclude each other.
+import { tr } from "../../i18n/locale";
+
 export interface PrefOption {
   key: string;
   label: string;
@@ -7,13 +9,24 @@ export interface PrefOption {
   words: string;
 }
 
-export const PREF_OPTIONS: PrefOption[] = [
+// The words are looked up when read, so they follow the language in use.
+const WISHES: { key: string; label: Parameters<typeof tr>[0]; words: Parameters<typeof tr>[0] }[] = [
   { key: "sun", label: "Sunny table", words: "sunny table" },
   { key: "shade", label: "In the shade", words: "in the shade" },
   { key: "view", label: "With a view", words: "with a view" },
   { key: "quiet", label: "Quiet corner", words: "quiet corner" },
   { key: "away_from_wc", label: "Away from the toilets", words: "away from the toilets" },
 ];
+
+export const PREF_OPTIONS: PrefOption[] = WISHES.map((wish) => ({
+  key: wish.key,
+  get label() {
+    return tr(wish.label);
+  },
+  get words() {
+    return tr(wish.words);
+  },
+}));
 
 const EXCLUSIVE: Record<string, string> = { sun: "shade", shade: "sun" };
 

@@ -4,6 +4,8 @@
 // SeatGlyph, so the key can never show a different symbol than the map.
 import { useId } from "react";
 import type { SeatState } from "../../api/types";
+import type { Message } from "../../i18n/catalogue";
+import { useT } from "../../i18n/I18nProvider";
 import { SEAT_RADIUS } from "../../seatmap/geometry";
 import { PatternDefs, SeatGlyph, safeId } from "../../seatmap/glyphs";
 import { RoomDefs } from "../../seatmap/RoomLayers";
@@ -71,10 +73,13 @@ function PlanSwatch({ state, id }: { state: SeatState; id: string }) {
 }
 
 export function MapKey({ entries, scenes = [], label = "Map key", look = "glyph" }: { entries: KeyEntry[]; scenes?: SceneEntry[]; label?: string; look?: "glyph" | "plan" }) {
+  const { t } = useT();
+  // The names and hints are written once, in English, by the page that asks for the key; the words are put in the language in use here.
+  const say = (text: string): string => t(text as Message);
   const prefix = safeId(useId());
   const half = SEAT_RADIUS + 6;
   return (
-    <ul className="legend" aria-label={label}>
+    <ul className="legend" aria-label={say(label)}>
       {entries.map((entry) => {
         const id = `${prefix}-${entry.state}-${entry.accessible ? "a" : "n"}-${entry.halo ? "h" : "n"}`;
         return (
@@ -89,8 +94,8 @@ export function MapKey({ entries, scenes = [], label = "Map key", look = "glyph"
               </svg>
             )}
             <span>
-              <strong className="legend-name">{entry.name}</strong>
-              <span className="legend-hint">{entry.hint}</span>
+              <strong className="legend-name">{say(entry.name)}</strong>
+              <span className="legend-hint">{say(entry.hint)}</span>
             </span>
           </li>
         );
@@ -101,8 +106,8 @@ export function MapKey({ entries, scenes = [], label = "Map key", look = "glyph"
           <li key={id} className="legend-item">
             <SceneSwatch scene={entry.scene} id={id} />
             <span>
-              <strong className="legend-name">{entry.name}</strong>
-              <span className="legend-hint">{entry.hint}</span>
+              <strong className="legend-name">{say(entry.name)}</strong>
+              <span className="legend-hint">{say(entry.hint)}</span>
             </span>
           </li>
         );

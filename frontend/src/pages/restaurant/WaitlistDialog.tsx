@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { joinWaitlist } from "../../api/restaurant";
 import type { PartyNeeds, WaitlistAnswer } from "../../api/restaurant";
 import { Button, Dialog, Field } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { errorMessage, formatDate, people } from "./format";
 import { emailError, nameError } from "./validation";
 
@@ -17,14 +18,15 @@ interface WaitlistDialogProps {
 }
 
 export function WaitlistDialog({ venueId, needs, time, onClose }: WaitlistDialogProps) {
+  const { t } = useT();
   const [joined, setJoined] = useState<{ answer: WaitlistAnswer; email: string } | null>(null);
   const close = (): void => {
     setJoined(null);
     onClose();
   };
-  const title = joined ? "You are on the waitlist" : `${time ?? ""} is full`;
+  const title = joined ? t("You are on the waitlist") : t("{time} is full", { time: time ?? "" });
   return (
-    <Dialog open={time !== null} title={title} onClose={close} actions={joined ? <Button onClick={close}>Done</Button> : undefined}>
+    <Dialog open={time !== null} title={title} onClose={close} actions={joined ? <Button onClick={close}>{t("Done")}</Button> : undefined}>
       {joined ? (
         <WaitlistResult answer={joined.answer} email={joined.email} />
       ) : (
@@ -43,6 +45,7 @@ interface WaitlistFormProps {
 }
 
 function WaitlistForm({ venueId, needs, time, onCancel, onJoined }: WaitlistFormProps) {
+  const { t } = useT();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   // Errors appear after the first submit, not while the diner is still typing.
@@ -60,7 +63,7 @@ function WaitlistForm({ venueId, needs, time, onCancel, onJoined }: WaitlistForm
       const entry = { date: needs.date, time, party: needs.party, name: name.trim(), email: email.trim() };
       onJoined(await joinWaitlist(venueId, entry), email.trim());
     } catch (error) {
-      setProblem(errorMessage(error, "We could not add you to the waitlist. Please try again."));
+      setProblem(errorMessage(error, t("We could not add you to the waitlist. Please try again.")));
       setBusy(false);
     }
   };
@@ -68,11 +71,10 @@ function WaitlistForm({ venueId, needs, time, onCancel, onJoined }: WaitlistForm
   return (
     <form onSubmit={submit} noValidate className="rb-form">
       <p>
-        Every table for {people(needs.party)} at {time} on {formatDate(needs.date)} is booked. Join the waitlist and we will email you if one
-        frees up.
+        {t("Every table for {people} at {time} on {date} is booked. Join the waitlist and we will email you if one frees up.", { people: people(needs.party), time, date: formatDate(needs.date) })}
       </p>
-      <Field label="Name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={showErrors ? nameError(name) : null} />
-      <Field label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={showErrors ? emailError(email) : null} />
+      <Field label={t("Name")} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={showErrors ? nameError(name) : null} />
+      <Field label={t("Email")} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={showErrors ? emailError(email) : null} />
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
           {problem}
@@ -80,10 +82,10 @@ function WaitlistForm({ venueId, needs, time, onCancel, onJoined }: WaitlistForm
       )}
       <div className="rb-actions">
         <Button variant="ghost" onClick={onCancel}>
-          Not now
+          {t("Not now")}
         </Button>
         <Button type="submit" busy={busy}>
-          Join the waitlist
+          {t("Join the waitlist")}
         </Button>
       </div>
     </form>
@@ -91,14 +93,14 @@ function WaitlistForm({ venueId, needs, time, onCancel, onJoined }: WaitlistForm
 }
 
 function WaitlistResult({ answer, email }: { answer: WaitlistAnswer; email: string }) {
+  const { t } = useT();
   return (
     <div role="status">
       <p className="rb-big-number">
-        You are number <strong className="tabular">{answer.position}</strong> in the queue.
+        {t("You are number")} <strong className="tabular">{answer.position}</strong> {t("in the queue.")}
       </p>
       <p>
-        Estimated wait: about <strong>{answer.estimated_wait_minutes} minutes</strong>. We will write to {email} if a table frees up. You do not need to
-        keep this page open.
+        {t("Estimated wait: about")} <strong>{t("{n} minutes", { n: answer.estimated_wait_minutes })}</strong>. {t("We will write to {email} if a table frees up. You do not need to keep this page open.", { email })}
       </p>
     </div>
   );

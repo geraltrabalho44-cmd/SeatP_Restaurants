@@ -9,6 +9,7 @@ import { getPayment, retryPayment } from "../../api/payments";
 import type { PaymentState } from "../../api/payments";
 import { getBooking } from "../../api/restaurant";
 import { Button, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { Confirmation } from "../restaurant/Confirmation";
 import { errorMessage } from "../restaurant/format";
 import { formatEuros } from "../restaurant/money";
@@ -24,6 +25,7 @@ const MAX_CHECKS = 24;
 type View = { status: "loading" } | { status: "error"; error: unknown } | { status: "ready"; payment: PaymentState };
 
 export default function PaymentReturnPage() {
+  const { t } = useT();
   const { paymentId = "" } = useParams();
   const [view, setView] = useState<View>({ status: "loading" });
   const [round, setRound] = useState(0);
@@ -56,9 +58,9 @@ export default function PaymentReturnPage() {
   }, [paymentId, round]);
 
   return (
-    <PageShell title="Your payment">
+    <PageShell title={t("Your payment")}>
       <div className="rb-page">
-        {view.status === "loading" && <Skeleton lines={4} label="Checking your payment" />}
+        {view.status === "loading" && <Skeleton lines={4} label={t("Checking your payment")} />}
         {view.status === "error" && <PaymentLoadError error={view.error} onRetry={() => setRound(round + 1)} />}
         {view.status === "ready" && <Outcome paymentId={paymentId} payment={view.payment} stillPending={stillPending} onCheckAgain={() => setRound(round + 1)} />}
       </div>
@@ -67,14 +69,15 @@ export default function PaymentReturnPage() {
 }
 
 function PaymentLoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const { t } = useT();
   if (error instanceof ApiError && error.code === "not_found") {
     return (
-      <EmptyState title="We cannot find this payment">
-        <p>The link may be old or mistyped. If you paid a deposit, your confirmation email has the link to your booking.</p>
+      <EmptyState title={t("We cannot find this payment")}>
+        <p>{t("The link may be old or mistyped. If you paid a deposit, your confirmation email has the link to your booking.")}</p>
       </EmptyState>
     );
   }
-  return <ErrorState title="We could not check your payment" message={errorMessage(error)} onRetry={onRetry} />;
+  return <ErrorState title={t("We could not check your payment")} message={errorMessage(error)} onRetry={onRetry} />;
 }
 
 interface OutcomeProps {
@@ -85,6 +88,7 @@ interface OutcomeProps {
 }
 
 function Outcome({ paymentId, payment, stillPending, onCheckAgain }: OutcomeProps) {
+  const { t } = useT();
   const again = payment.restaurant_slug ? `/restaurants/${encodeURIComponent(payment.restaurant_slug)}` : "/";
   if (payment.status === "paid" || (payment.status === "refund_due" && payment.booking_status === "confirmed")) {
     return <Paid paymentId={paymentId} payment={payment} />;
@@ -94,16 +98,16 @@ function Outcome({ paymentId, payment, stillPending, onCheckAgain }: OutcomeProp
   }
   const refunded = payment.status === "refunded" || payment.status === "refund_due";
   return (
-    <section className="rb-card" aria-label="Payment result">
-      <h1 className="rb-title">We did not keep your table</h1>
+    <section className="rb-card" aria-label={t("Payment result")}>
+      <h1 className="rb-title">{t("We did not keep your table")}</h1>
       <p>
         {refunded
-          ? `Your payment arrived after the time to pay had ended, so we gave the table back and are refunding your ${formatEuros(payment.amount_cents)}.`
-          : "The time to pay ran out, or you gave it up, so the table went back to the restaurant. Nothing was charged."}
+          ? t("Your payment arrived after the time to pay had ended, so we gave the table back and are refunding your {amount}.", { amount: formatEuros(payment.amount_cents) })
+          : t("The time to pay ran out, or you gave it up, so the table went back to the restaurant. Nothing was charged.")}
       </p>
       <p>
         <Link className="btn btn-primary" to={again}>
-          Book another table at {payment.restaurant}
+          {t("Book another table at {restaurant}", { restaurant: payment.restaurant })}
         </Link>
       </p>
     </section>
@@ -111,6 +115,7 @@ function Outcome({ paymentId, payment, stillPending, onCheckAgain }: OutcomeProp
 }
 
 function Waiting({ paymentId, payment, stillPending, onCheckAgain }: OutcomeProps) {
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const pay = async (): Promise<void> => {
@@ -120,17 +125,17 @@ function Waiting({ paymentId, payment, stillPending, onCheckAgain }: OutcomeProp
       const { next_url: next } = await retryPayment(paymentId);
       window.location.assign(next);
     } catch (error) {
-      setProblem(errorMessage(error, "We could not reopen the payment page."));
+      setProblem(errorMessage(error, t("We could not reopen the payment page.")));
       setBusy(false);
     }
   };
   return (
-    <section className="rb-card" aria-label="Payment result">
-      <h1 className="rb-title">{stillPending ? "Still waiting for the payment" : "Confirming your payment…"}</h1>
+    <section className="rb-card" aria-label={t("Payment result")}>
+      <h1 className="rb-title">{stillPending ? t("Still waiting for the payment") : t("Confirming your payment…")}</h1>
       <p role="status">
         {stillPending
-          ? `We have not heard back about your ${formatEuros(payment.amount_cents)} deposit for ${payment.restaurant} yet. If you paid, it can take a moment.`
-          : `We are checking your ${formatEuros(payment.amount_cents)} deposit for ${payment.restaurant}.`}
+          ? t("We have not heard back about your {amount} deposit for {restaurant} yet. If you paid, it can take a moment.", { amount: formatEuros(payment.amount_cents), restaurant: payment.restaurant })
+          : t("We are checking your {amount} deposit for {restaurant}.", { amount: formatEuros(payment.amount_cents), restaurant: payment.restaurant })}
       </p>
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
@@ -139,9 +144,9 @@ function Waiting({ paymentId, payment, stillPending, onCheckAgain }: OutcomeProp
       )}
       {stillPending && (
         <div className="rb-actions">
-          <Button onClick={onCheckAgain}>Check again</Button>
+          <Button onClick={onCheckAgain}>{t("Check again")}</Button>
           <Button variant="secondary" busy={busy} onClick={() => void pay()}>
-            Go back to the payment page
+            {t("Go back to the payment page")}
           </Button>
         </div>
       )}
@@ -151,6 +156,7 @@ function Waiting({ paymentId, payment, stillPending, onCheckAgain }: OutcomeProp
 
 /** Paid: show the confirmation. The manage link was kept in this tab while the diner paid. */
 function Paid({ paymentId, payment }: { paymentId: string; payment: PaymentState }) {
+  const { t } = useT();
   const [pending] = useState(() => recallPendingBooking(paymentId));
   const token = pending ? manageToken(pending.manageUrl) : null;
   const { state } = useLoad(() => (token ? getBooking(token) : Promise.reject(new Error("no link"))), token ?? "none");
@@ -160,13 +166,12 @@ function Paid({ paymentId, payment }: { paymentId: string; payment: PaymentState
   if (pending && state.status === "ready") {
     return <Confirmation confirmation={{ booking: state.data, manage_url: pending.manageUrl, email: pending.email }} />;
   }
-  if (pending && state.status === "loading") return <Skeleton lines={4} label="Loading your booking" />;
+  if (pending && state.status === "loading") return <Skeleton lines={4} label={t("Loading your booking")} />;
   return (
-    <section className="rb-card" aria-label="Payment result">
-      <h1 className="rb-title">Deposit paid. Booking confirmed.</h1>
+    <section className="rb-card" aria-label={t("Payment result")}>
+      <h1 className="rb-title">{t("Deposit paid. Booking confirmed.")}</h1>
       <p>
-        Your {formatEuros(payment.amount_cents)} deposit for {payment.restaurant} is paid and your table is reserved. We are sending the confirmation
-        email, with the link to manage your booking.
+        {t("Your {amount} deposit for {restaurant} is paid and your table is reserved. We are sending the confirmation email, with the link to manage your booking.", { amount: formatEuros(payment.amount_cents), restaurant: payment.restaurant })}
       </p>
     </section>
   );

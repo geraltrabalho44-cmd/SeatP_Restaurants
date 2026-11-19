@@ -4,6 +4,8 @@
 // would go mad hearing every second, so the live region only speaks at
 // "1 minute left" and "time is up".
 import { useEffect, useState } from "react";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import { formatCountdown } from "./format";
 
 /** Seconds left until `expiresAt` (ISO date-time), updated every second. Null when nothing is held. */
@@ -20,8 +22,8 @@ export function useSecondsLeft(expiresAt: string | null): number | null {
 }
 
 function spokenMessage(seconds: number): string {
-  if (seconds === 0) return "Your hold has ended. The table may be taken by someone else.";
-  if (seconds <= 60) return "One minute left to finish your booking.";
+  if (seconds === 0) return tr("Your hold has ended. The table may be taken by someone else.");
+  if (seconds <= 60) return tr("One minute left to finish your booking.");
   return "";
 }
 
@@ -33,6 +35,7 @@ interface HoldCountdownProps {
 }
 
 export function HoldCountdown({ tableLabel, secondsLeft, variant = "banner" }: HoldCountdownProps) {
+  const { t } = useT();
   const urgent = secondsLeft <= 60;
   if (variant === "chip") {
     return (
@@ -43,15 +46,15 @@ export function HoldCountdown({ tableLabel, secondsLeft, variant = "banner" }: H
         </svg>
         {secondsLeft > 0 ? (
           <span>
-            Held for{" "}
-            <strong className="tabular" role="timer" aria-label={`${formatCountdown(secondsLeft)} minutes`}>
+            {t("Held for")}{" "}
+            <strong className="tabular" role="timer" aria-label={t("{time} minutes", { time: formatCountdown(secondsLeft) })}>
               {formatCountdown(secondsLeft)}
             </strong>
-            <span className="visually-hidden"> (table {tableLabel})</span>
-            {urgent && <span className="rb-hold-flag"> (almost up)</span>}
+            <span className="visually-hidden"> ({t("table {label}", { label: tableLabel })})</span>
+            {urgent && <span className="rb-hold-flag"> ({t("almost up")})</span>}
           </span>
         ) : (
-          <span>Hold ended</span>
+          <span>{t("Hold ended")}</span>
         )}
         <span className="visually-hidden" role="status" aria-live="polite">
           {spokenMessage(secondsLeft)}
@@ -68,14 +71,14 @@ export function HoldCountdown({ tableLabel, secondsLeft, variant = "banner" }: H
       <p className="rb-hold-text">
         {secondsLeft > 0 ? (
           <>
-            Table {tableLabel} is held for you for{" "}
-            <strong className="tabular" role="timer" aria-label={`${formatCountdown(secondsLeft)} minutes`}>
+            {t("Table {label} is held for you for", { label: tableLabel })}{" "}
+            <strong className="tabular" role="timer" aria-label={t("{time} minutes", { time: formatCountdown(secondsLeft) })}>
               {formatCountdown(secondsLeft)}
             </strong>
-            {urgent && <span className="rb-hold-flag"> (almost up)</span>}
+            {urgent && <span className="rb-hold-flag"> ({t("almost up")})</span>}
           </>
         ) : (
-          <>Your hold on table {tableLabel} has ended. Pick a table again to continue.</>
+          <>{t("Your hold on table {label} has ended. Pick a table again to continue.", { label: tableLabel })}</>
         )}
       </p>
       <span className="visually-hidden" role="status" aria-live="polite">

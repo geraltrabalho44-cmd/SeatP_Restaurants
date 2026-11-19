@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { getSlots } from "../../api/restaurant";
 import type { PartyNeeds, RestaurantInfo, TimeSlot } from "../../api/restaurant";
 import { Button, EmptyState, ErrorState, Skeleton } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { errorMessage, formatDate, people, toMinutes } from "./format";
 import { WhenFields } from "./StepParty";
 import "./when.css";
@@ -55,6 +56,7 @@ export function closestTimes(slots: TimeSlot[], wanted: string | null | undefine
     .map((slot) => slot.time);
 }
 export function StepTime({ venueId, needs, wanted, onPick, onBack, info, onChange }: StepTimeProps) {
+  const { t } = useT();
   const context=`${needs.date}|${needs.party}`;
   const { state, reload } = useLoad(() => getSlots(venueId, needs.date, needs.party).then(answer=>({...answer,requestContext:context})), context);
   const [waitlistTime, setWaitlistTime] = useState<string | null>(null);
@@ -64,28 +66,28 @@ export function StepTime({ venueId, needs, wanted, onPick, onBack, info, onChang
   const lost=state.status==="ready" && wanted && !state.data.slots.some(s=>s.time===wanted && s.status!=="full" && s.reason!=="past");
   const back = (
     <Button variant="secondary" onClick={onBack}>
-      Change date or party
+      {t("Change date or party")}
     </Button>
   );
   return (
     <section className="rb-step when-times" aria-labelledby="rb-time-title">
       <StepHeading>
-        <span id="rb-time-title">{lost ? "Pick another time" : "Choose a time"}</span>
+        <span id="rb-time-title">{lost ? t("Pick another time") : t("Choose a time")}</span>
       </StepHeading>
       {info && onChange && <WhenFields info={info} needs={needs} onChange={onChange} />}
       <WeatherPanel venueId={venueId} needs={needs} onTime={onPick} />
       <p className="rb-muted">
         {formatDate(needs.date)}, {people(needs.party)}.
       </p>
-      {(state.status === "loading" || (state.status==="ready" && state.data.requestContext!==context)) && <Skeleton lines={4} label="Looking for free times" />}
-      {state.status === "error" && <ErrorState title="We could not load the times" message={errorMessage(state.error)} onRetry={() => reload()} />}
+      {(state.status === "loading" || (state.status==="ready" && state.data.requestContext!==context)) && <Skeleton lines={4} label={t("Looking for free times")} />}
+      {state.status === "error" && <ErrorState title={t("We could not load the times")} message={errorMessage(state.error)} onRetry={() => reload()} />}
       {state.status === "ready" && state.data.requestContext===context && state.data.closed_reason && (
-        <EmptyState title="Closed that day" action={back}>
+        <EmptyState title={t("Closed that day")} action={back}>
           <p>{state.data.closed_reason}</p>
         </EmptyState>
       )}
       {state.status === "ready" && state.data.requestContext===context && !state.data.closed_reason && <OpenDay slots={state.data.slots} needs={needs} wanted={wanted ?? null} back={info ? null : back} selected={selected} info={info} onPick={pick} />}
-      {selected && <div className="when-continue"><Button onClick={()=>onPick(selected)}>Choose a table at {selected}</Button><p className="rb-muted">You’ll choose your table next. Nothing is reserved yet.</p></div>}
+      {selected && <div className="when-continue"><Button onClick={()=>onPick(selected)}>{t("Choose a table at {time}", { time: selected })}</Button><p className="rb-muted">{t("You’ll choose your table next. Nothing is reserved yet.")}</p></div>}
       <WaitlistDialog venueId={venueId} needs={needs} time={waitlistTime} onClose={() => setWaitlistTime(null)} />
     </section>
   );
@@ -101,30 +103,32 @@ interface OpenDayProps {
 }
 /** An open day: its upcoming times, or why there are none. */
 function OpenDay({ slots, needs, wanted, back, onPick, selected, info }: OpenDayProps) {
+  const { t } = useT();
   const upcoming = upcomingSlots(slots);
   if (upcoming.length === 0 && slots.length > 0) {
     return (
-      <EmptyState title="No times left today" action={back}>
-        <p>Every time on this day has already passed. Please pick another date.</p>
+      <EmptyState title={t("No times left today")} action={back}>
+        <p>{t("Every time on this day has already passed. Please pick another date.")}</p>
       </EmptyState>
     );
   }
   if (upcoming.length === 0) {
     return (
-      <EmptyState title="No times on this day" action={back}>
-        <p>There are no bookable times for {people(needs.party)} on this day. Try another date or a smaller party.</p>
+      <EmptyState title={t("No times on this day")} action={back}>
+        <p>{t("There are no bookable times for {people} on this day. Try another date or a smaller party.", { people: people(needs.party) })}</p>
       </EmptyState>
     );
   }
   return (
     <>
-      {upcoming.length < slots.length && <p className="rb-muted">Times that have already passed are not shown.</p>}
+      {upcoming.length < slots.length && <p className="rb-muted">{t("Times that have already passed are not shown.")}</p>}
       <SlotGroups slots={upcoming} wanted={wanted} selected={selected} starts={info?.services.filter(s=>s.weekday===((new Date(needs.date+"T12:00:00").getDay()+6)%7))} onPick={onPick} />
       {back && <div className="rb-actions">{back}</div>}
     </>
   );
 }
 function SlotGroups({ slots, wanted, onPick, selected, starts }: { starts?: RestaurantInfo["services"]; slots: TimeSlot[]; wanted: string | null; selected:string|null; onPick: (slot: TimeSlot) => void }) {
+  const { t } = useT();
   const [allTimes,setAllTimes]=useState(false);
   const allFull = slots.every((slot) => slot.status === "full");
   const near = closestTimes(slots, wanted);
@@ -137,14 +141,14 @@ function SlotGroups({ slots, wanted, onPick, selected, starts }: { starts?: Rest
     <>
       {allFull && (
         <p className="rb-notice" role="status">
-          Every time is booked on this day. Pick a time to join its waitlist, or try another date.
+          {t("Every time is booked on this day. Pick a time to join its waitlist, or try another date.")}
         </p>
       )}
       {near.length > 0 && wanted && <>
-        <div className="when-recovery" role="status"><strong>{wanted} is not available.</strong><p>Your date, party and requirements are unchanged.</p>{!slots.some(s=>s.time===wanted) && nextService && <p>{nextService.name} starts at {nextService.start}.</p>}</div>
-        <section className="when-alternative-group" aria-label="Next available times"><h3>Next available times</h3><div className="when-alternatives">{near.map(time=><a href={`#when-slot-${time}`} key={time} aria-current={selected===time ? "time" : undefined} onClick={event=>{event.preventDefault();onPick(slots.find(s=>s.time===time)!);}}><strong>{time}</strong>{" "}<span>{selected===time ? "Selected · " : ""}{Math.abs(toMinutes(time)-toMinutes(wanted))} min {time<wanted?"earlier":"later"}</span></a>)}</div></section>
+        <div className="when-recovery" role="status"><strong>{t("{time} is not available.", { time: wanted })}</strong><p>{t("Your date, party and requirements are unchanged.")}</p>{!slots.some(s=>s.time===wanted) && nextService && <p>{t("{service} starts at {time}.", { service: nextService.name, time: nextService.start })}</p>}</div>
+        <section className="when-alternative-group" aria-label={t("Next available times")}><h3>{t("Next available times")}</h3><div className="when-alternatives">{near.map(time=><a href={`#when-slot-${time}`} key={time} aria-current={selected===time ? "time" : undefined} onClick={event=>{event.preventDefault();onPick(slots.find(s=>s.time===time)!);}}><strong>{time}</strong>{" "}<span>{selected===time ? `${t("Selected")} · ` : ""}{time<wanted ? t("{n} min earlier", { n: Math.abs(toMinutes(time)-toMinutes(wanted)) }) : t("{n} min later", { n: Math.abs(toMinutes(time)-toMinutes(wanted)) })}</span></a>)}</div></section>
       </>}
-      {near.length>0 && <button type="button" className="when-show-all" aria-expanded={allTimes} onClick={()=>setAllTimes(!allTimes)}>{allTimes ? "Hide all service times" : "See all service times"}</button>}
+      {near.length>0 && <button type="button" className="when-show-all" aria-expanded={allTimes} onClick={()=>setAllTimes(!allTimes)}>{allTimes ? t("Hide all service times") : t("See all service times")}</button>}
       {(near.length===0 || allTimes) && groups.map((group) => (
         <details key={group.service} className="rb-service when-service" open={group.service===preferred}>
           <summary className="rb-service-title">{group.service}</summary>

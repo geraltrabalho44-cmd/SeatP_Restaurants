@@ -4,6 +4,7 @@
 // into the map. Nothing here fetches or touches the DOM.
 import type { AmbienceAnswer, DinerMap } from "../../api/restaurant";
 import type { MapSeat, RoomLight } from "../../api/types";
+import { tr } from "../../i18n/locale";
 import { fromMinutes, toMinutes } from "./format";
 import { isPickable } from "./tableView";
 
@@ -78,15 +79,13 @@ export function defaultRoom(map: DinerMap, tabs: RoomTab[]): number | null {
   return tabs[0]?.id ?? null;
 }
 
-const LIGHT_WORDS: Record<RoomLight, string> = {
-  sun: "In the sun",
-  sunset: "Sunset light",
-  shade: "In the shade",
-  daylight: "Daylight from the windows",
-  interior: "Away from the windows",
-  night: "After dark",
-};
-
 export function lightWords(light: RoomLight): string {
-  return LIGHT_WORDS[light];
+  return {
+    sun: tr("In the sun"),
+    sunset: tr("Sunset light"),
+    shade: tr("In the shade"),
+    daylight: tr("Daylight from the windows"),
+    interior: tr("Away from the windows"),
+    night: tr("After dark"),
+  }[light];
 }

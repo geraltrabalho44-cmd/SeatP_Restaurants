@@ -4,8 +4,10 @@
 // sit behind "Why this table", so the card stays short beside the plan.
 import type { DinerTable } from "../../api/restaurant";
 import { Badge, Button } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { lightWords } from "./ambienceView";
 import { guests, tableName } from "./format";
+import { serverText } from "./serverText";
 import { partyRange, unavailableReason } from "./tableView";
 
 interface TableCardProps {
@@ -28,7 +30,7 @@ interface TableCardProps {
 /** The reasons we give for a suggestion, then what the table is like, without saying the same thing twice. */
 function lines(reasons: string[], phrases: string[]): string[] {
   const seen = new Set<string>();
-  return [...reasons, ...phrases].filter((line) => {
+  return [...reasons, ...phrases].map(serverText).filter((line) => {
     const key = line.trim().toLowerCase();
     if (!key || seen.has(key)) return false;
     seen.add(key);
@@ -53,18 +55,19 @@ function FactIcon({ kind }: { kind: "where" | "view" | "sun" | "night" | "seats"
 }
 
 export function TableCard({ table, roomName, zone, recommended, reasons, heldId, busy, onTake, quick }: TableCardProps) {
+  const { t } = useT();
   const ambience = table.ambience;
   const reason = unavailableReason(table);
   const held = table.id === heldId && table.state !== "taken";
   const text = lines(recommended ? reasons : [], ambience?.phrases ?? []);
-  const meta = [ambience?.view?.text, `Seats ${table.max_party}`, ambience ? lightWords(ambience.light) : null].filter(Boolean).join(" · ");
+  const meta = [ambience?.view?.text, t("Seats {n}", { n: table.max_party }), ambience ? lightWords(ambience.light) : null].filter(Boolean).join(" · ");
   if (quick) {
     // "Window table · 2 guests", then "R2 · The river lights · Seats 2": where, for how many, and why it is good.
     return (
-      <section className="rb-card rb-table-card rb-table-quick" aria-label={`Table ${table.label}, ${partyRange(table)}`}>
-        {recommended && <Badge tone="success">Recommended</Badge>}
+      <section className="rb-card rb-table-card rb-table-quick" aria-label={t("Table {label}, {range}", { label: table.label, range: partyRange(table) })}>
+        {recommended && <Badge tone="success">{t("Recommended")}</Badge>}
         <h3 className="rb-table-title">
-          {zone ? `${zone} table` : tableName(table.label)} · {guests(quick.party)}
+          {zone ? t("{zone} table", { zone }) : tableName(table.label)} · {guests(quick.party)}
         </h3>
         <p className="rb-muted rb-table-meta">
           {[roomName, table.label, meta].filter(Boolean).join(" · ")}
@@ -72,7 +75,7 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
         {reason && <p className="rb-muted rb-table-card-reason">{reason}</p>}
         {text.length > 0 && (
           <details className="rb-why">
-            <summary>Why this table</summary>
+            <summary>{t("Why this table")}</summary>
             <ul className="rb-reasons">
               {text.map((line) => (
                 <li key={line}>{line}</li>
@@ -84,22 +87,22 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
     );
   }
   return (
-    <section className="rb-card rb-table-card" aria-label={`Table ${table.label}, ${partyRange(table)}`}>
+    <section className="rb-card rb-table-card" aria-label={t("Table {label}, {range}", { label: table.label, range: partyRange(table) })}>
       <div className="rb-table-card-head">
         <div>
           {roomName && <p className="rb-table-room">{roomName}</p>}
           <h3 className="rb-table-title">
             {tableName(table.label)}
-            {zone ? ` · ${zone} table` : ""}
+            {zone ? ` · ${t("{zone} table", { zone })}` : ""}
           </h3>
         </div>
-        {recommended && !held && <Badge tone="success">Recommended</Badge>}
+        {recommended && !held && <Badge tone="success">{t("Recommended")}</Badge>}
       </div>
       <ul className="rb-table-facts">
         {zone && (
           <li>
             <FactIcon kind="where" />
-            {roomName ? `${zone} table, ${roomName}` : `${zone} table`}
+            {roomName ? t("{zone} table, {room}", { zone, room: roomName }) : t("{zone} table", { zone })}
           </li>
         )}
         {ambience?.view?.text && (
@@ -119,22 +122,22 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
           {partyRange(table)}
         </li>
       </ul>
-      {ambience?.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || "The view from this table"} loading="lazy" />}
+      {ambience?.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || t("The view from this table")} loading="lazy" />}
       {held ? (
-        <Badge tone="success">Held for you</Badge>
+        <Badge tone="success">{t("Held for you")}</Badge>
       ) : reason ? (
         <p className="rb-muted rb-table-card-reason">{reason}</p>
       ) : (
         <>
           <Button busy={busy} onClick={() => onTake(table.id)}>
-            Hold {table.label} &amp; continue <span aria-hidden="true">{"→"}</span>
+            {t("Hold {label} & continue", { label: table.label })} <span aria-hidden="true">{"→"}</span>
           </Button>
-          <p className="rb-muted rb-table-note">You will have five minutes to finish after holding the table.</p>
+          <p className="rb-muted rb-table-note">{t("You will have five minutes to finish after holding the table.")}</p>
         </>
       )}
       {text.length > 0 && (
         <details className="rb-why">
-          <summary>Why this table</summary>
+          <summary>{t("Why this table")}</summary>
           <ul className="rb-reasons">
             {text.map((line) => (
               <li key={line}>{line}</li>

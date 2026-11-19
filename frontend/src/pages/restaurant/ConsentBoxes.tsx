@@ -5,6 +5,7 @@ import { useState } from "react";
 import { getTerms } from "../../api/legal";
 import type { Consent, TermsDocument } from "../../api/legal";
 import { Button, Checkbox, Dialog } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { errorMessage } from "./format";
 
 interface ConsentBoxesProps {
@@ -17,6 +18,7 @@ interface ConsentBoxesProps {
 }
 
 export function ConsentBoxes({ venueId, value, onChange, error = null, disabled = false }: ConsentBoxesProps) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [document, setDocument] = useState<TermsDocument | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -27,21 +29,21 @@ export function ConsentBoxes({ venueId, value, onChange, error = null, disabled 
       setDocument(await getTerms(venueId));
       setProblem(null);
     } catch (failure) {
-      setProblem(errorMessage(failure, "We could not load the terms. Please try again."));
+      setProblem(errorMessage(failure, t("We could not load the terms. Please try again.")));
     }
   };
   return (
-    <section className="rb-consent" aria-label="Terms and offers">
+    <section className="rb-consent" aria-label={t("Terms and offers")}>
       <Checkbox
         id="rb-accept-terms"
-        label="I accept the terms and conditions and the privacy notice."
+        label={t("I accept the terms and conditions and the privacy notice.")}
         checked={value.terms}
         disabled={disabled}
         onChange={(event) => onChange({ ...value, terms: event.target.checked })}
       />
       <p className="rb-consent-read">
         <Button variant="ghost" onClick={() => void show()}>
-          Read the terms and privacy notice
+          {t("Read the terms and privacy notice")}
         </Button>
       </p>
       {error && (
@@ -51,15 +53,15 @@ export function ConsentBoxes({ venueId, value, onChange, error = null, disabled 
       )}
       <Checkbox
         id="rb-accept-offers"
-        label="I'd like to receive offers and news from this restaurant (optional)."
-        hint="Only from this restaurant, by email or phone. You can stop at any time with the link in every message. Not ticking this changes nothing about your booking."
+        label={t("I'd like to receive offers and news from this restaurant (optional).")}
+        hint={t("Only from this restaurant, by email or phone. You can stop at any time with the link in every message. Not ticking this changes nothing about your booking.")}
         checked={value.offers}
         disabled={disabled}
         onChange={(event) => onChange({ ...value, offers: event.target.checked })}
       />
       <Dialog
         open={open}
-        title={document?.title ?? "Terms and privacy"}
+        title={document?.title ?? t("Terms and privacy")}
         onClose={() => setOpen(false)}
         actions={
           <Button
@@ -68,7 +70,7 @@ export function ConsentBoxes({ venueId, value, onChange, error = null, disabled 
               setOpen(false);
             }}
           >
-            Accept and close
+            {t("Accept and close")}
           </Button>
         }
       >
@@ -77,7 +79,7 @@ export function ConsentBoxes({ venueId, value, onChange, error = null, disabled 
             {problem}
           </p>
         )}
-        {!document && !problem && <p>Loading the terms…</p>}
+        {!document && !problem && <p>{t("Loading the terms…")}</p>}
         {document && <TermsText document={document} />}
       </Dialog>
     </section>
@@ -86,11 +88,12 @@ export function ConsentBoxes({ venueId, value, onChange, error = null, disabled 
 
 /** The document, as plain paragraphs: nothing here is ever rendered as markup. */
 export function TermsText({ document }: { document: TermsDocument }) {
+  const { t } = useT();
   return (
     <div className="rb-terms">
       {document.draft && (
         <p className="rb-notice rb-notice-warning" role="note">
-          Demo text: a draft that has not been reviewed by a lawyer.
+          {t("Demo text: a draft that has not been reviewed by a lawyer.")}
         </p>
       )}
       {document.sections.map((section) => (

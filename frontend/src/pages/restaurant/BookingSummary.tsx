@@ -3,82 +3,85 @@
 import type { BookingStatus, BookingView } from "../../api/restaurant";
 import { Badge } from "../../design/components";
 import type { BadgeTone } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import { formatDate, guests, people, tablesText } from "./format";
 import { prefWords } from "./prefs";
 
 const STATUS_TEXT: Record<BookingStatus, { label: string; tone: BadgeTone }> = {
-  pending: { label: "Waiting for deposit", tone: "warning" },
-  confirmed: { label: "Confirmed", tone: "success" },
-  seated: { label: "Seated", tone: "info" },
-  finishing: { label: "Finishing", tone: "info" },
-  completed: { label: "Completed", tone: "neutral" },
-  cancelled: { label: "Cancelled", tone: "danger" },
-  no_show: { label: "Marked as no-show", tone: "danger" },
+  pending: { get label() { return tr("Waiting for deposit"); }, tone: "warning" },
+  confirmed: { get label() { return tr("Confirmed"); }, tone: "success" },
+  seated: { get label() { return tr("Seated"); }, tone: "info" },
+  finishing: { get label() { return tr("Finishing"); }, tone: "info" },
+  completed: { get label() { return tr("Completed"); }, tone: "neutral" },
+  cancelled: { get label() { return tr("Cancelled"); }, tone: "danger" },
+  no_show: { get label() { return tr("Marked as no-show"); }, tone: "danger" },
 };
 
 /** A cancelled booking has no table; "No table yet" would suggest one is still coming. */
 function tableText(booking: BookingView): string {
-  if (booking.status === "cancelled") return "None, the booking is cancelled";
+  if (booking.status === "cancelled") return tr("None, the booking is cancelled");
   return tablesText(booking.table_labels);
 }
 
 /** "Seat 2, facing the window": the sentence is only there on the diner's own pages. */
 function seatText(seat: { label: string; phrase?: string | null }): string {
-  return seat.phrase ? `Seat ${seat.label}, ${seat.phrase.charAt(0).toLowerCase()}${seat.phrase.slice(1)}` : `Seat ${seat.label}`;
+  return seat.phrase ? tr("Seat {label}, {phrase}", { label: seat.label, phrase: `${seat.phrase.charAt(0).toLowerCase()}${seat.phrase.slice(1)}` }) : tr("Seat {label}", { label: seat.label });
 }
 
 function needsText(booking: BookingView): string {
   const needs: string[] = [];
-  if (booking.needs_accessible) needs.push("Accessible table");
-  if (booking.high_chairs > 0) needs.push(booking.high_chairs === 1 ? "1 high chair" : `${booking.high_chairs} high chairs`);
-  return needs.length > 0 ? needs.join(", ") : "None";
+  if (booking.needs_accessible) needs.push(tr("Accessible table"));
+  if (booking.high_chairs > 0) needs.push(booking.high_chairs === 1 ? tr("1 high chair") : tr("{count} high chairs", { count: booking.high_chairs }));
+  return needs.length > 0 ? needs.join(", ") : "";
 }
 
 /** What matters at the door, one fact per row: used beside the restaurant card on the confirmation and the manage page. */
 export function BookingRows({ booking }: { booking: BookingView }) {
+  const { t } = useT();
   const wishes = prefWords(booking.prefs);
   const needs = needsText(booking);
   return (
     <dl className="rb5-rows">
       <div>
-        <dt>Date</dt>
+        <dt>{t("Date")}</dt>
         <dd>{formatDate(booking.date)}</dd>
       </div>
       <div>
-        <dt>Arrival</dt>
+        <dt>{t("Arrival")}</dt>
         <dd className="tabular">
           {booking.time} · {guests(booking.party_size)}
         </dd>
       </div>
       <div>
-        <dt>Table</dt>
+        <dt>{t("Table")}</dt>
         <dd>{tableText(booking)}</dd>
       </div>
-      {booking.occasion && <div><dt>Occasion</dt><dd>{booking.occasion}</dd></div>}
-      {booking.dietary_requirements && <div><dt>Dietary preferences</dt><dd>{booking.dietary_requirements}</dd></div>}
-      {booking.allergies && <div><dt>Food allergies</dt><dd>{booking.allergies}</dd></div>}
-      {booking.arrival_time && <div><dt>Expected arrival</dt><dd>{booking.arrival_time}</dd></div>}
+      {booking.occasion && <div><dt>{t("Occasion")}</dt><dd>{booking.occasion}</dd></div>}
+      {booking.dietary_requirements && <div><dt>{t("Dietary preferences")}</dt><dd>{booking.dietary_requirements}</dd></div>}
+      {booking.allergies && <div><dt>{t("Food allergies")}</dt><dd>{booking.allergies}</dd></div>}
+      {booking.arrival_time && <div><dt>{t("Expected arrival")}</dt><dd>{booking.arrival_time}</dd></div>}
       {booking.seat && (
         <div>
-          <dt>Chair request</dt>
+          <dt>{t("Chair request")}</dt>
           <dd>{seatText(booking.seat)}</dd>
         </div>
       )}
-      {needs !== "None" && (
+      {needs !== "" && (
         <div>
-          <dt>Needs</dt>
+          <dt>{t("Needs")}</dt>
           <dd>{needs}</dd>
         </div>
       )}
       {wishes && (
         <div>
-          <dt>Your wishes</dt>
+          <dt>{t("Your wishes")}</dt>
           <dd>{wishes}</dd>
         </div>
       )}
       {booking.notes && (
         <div>
-          <dt>Notes</dt>
+          <dt>{t("Notes")}</dt>
           <dd>{booking.notes}</dd>
         </div>
       )}
@@ -88,58 +91,59 @@ export function BookingRows({ booking }: { booking: BookingView }) {
 
 /** `hideStatus` leaves the status row out where the page already says it in a heading ("Booking confirmed"). */
 export function BookingSummary({ booking, hideStatus = false }: { booking: BookingView; hideStatus?: boolean }) {
+  const { t } = useT();
   const status = STATUS_TEXT[booking.status];
   return (
     <dl className="rb-summary">
       {!hideStatus && (
         <div>
-          <dt>Status</dt>
+          <dt>{t("Status")}</dt>
           <dd>
             <Badge tone={status.tone}>{status.label}</Badge>
           </dd>
         </div>
       )}
       <div>
-        <dt>Restaurant</dt>
+        <dt>{t("Restaurant")}</dt>
         <dd>{booking.venue_name}</dd>
       </div>
       <div>
-        <dt>When</dt>
+        <dt>{t("When")}</dt>
         <dd>
-          {formatDate(booking.date)}, {booking.time} to {booking.end_time}
+          {formatDate(booking.date)}, {t("{from} to {to}", { from: booking.time, to: booking.end_time })}
         </dd>
       </div>
       <div>
-        <dt>Party</dt>
+        <dt>{t("Party")}</dt>
         <dd>{people(booking.party_size)}</dd>
       </div>
       <div>
-        <dt>Table</dt>
+        <dt>{t("Table")}</dt>
         <dd>{tableText(booking)}</dd>
       </div>
       {booking.seat && (
         <div>
-          <dt>Chair requested</dt>
+          <dt>{t("Chair requested")}</dt>
           <dd>{seatText(booking.seat)}</dd>
         </div>
       )}
       <div>
-        <dt>Name</dt>
+        <dt>{t("Name")}</dt>
         <dd>{booking.name}</dd>
       </div>
       <div>
-        <dt>Needs</dt>
-        <dd>{needsText(booking)}</dd>
+        <dt>{t("Needs")}</dt>
+        <dd>{needsText(booking) || t("None")}</dd>
       </div>
       {prefWords(booking.prefs) && (
         <div>
-          <dt>Your wishes</dt>
+          <dt>{t("Your wishes")}</dt>
           <dd>{prefWords(booking.prefs)}</dd>
         </div>
       )}
       {booking.notes && (
         <div>
-          <dt>Notes</dt>
+          <dt>{t("Notes")}</dt>
           <dd>{booking.notes}</dd>
         </div>
       )}

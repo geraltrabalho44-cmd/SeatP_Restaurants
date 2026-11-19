@@ -5,6 +5,8 @@ import type { FormEvent } from "react";
 import type { PartyNeeds, RestaurantInfo } from "../../api/restaurant";
 import { Button, Checkbox, Field, Select } from "../../design/components";
 import type { SelectOption } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import { formatDate, people, todayIso, weekdayName } from "./format";
 import { PREF_OPTIONS, togglePref } from "./prefs";
 import "./when.css";
@@ -25,21 +27,22 @@ export function pythonWeekday(iso: string): number {
 /** Why the restaurant is closed on this date, or null when it is open. */
 export function closedReason(info: RestaurantInfo, date: string): string | null {
   const blackout = info.blackout_dates.find((b) => b.date === date);
-  if (blackout) return `Closed on ${formatDate(date)}: ${blackout.reason}.`;
+  if (blackout) return tr("Closed on {date}: {reason}.", { date: formatDate(date), reason: blackout.reason });
   const open = info.services.some((s) => s.weekday === pythonWeekday(date));
-  if (!open && info.services.length > 0) return `${info.name} is closed on ${weekdayName(date)}s.`;
+  if (!open && info.services.length > 0) return tr("{name} is closed on {weekday}s.", { name: info.name, weekday: weekdayName(date) });
   return null;
 }
 function partyOptions(max: number): SelectOption[] {
   return Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: people(i + 1) }));
 }
-const HIGH_CHAIR_OPTIONS: SelectOption[] = [
-  { value: "0", label: "No high chair" },
-  { value: "1", label: "1 high chair" },
-  { value: "2", label: "2 high chairs" },
-  { value: "3", label: "3 high chairs" },
+const highChairOptions = (): SelectOption[] => [
+  { value: "0", label: tr("No high chair") },
+  { value: "1", label: tr("1 high chair") },
+  { value: "2", label: tr("2 high chairs") },
+  { value: "3", label: tr("3 high chairs") },
 ];
 export function StepParty({ info, needs, onChange, onNext, focusOnMount }: StepPartyProps) {
+  const { t } = useT();
   const closed = needs.date === "" ? null : closedReason(info, needs.date);
   const dateMissing = needs.date === "";
   const submit = (event: FormEvent<HTMLFormElement>): void => {
@@ -48,60 +51,61 @@ export function StepParty({ info, needs, onChange, onNext, focusOnMount }: StepP
   };
   return (
     <form className="rb-step when-party" onSubmit={submit} noValidate>
-      <StepHeading focusOnMount={focusOnMount}>When would you like to visit?</StepHeading>
+      <StepHeading focusOnMount={focusOnMount}>{t("When would you like to visit?")}</StepHeading>
       <WhenFields info={info} needs={needs} onChange={onChange} />
       <div className="rb-actions">
         <Button type="submit" disabled={closed !== null || dateMissing}>
-          See free times
+          {t("See free times")}
         </Button>
       </div>
     </form>
   );
 }
 export function WhenFields({info, needs, onChange}: Pick<StepPartyProps,"info"|"needs"|"onChange">) {
+ const { t } = useT();
  const closed=needs.date ? closedReason(info,needs.date):null;
  const dateMissing=needs.date === "";
  return <div className="when-fields">
       <Field
-        label="Date"
+        label={t("Date")}
         type="date"
         min={todayIso()}
         value={needs.date}
         onChange={(e) => onChange({ ...needs, date: e.target.value })}
-        error={dateMissing ? "Choose a date to see the free times." : null}
+        error={dateMissing ? t("Choose a date to see the free times.") : null}
         required
       />
       {closed && (
         <p className="rb-notice rb-notice-closed" role="status">
-          <strong>Closed that day.</strong> {closed} Please pick another date.
+          <strong>{t("Closed that day.")}</strong> {closed} {t("Please pick another date.")}
         </p>
       )}
       <Select
-        label="Party size"
-        hint={`Including children. For more than ${info.max_party}, please call the restaurant.`}
+        label={t("Party size")}
+        hint={t("Including children. For more than {max}, please call the restaurant.", { max: info.max_party })}
         options={partyOptions(info.max_party)}
         value={String(needs.party)}
         onChange={(e) => onChange({ ...needs, party: Number(e.target.value) })}
       />
-      <details className="when-requirements" open={needs.needs_accessible || needs.high_chairs>0 || (needs.prefs?.length ?? 0)>0 ? true : undefined}><summary>Access needs and table preferences</summary>
+      <details className="when-requirements" open={needs.needs_accessible || needs.high_chairs>0 || (needs.prefs?.length ?? 0)>0 ? true : undefined}><summary>{t("Access needs and table preferences")}</summary>
       <fieldset className="rb-needs">
-        <legend className="field-label">Anything we should know?</legend>
+        <legend className="field-label">{t("Anything we should know?")}</legend>
         <Checkbox
-          label="Someone needs an accessible table"
-          hint="Step-free access and room for a wheelchair"
+          label={t("Someone needs an accessible table")}
+          hint={t("Step-free access and room for a wheelchair")}
           checked={needs.needs_accessible}
           onChange={(e) => onChange({ ...needs, needs_accessible: e.target.checked })}
         />
         <Select
-          label="High chairs for small children"
-          options={HIGH_CHAIR_OPTIONS}
+          label={t("High chairs for small children")}
+          options={highChairOptions()}
           value={String(needs.high_chairs)}
           onChange={(e) => onChange({ ...needs, high_chairs: Number(e.target.value) })}
         />
       </fieldset>
       <fieldset className="rb-needs">
-        <legend className="field-label">What would you like your table to be like? (optional)</legend>
-        <p className="rb-muted">We will suggest a table that fits when we can. Wishes never take a table away from a bigger party.</p>
+        <legend className="field-label">{t("What would you like your table to be like? (optional)")}</legend>
+        <p className="rb-muted">{t("We will suggest a table that fits when we can. Wishes never take a table away from a bigger party.")}</p>
         {PREF_OPTIONS.map((option) => (
           <Checkbox
             key={option.key}

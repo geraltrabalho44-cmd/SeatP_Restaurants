@@ -14,19 +14,21 @@ import { errorMessage, formatDate, people } from "./format";
 import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 import { useLoad } from "./useLoad";
 import { ArrivalNotice } from "./ArrivalNotice";
+import { useT } from "../../i18n/I18nProvider";
 import { OffersChoice } from "./OffersChoice";
 import { RainCard } from "./WeatherRainOffer";
 import { cancelNote, depositStatus } from "./money";
 import "./restaurant.css";
 
 export default function ManageBookingPage() {
+  const { t } = useT();
   const { token = "" } = useParams();
   const { state, reload, setData } = useLoad(() => getBooking(token), token);
   return (
-    <PageShell title="Your booking">
+    <PageShell title={t("Your booking")}>
       <div className="rb-page">
-        <h1 className="rb-title rb5-page-title">Manage your booking</h1>
-        {state.status === "loading" && <Skeleton lines={5} label="Loading your booking" />}
+        <h1 className="rb-title rb5-page-title">{t("Manage your booking")}</h1>
+        {state.status === "loading" && <Skeleton lines={5} label={t("Loading your booking")} />}
         {state.status === "error" && <ManageError error={state.error} onRetry={() => reload()} />}
         {state.status === "ready" && <RainCard key={token} path={"/b/"+encodeURIComponent(token)+"/rain"} />}
         {state.status === "ready" && <ManageBooking token={token} booking={state.data} onUpdate={setData} />}
@@ -36,17 +38,17 @@ export default function ManageBookingPage() {
 }
 
 function ManageError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const { t } = useT();
   if (error instanceof ApiError && error.code === "not_found") {
     return (
-      <EmptyState title="This link does not work">
+      <EmptyState title={t("This link does not work")}>
         <p>
-          It may be mistyped, or the booking was made with a different link. Open the link exactly as it appears in your confirmation email,
-          or contact the restaurant.
+          {t("It may be mistyped, or the booking was made with a different link. Open the link exactly as it appears in your confirmation email, or contact the restaurant.")}
         </p>
       </EmptyState>
     );
   }
-  return <ErrorState title="We could not load your booking" message={errorMessage(error)} onRetry={onRetry} />;
+  return <ErrorState title={t("We could not load your booking")} message={errorMessage(error)} onRetry={onRetry} />;
 }
 
 /** Only bookings that have not started yet can be changed or cancelled by the diner. */
@@ -55,6 +57,7 @@ function isEditable(booking: BookingView): boolean {
 }
 
 function ManageBooking({ token, booking, onUpdate }: { token: string; booking: BookingView; onUpdate: (b: BookingView) => void }) {
+  const { t } = useT();
   const toast = useToast();
   // Which part of the booking is being edited: opened by the diner's intent, one at a time.
   const [panel, setPanel] = useState<"time" | "chair" | null>(null);
@@ -64,12 +67,12 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
   const changed = (next: BookingView): void => {
     update(next);
     setPanel(null);
-    toast.show(`Booking changed: ${next.time}, party of ${next.party_size}.`, "success");
+    toast.show(t("Booking changed: {time}, party of {n}.", { time: next.time, n: next.party_size }), "success");
   };
   const toggle = (which: "time" | "chair"): void => setPanel(panel === which ? null : which);
   const hasChairs = (booking.table_ids ?? []).length > 0;
   const venue = usePublicVenue(booking.venue_public_id);
-  const statusBadge = booking.status === "confirmed" ? <Badge tone="success">Confirmed</Badge> : booking.status === "cancelled" ? <Badge tone="danger">Cancelled</Badge> : booking.status === "pending" ? <Badge tone="warning">Waiting for deposit</Badge> : null;
+  const statusBadge = booking.status === "confirmed" ? <Badge tone="success">{t("Confirmed")}</Badge> : booking.status === "cancelled" ? <Badge tone="danger">{t("Cancelled")}</Badge> : booking.status === "pending" ? <Badge tone="warning">{t("Waiting for deposit")}</Badge> : null;
   return (
     <>
       <p className="rb5-manage-sub">
@@ -77,22 +80,22 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
       </p>
       {booking.status === "cancelled" && (
         <p className="rb-notice" role="status">
-          This booking is cancelled. The table is free for someone else.
+          {t("This booking is cancelled. The table is free for someone else.")}
         </p>
       )}
       {booking.status === "pending" && booking.payment && (
         <p className="rb-notice rb-notice-warning" role="status">
-          <strong>This booking is waiting for its deposit.</strong>{" "}
-          {booking.payment.payment_id ? <a href={`/pay/return/${encodeURIComponent(booking.payment.payment_id)}`}>Check or finish the payment</a> : "Please finish the payment."}
+          <strong>{t("This booking is waiting for its deposit.")}</strong>{" "}
+          {booking.payment.payment_id ? <a href={`/pay/return/${encodeURIComponent(booking.payment.payment_id)}`}>{t("Check or finish the payment")}</a> : t("Please finish the payment.")}
         </p>
       )}
       <div className="rb5-two rb5-manage">
-        <section className="rb-card rb5-details-card" aria-label="Reservation details">
-          <h2 className="rb5-card-title">Reservation details</h2>
+        <section className="rb-card rb5-details-card" aria-label={t("Reservation details")}>
+          <h2 className="rb5-card-title">{t("Reservation details")}</h2>
           <BookingRows booking={booking} />
           {booking.offer && (
             <p className="rb-muted" data-testid="offer-line">
-              Offer: {booking.offer.name}, {booking.offer.what}. The restaurant takes it off your bill.
+              {t("Offer: {name}, {what}. The restaurant takes it off your bill.", { name: booking.offer.name, what: booking.offer.what })}
             </p>
           )}
           {booking.payment && booking.status !== "pending" && booking.payment.status !== "expired" && (
@@ -101,7 +104,7 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
             </p>
           )}
           <div className="rb5-reference">
-            <span className="rb-muted">Reference {booking.public_id.slice(0, 8).toUpperCase()}</span>
+            <span className="rb-muted">{t("Reference {id}", { id: booking.public_id.slice(0, 8).toUpperCase() })}</span>
             <DirectionsLink venue={venue} />
           </div>
         </section>
@@ -113,30 +116,30 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
         </div>
       </div>
       <p>
-        <a href={`/r/${encodeURIComponent(booking.venue_public_id)}`}>Make another booking at {booking.venue_name}</a>
+        <a href={`/r/${encodeURIComponent(booking.venue_public_id)}`}>{t("Make another booking at {name}", { name: booking.venue_name })}</a>
       </p>
     </>
   );
 
   function renderActions() {
     if (!isEditable(booking)) {
-      return booking.status !== "cancelled" ? <p className="rb-muted">This booking can no longer be changed online. Please contact the restaurant.</p> : null;
+      return booking.status !== "cancelled" ? <p className="rb-muted">{t("This booking can no longer be changed online. Please contact the restaurant.")}</p> : null;
     }
     return (
-      <section className="rb-card rb5-change" aria-label="Make a change">
-        <h2 className="rb5-card-title">Make a change</h2>
+      <section className="rb-card rb5-change" aria-label={t("Make a change")}>
+        <h2 className="rb5-card-title">{t("Make a change")}</h2>
         <>
-          <div className="rb-manage-actions" role="group" aria-label="Manage this booking">
+          <div className="rb-manage-actions" role="group" aria-label={t("Manage this booking")}>
             <Button variant="secondary" aria-expanded={panel === "time"} aria-controls="rb-panel-time" onClick={() => toggle("time")}>
-              Change time or guests
+              {t("Change time or guests")}
             </Button>
             {hasChairs && (
               <Button variant="secondary" aria-expanded={panel === "chair"} aria-controls="rb-panel-chair" onClick={() => toggle("chair")}>
-                {booking.seat ? "Change chair request" : "Request a chair"}
+                {booking.seat ? t("Change chair request") : t("Request a chair")}
               </Button>
             )}
             <Button variant="ghost" className="rb-danger-link" onClick={() => setCancelling(true)}>
-              Cancel booking
+              {t("Cancel booking")}
             </Button>
           </div>
           {panel === "time" && (
@@ -152,7 +155,7 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
                 onClose={() => setPanel(null)}
                 onChanged={(next) => {
                   update(next);
-                  toast.show(next.seat ? "Chair request updated." : "Chair request removed.", "success");
+                  toast.show(next.seat ? t("Chair request updated.") : t("Chair request removed."), "success");
                 }}
               />
             </div>
@@ -166,6 +169,7 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
 
 /** The safe way out ("Keep booking") comes first, so it is where focus starts; Escape also keeps the booking. */
 function CancelDialog({ token, booking, open, onClose, onCancelled }: { token: string; booking: BookingView; open: boolean; onClose: () => void; onCancelled: (b: BookingView) => void }) {
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const confirm = async (): Promise<void> => {
@@ -177,7 +181,7 @@ function CancelDialog({ token, booking, open, onClose, onCancelled }: { token: s
       onClose();
       onCancelled(cancelled);
     } catch (error) {
-      setProblem(errorMessage(error, "We could not cancel. Your booking is still in place; please try again."));
+      setProblem(errorMessage(error, t("We could not cancel. Your booking is still in place; please try again.")));
     } finally {
       setBusy(false);
     }
@@ -185,21 +189,21 @@ function CancelDialog({ token, booking, open, onClose, onCancelled }: { token: s
   const actions = (
     <>
       <Button variant="secondary" onClick={onClose}>
-        Keep booking
+        {t("Keep booking")}
       </Button>
       <Button variant="danger" busy={busy} onClick={() => void confirm()}>
-        Cancel booking
+        {t("Cancel booking")}
       </Button>
     </>
   );
   return (
-    <Dialog open={open} title="Cancel this booking?" onClose={onClose} actions={actions}>
+    <Dialog open={open} title={t("Cancel this booking?")} onClose={onClose} actions={actions}>
       <p>
         <strong>{booking.venue_name}</strong>
         <br />
-        {formatDate(booking.date)}, {booking.time} to {booking.end_time} · {people(booking.party_size)}
+        {formatDate(booking.date)}, {t("{from} to {to}", { from: booking.time, to: booking.end_time })} · {people(booking.party_size)}
       </p>
-      <p>The table is released straight away and cannot be taken back. You would need to book again.</p>
+      <p>{t("The table is released straight away and cannot be taken back. You would need to book again.")}</p>
       {cancelNote(booking.payment) && <p className="rb-notice" role="note">{cancelNote(booking.payment)}</p>}
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">

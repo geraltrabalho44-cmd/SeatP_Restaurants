@@ -1,10 +1,19 @@
 // One time slot. Its status is told three ways, never by colour alone:
 // an icon (open circle, half circle, cross), a word, and the colour.
 import type { SlotStatus, TimeSlot } from "../../api/restaurant";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
+// Read when used, so the words follow the language in use.
 export const SLOT_TEXT: Record<SlotStatus, string> = {
-  available: "Available",
-  limited: "Few tables left",
-  full: "Full, join waitlist",
+  get available() {
+    return tr("Available");
+  },
+  get limited() {
+    return tr("Few tables left");
+  },
+  get full() {
+    return tr("Full, join waitlist");
+  },
 };
 function SlotIcon({ status }: { status: SlotStatus }) {
   return (
@@ -23,14 +32,15 @@ interface SlotButtonProps {
   onPick: (slot: TimeSlot) => void;
 }
 export function SlotButton({ slot, near = false, selected = false, onPick }: SlotButtonProps) {
+  const { t } = useT();
   return (
     <button id={`when-slot-${slot.time}`} type="button" aria-pressed={selected} className={`rb-slot${selected ? " is-selected" : ""} rb-slot-${slot.status}${near ? " rb-slot-near" : ""}`} onClick={() => onPick(slot)}>
       <span className="rb-slot-time tabular">{slot.time}</span>
       <span className="rb-slot-status">
         <SlotIcon status={slot.status} />
-        {selected ? "Selected" : SLOT_TEXT[slot.status]}
+        {selected ? t("Selected") : SLOT_TEXT[slot.status]}
       </span>
-      {near && <span className="rb-slot-near-tag">Closest</span>}
+      {near && <span className="rb-slot-near-tag">{t("Closest")}</span>}
     </button>
   );
 }

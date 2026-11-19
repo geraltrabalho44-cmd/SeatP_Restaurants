@@ -12,6 +12,25 @@ export function detect(query:string|null,saved:string|null,languages:readonly st
   }
   return "en";
 }
+// The language of the page right now. The provider sets it while rendering, so plain functions (dates, money,
+// form checks) can speak it without being handed it. A component that shows their words calls useT(), which
+// is what makes it draw again when the language is changed.
+let active: Locale = "en";
+export function setActiveLocale(locale: Locale): void {
+  active = locale;
+}
+export function activeLocale(): Locale {
+  return active;
+}
+/** The Intl tag of the language in use: en-GB, pt-PT, es-ES or fr-FR. */
+export function activeTag(): string {
+  return tags[active];
+}
+/** Translates in the language in use, for code that is not a component. */
+export function tr(key: Message, params: Record<string, string | number> = {}): string {
+  return translate(active, key, params);
+}
+
 export function translate(locale:Locale,key:Message,params:Record<string,string|number>={}):string {
   const index=({pt:0,es:1,fr:2} as const)[locale as Exclude<Locale,"en">];
   const text=locale==="en" || !Object.hasOwn(catalogue,key)? key:catalogue[key][index];

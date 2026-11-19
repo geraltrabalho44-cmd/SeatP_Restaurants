@@ -4,11 +4,14 @@
 import type { TableSeats } from "../../api/restaurant";
 import type { MapSeat, MapTable } from "../../api/types";
 import { SeatMap } from "../../seatmap/SeatMap";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
+import { serverText } from "./serverText";
 
 /** "Seat 2 · Facing the window", with "(not available)" for a chair that cannot be chosen. */
 export function seatLabel(seat: TableSeats["seats"][number]): string {
-  const base = seat.phrase ? `Seat ${seat.label} · ${seat.phrase}` : `Seat ${seat.label}`;
-  return seat.state === "blocked" ? `${base} (not available)` : base;
+  const base = seat.phrase ? tr("Seat {label} · {phrase}", { label: seat.label, phrase: serverText(seat.phrase) }) : tr("Seat {label}", { label: seat.label });
+  return seat.state === "blocked" ? tr("{base} (not available)", { base }) : base;
 }
 
 function asMapSeats(seats: TableSeats["seats"]): MapSeat[] {
@@ -23,13 +26,14 @@ interface SeatPickerProps {
 }
 
 export function SeatPicker({ label, data, picked, onPick }: SeatPickerProps) {
+  const { t } = useT();
   const tables: MapTable[] = data.tables.map((t) => ({ ...t, shape: t.shape as MapTable["shape"], state: "free" }));
   const seats = asMapSeats(data.seats);
   return (
     <div className="rb-map-layout">
       <SeatMap label={label} mode="seats" tables={tables} seats={seats} selectable={(id) => seats.find((s) => s.id === id)?.state === "free"} selectedId={picked} onSelect={onPick} />
       <div className="rb-map-side">
-        <div role="radiogroup" aria-label="Chair at your table" className="rb-card rb-seat-choices">
+        <div role="radiogroup" aria-label={t("Chair at your table")} className="rb-card rb-seat-choices">
           {data.seats.map((seat) => (
             <label key={seat.id} className="rb-seat-choice">
               <input type="radio" name="chair" checked={picked === seat.id} disabled={seat.state === "blocked"} onChange={() => onPick(seat.id)} />

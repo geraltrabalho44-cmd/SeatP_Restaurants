@@ -9,6 +9,8 @@ import { getDinerMap, holdTable, venueDayScope } from "../../api/restaurant";
 import type { BookingConfirmation, ContactDetails, DinerMap, DinerTable, PartyNeeds } from "../../api/restaurant";
 import { useLive } from "../../api/useLive";
 import { Button, Checkbox, ErrorState, Skeleton } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import type { Agreements } from "./agreements";
 import { FloorPlan } from "./FloorPlan";
 import { errorMessage, guests, shortDate, tableName } from "./format";
@@ -75,8 +77,8 @@ interface Conflict {
 /** The words for a failed hold. A 409 means someone was faster; anything else is a plain problem. */
 function holdFailure(error: unknown, tableId: number | null, label: string | null): Conflict | string {
   const lost = error instanceof ApiError && (error.code === "seat_taken" || error.code === "conflict");
-  if (!lost) return errorMessage(error, "We could not hold that table. Please try again.");
-  const message = label ? `Table ${label} was just taken by someone else.` : "The last table for your party was just taken.";
+  if (!lost) return errorMessage(error, tr("We could not hold that table. Please try again."));
+  const message = label ? tr("Table {label} was just taken by someone else.", { label }) : tr("The last table for your party was just taken.");
   return { message, failedId: tableId };
 }
 
@@ -107,6 +109,7 @@ function sunsetOf(map: DinerMap): string | null {
 }
 
 export function StepTable(props: StepTableProps) {
+  const { t } = useT();
   const { venueId, needs, time, hold, onHold } = props;
   const phone = usePhone();
   const phoneHeader = phone && !hold;
@@ -124,7 +127,7 @@ export function StepTable(props: StepTableProps) {
   const carried = props.carriedNotice;
   useEffect(() => {
     if (!carried) return;
-    setConflict({ title: "Choose an available table", message: carried, failedId: null });
+    setConflict({ title: tr("Choose an available table"), message: carried, failedId: null });
     reload(true);
   }, [carried, reload]);
 
@@ -132,7 +135,7 @@ export function StepTable(props: StepTableProps) {
   useEffect(() => {
     const ours = hold && map?.tables.find((t) => t.id === hold.tableId);
     if (props.submitting || !hold || !ours || ours.state !== "taken") return;
-    setConflict({ message: `Table ${hold.tableLabel} was just booked by someone else.`, failedId: hold.tableId });
+    setConflict({ message: tr("Table {label} was just booked by someone else.", { label: hold.tableLabel }), failedId: hold.tableId });
     onHold(null);
   }, [map, hold, onHold, props.submitting]);
 
@@ -144,7 +147,7 @@ export function StepTable(props: StepTableProps) {
     try {
       const result = await holdTable(venueId, needs, time, tableId);
       onHold({ holdId: result.hold_id, tableId: result.table.id, tableIds: result.table_ids, tableLabel: result.table.label, expiresAt: result.expires_at });
-      setSpoken(`Table ${result.table.label} is held for you for 5 minutes.`);
+      setSpoken(tr("Table {label} is held for you for 5 minutes.", { label: result.table.label }));
       // Only now give the old table back: if the new hold had failed, the diner would still have the old one.
       await releaseQuietly(venueId, hold);
     } catch (error) {
@@ -163,7 +166,7 @@ export function StepTable(props: StepTableProps) {
       {map && !hold && !busy && <WeatherPanel venueId={venueId} needs={needs} time={time} onTable={id=>void take(id)} />}
       {phoneHeader && props.onAccessibilityChange && (
         <Checkbox
-          label="I need a wheelchair-accessible table"
+          label={t("I need a wheelchair-accessible table")}
           checked={needs.needs_accessible}
           disabled={busy}
           onChange={(event) => {
@@ -172,8 +175,8 @@ export function StepTable(props: StepTableProps) {
           }}
         />
       )}
-      {!map && state.status !== "error" && <Skeleton lines={6} label="Checking available tables" />}
-      {state.status === "error" && <ErrorState title="We could not load the floor plan" message={errorMessage(state.error)} onRetry={() => reload()} />}
+      {!map && state.status !== "error" && <Skeleton lines={6} label={t("Checking available tables")} />}
+      {state.status === "error" && <ErrorState title={t("We could not load the floor plan")} message={errorMessage(state.error)} onRetry={() => reload()} />}
       {map && (
         <TableStepBody map={map} {...props} phone={phone} phoneHeader={phoneHeader} busy={busy} conflict={conflict} problem={problem} onTake={(id) => void take(id)} />
       )}
@@ -195,6 +198,7 @@ interface BodyProps extends StepTableProps {
 }
 
 function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, phone, phoneHeader, busy, conflict, problem, onTake, onHold, onNext, onBack, needs, time, details }: BodyProps) {
+  const { t } = useT();
   const heldId = hold?.tableId ?? null;
   // The light cursor only repaints the light; the tables, holds and live updates stay as they are.
   const steps = cursorSteps(loaded.stay_start, loaded.stay_end);
@@ -237,13 +241,13 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
     setLooking(bestId);
     setChosenByDiner(false);
     const table = map.tables.find((t) => t.id === bestId);
-    if (table) setPicked(`Table ${table.label} is suggested and selected.`);
+    if (table) setPicked(tr("Table {label} is suggested and selected.", { label: table.label }));
   }, [looking, heldId, bestId, map]);
   const lookAt = (id: number): void => {
     setChosenByDiner(true);
     setLooking(id);
     const table = map.tables.find((t) => t.id === id);
-    setPicked(table ? `Table ${table.label} selected.` : "");
+    setPicked(table ? tr("Table {label} selected.", { label: table.label }) : "");
   };
   // A table the diner chose stays in front of them; our own suggestion gives way to whatever they point at.
   const focusId = chosenByDiner ? (looking ?? pointed) : (pointed ?? looking);
@@ -263,7 +267,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
     setPointed(null);
     setLooking(bestTable.id);
     setChosenRoom(bestTable.room_id ?? null);
-    setPicked(`Suggested table ${bestTable.label} selected.`);
+    setPicked(tr("Suggested table {label} selected.", { label: bestTable.label }));
   };
   const heldTable = hold ? map.tables.find((t) => t.id === hold.tableId) : undefined;
   const heldRoomName = heldTable && tabs.length > 0 ? roomNameOf(heldTable.room_id) : null;
@@ -330,7 +334,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
 
   const notices = (
     <>
-      {conflict && <ConflictNotice title={conflict.title ?? "Sorry, that table is gone."} message={conflict.message} options={alternatives(map, conflict.failedId, needs.party)} busy={busy} onTake={onTake} />}
+      {conflict && <ConflictNotice title={conflict.title ?? t("Sorry, that table is gone.")} message={conflict.message} options={alternatives(map, conflict.failedId, needs.party)} busy={busy} onTake={onTake} />}
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
           {problem}
@@ -369,13 +373,13 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
             onChooseSeat={onNext}
             onClearSeat={details.onClearSeat}
           />
-          <section className="rb-card rb5-your-table" aria-label="Your table">
-            <h3 className="rb5-card-title">Your table</h3>
+          <section className="rb-card rb5-your-table" aria-label={t("Your table")}>
+            <h3 className="rb5-card-title">{t("Your table")}</h3>
             <p className="rb-muted">
-              {[`${tableName(hold.tableLabel)}${heldTable && zoneOf(heldTable) ? ` · ${zoneOf(heldTable)} table` : ""}`, heldTable?.ambience?.view?.text].filter(Boolean).join(" · ")}
+              {[`${tableName(hold.tableLabel)}${heldTable && zoneOf(heldTable) ? ` · ${t("{zone} table", { zone: zoneOf(heldTable) ?? "" })}` : ""}`, heldTable?.ambience?.view?.text].filter(Boolean).join(" · ")}
             </p>
             <FloorPlan
-              label={`Floor plan with your table ${hold.tableLabel}`}
+              label={t("Floor plan with your table {label}", { label: hold.tableLabel })}
               tables={planTables}
               seats={map.seats}
               zones={map.zones}
@@ -390,10 +394,10 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
             <MapKey entries={DINER_KEY_HELD} look="plan" />
             <div className="rb5-your-table-actions">
               <Button variant="ghost" disabled={submitting} onClick={changeTable}>
-                Choose a different table
+                {t("Choose a different table")}
               </Button>
               <Button variant="ghost" disabled={submitting} onClick={onBack}>
-                Change date or time
+                {t("Change date or time")}
               </Button>
             </div>
           </section>
@@ -406,9 +410,9 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
     return (
       <>
         {notices}
-        <section className="rb5-quick-plan" aria-label="Floor plan">
+        <section className="rb5-quick-plan" aria-label={t("Floor plan")}>
           <FloorPlan
-            label={`Floor plan for ${time}`}
+            label={t("Floor plan for {time}", { time })}
             tables={planTables}
             seats={map.seats}
             zones={map.zones}
@@ -439,7 +443,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
             movingBetweenViews.current = true;
             setChoosing(true);
           }}>
-            Choose another table
+            {t("Choose another table")}
           </Button>
         </div>
         <div className="rb-actions rb-actions-sticky">
@@ -450,7 +454,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
               onTake(cardTable.id);
             }}
           >
-            Continue with this table
+            {t("Continue with this table")}
           </Button>
         </div>
         </div>
@@ -464,11 +468,13 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
         {notices}
         {!conflict && (
           <p className="rb-notice rb-notice-warning" role="status">
-            {needs.needs_accessible ? "No wheelchair-accessible table" : "No table"} for {guests(needs.party)} is available at {time}.
+            {needs.needs_accessible
+              ? t("No wheelchair-accessible table for {guests} is available at {time}.", { guests: guests(needs.party), time })
+              : t("No table for {guests} is available at {time}.", { guests: guests(needs.party), time })}
           </p>
         )}
         <div className="rb-actions rb-actions-sticky">
-          <Button onClick={onBack}>Choose another time</Button>
+          <Button onClick={onBack}>{t("Choose another time")}</Button>
         </div>
       </>
     );
@@ -476,7 +482,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
 
   const cardNode = nothingFree ? (
     <p className="rb-notice">
-      No table for {guests(needs.party)} is free at {time} any more. Please go back and pick another time.
+      {t("No table for {guests} is free at {time} any more. Please go back and pick another time.", { guests: guests(needs.party), time })}
     </p>
   ) : cardTable ? (
     <TableCard
@@ -494,16 +500,16 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
     />
   ) : suggestionElsewhere && bestTable ? (
     <div className="rb-card rb-suggestion">
-      <p className="rb-eyebrow">Our suggestion</p>
+      <p className="rb-eyebrow">{t("Our suggestion")}</p>
       <h3 className="rb-suggestion-title">
-        {tableName(bestTable.label)} is in {roomNameOf(bestTable.room_id) ?? "another room"}
+        {t("{table} is in {room}", { table: tableName(bestTable.label), room: roomNameOf(bestTable.room_id) ?? t("another room") })}
       </h3>
-      <p className="rb-muted">There is no suggested table in the room you are looking at. Tap any free table here, or go to our suggestion first.</p>
+      <p className="rb-muted">{t("There is no suggested table in the room you are looking at. Tap any free table here, or go to our suggestion first.")}</p>
       <Button onClick={useSuggestion}>
-        Show {tableName(bestTable.label)} in {roomNameOf(bestTable.room_id) ?? "another room"}
+        {t("Show {table} in {room}", { table: tableName(bestTable.label), room: roomNameOf(bestTable.room_id) ?? t("another room") })}
       </Button>
       <Button variant="ghost" busy={busy} onClick={() => onTake(null)}>
-        Choose for me
+        {t("Choose for me")}
       </Button>
     </div>
   ) : (
@@ -527,22 +533,22 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
             setChoosing(false);
           }}
         >
-          ‹ Back to the suggested table
+          ‹ {t("Back to the suggested table")}
         </Button>
       )}
       <div className="rb5-choose">
-        <section className="rb-card rb5-plan-card" aria-label="Floor plan">
+        <section className="rb-card rb5-plan-card" aria-label={t("Floor plan")}>
           <div className="rb5-plan-top">
             {tabs.length > 0 && <RoomTabs tabs={tabs} current={roomId as number | null} onChange={setChosenRoom} />}
             <p className="rb-muted rb5-available">
-              {availableHere} available{roomName ? ` in ${roomName}` : ""}
+              {roomName ? t("{n} available in {room}", { n: availableHere, room: roomName }) : t("{n} available", { n: availableHere })}
             </p>
           </div>
           {view === "map" ? (
             <>
               <div className="rb-map-main">
                 <FloorPlan
-                  label={`Floor plan for ${time}`}
+                  label={t("Floor plan for {time}", { time })}
                   tables={planTables}
                   seats={map.seats}
                   zones={map.zones}
@@ -558,7 +564,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
                 />
               </div>
               <MapKey entries={heldId !== null ? DINER_KEY_HELD : DINER_KEY} look="plan" />
-              {map.rooms && <p className="rb-muted rb-scene-note">{SCENE_NOTE}</p>}
+              {map.rooms && <p className="rb-muted rb-scene-note">{t(SCENE_NOTE)}</p>}
             </>
           ) : (
             <TableList
@@ -577,11 +583,11 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
             <div className="rb-table-card-more">
               {bestTable && cardTable.id !== bestTable.id && inRoom(bestTable.id) && (
                 <Button variant="ghost" onClick={useSuggestion}>
-                  Use suggested table {bestTable.label}
+                  {t("Use suggested table {label}", { label: bestTable.label })}
                 </Button>
               )}
               <Button variant="ghost" busy={busy} onClick={() => onTake(null)}>
-                Choose for me
+                {t("Choose for me")}
               </Button>
             </div>
           )}
@@ -604,7 +610,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
       {/* Only for a hold without the form beside the plan (older callers): the one way on. */}
       {!panelShown && heldId !== null && (
         <div className="rb-actions rb-actions-sticky">
-          <Button onClick={onNext}>Continue with table {hold?.tableLabel}</Button>
+          <Button onClick={onNext}>{t("Continue with table {label}", { label: hold?.tableLabel ?? "" })}</Button>
         </div>
       )}
     </>
@@ -613,14 +619,15 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
 
 /** "Choose your table", the one-line context with Edit, and the Map / List switch. */
 function ChooseHeader({ needs, time, onBack, view, onView }: { needs: PartyNeeds; time: string; onBack: () => void; view?: "map" | "list"; onView?: (view: "map" | "list") => void }) {
+  const { t } = useT();
   return (
     <div className="rb5-choose-head">
       <div>
-        <StepHeading>Choose your table</StepHeading>
+        <StepHeading>{t("Choose your table")}</StepHeading>
         <p className="rb-muted rb5-context">
           {shortDate(needs.date)} · {time} · {guests(needs.party)}
-          <Button variant="ghost" onClick={onBack} aria-label="Edit date, time and guests">
-            Edit
+          <Button variant="ghost" onClick={onBack} aria-label={t("Edit date, time and guests")}>
+            {t("Edit")}
           </Button>
         </p>
       </div>
@@ -630,11 +637,12 @@ function ChooseHeader({ needs, time, onBack, view, onView }: { needs: PartyNeeds
 }
 
 function TableViewSwitch({ view, onView }: { view: "map" | "list"; onView: (view: "map" | "list") => void }) {
+  const { t } = useT();
   return (
-    <div className="rb5-view-switch" role="group" aria-label="Show the tables as">
+    <div className="rb5-view-switch" role="group" aria-label={t("Show the tables as")}>
       {(["map", "list"] as const).map((choice) => (
         <button key={choice} type="button" aria-pressed={view === choice} onClick={() => onView(choice)}>
-          {choice === "map" ? "Map" : "List"}
+          {choice === "map" ? t("Map") : t("List")}
         </button>
       ))}
     </div>

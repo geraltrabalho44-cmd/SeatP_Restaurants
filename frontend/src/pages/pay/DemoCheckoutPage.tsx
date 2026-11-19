@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { abandonPayment, getPayment, payDemo } from "../../api/payments";
 import { Button, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { errorMessage, formatCountdown } from "../restaurant/format";
 import { useSecondsLeft } from "../restaurant/HoldCountdown";
 import { formatEuros } from "../restaurant/money";
@@ -13,17 +14,18 @@ import "../restaurant/restaurant.css";
 import "../restaurant/booking-v5.css";
 
 export default function DemoCheckoutPage() {
+  const { t } = useT();
   const { paymentId = "" } = useParams();
   const { state, reload } = useLoad(() => getPayment(paymentId), paymentId);
   return (
-    <PageShell title="Demo payment">
+    <PageShell title={t("Demo payment")}>
       <div className="rb-page">
-        <h1 className="rb-title">Pay your deposit</h1>
-        {state.status === "loading" && <Skeleton lines={4} label="Loading your payment" />}
+        <h1 className="rb-title">{t("Pay your deposit")}</h1>
+        {state.status === "loading" && <Skeleton lines={4} label={t("Loading your payment")} />}
         {state.status === "error" && <PaymentError error={state.error} onRetry={() => reload()} />}
         {state.status === "ready" && state.data.mode !== "demo" && (
-          <EmptyState title="This is not a demo payment">
-            <p>Please use the payment page the restaurant sent you to.</p>
+          <EmptyState title={t("This is not a demo payment")}>
+            <p>{t("Please use the payment page the restaurant sent you to.")}</p>
           </EmptyState>
         )}
         {state.status === "ready" && state.data.mode === "demo" && <DemoCard paymentId={paymentId} restaurant={state.data.restaurant} amountCents={state.data.amount_cents} expiresAt={state.data.expires_at} status={state.data.status} />}
@@ -33,14 +35,15 @@ export default function DemoCheckoutPage() {
 }
 
 function PaymentError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const { t } = useT();
   if (error instanceof ApiError && error.code === "not_found") {
     return (
-      <EmptyState title="We cannot find this payment">
-        <p>The link may be old or mistyped.</p>
+      <EmptyState title={t("We cannot find this payment")}>
+        <p>{t("The link may be old or mistyped.")}</p>
       </EmptyState>
     );
   }
-  return <ErrorState title="We could not load your payment" message={errorMessage(error)} onRetry={onRetry} />;
+  return <ErrorState title={t("We could not load your payment")} message={errorMessage(error)} onRetry={onRetry} />;
 }
 
 interface DemoCardProps {
@@ -52,6 +55,7 @@ interface DemoCardProps {
 }
 
 function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: DemoCardProps) {
+  const { t } = useT();
   const navigate = useNavigate();
   const [busy, setBusy] = useState<"ok" | "decline" | "abandon" | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -64,7 +68,7 @@ function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: Dem
   useEffect(() => {
     if (status !== "pending") void navigate(`/pay/return/${encodeURIComponent(paymentId)}`, { replace: true });
   }, [status, paymentId, navigate]);
-  if (status !== "pending") return <Skeleton lines={2} label="Checking your payment" />;
+  if (status !== "pending") return <Skeleton lines={2} label={t("Checking your payment")} />;
   const act = async (what: "ok" | "decline" | "abandon"): Promise<void> => {
     setBusy(what);
     setProblem(null);
@@ -81,34 +85,33 @@ function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: Dem
         back();
       }
     } catch (error) {
-      setProblem(errorMessage(error, "We could not process the payment. Please try again."));
+      setProblem(errorMessage(error, t("We could not process the payment. Please try again.")));
     } finally {
       setBusy(null);
     }
   };
   return (
-    <section className="rb-card rb-pay-card" aria-label="Demo payment">
+    <section className="rb-card rb-pay-card" aria-label={t("Demo payment")}>
       <p className="rb-notice rb-notice-warning" role="note">
-        <strong>Demo payment.</strong> No real money moves and no card is needed. This is the page that, with real payments connected, would
-        be the secure page of the payment provider.
+        <strong>{t("Demo payment.")}</strong> {t("No real money moves and no card is needed. This is the page that, with real payments connected, would be the secure page of the payment provider.")}
       </p>
       <p>
-        Deposit for <strong>{restaurant}</strong>
+        {t("Deposit for")} <strong>{restaurant}</strong>
       </p>
       <p className="rb-big-number">{formatEuros(amountCents)}</p>
       {secondsLeft !== null && secondsLeft > 0 && (
         <p className="rb-muted">
-          Your table is kept for <strong className="tabular" role="timer">{formatCountdown(secondsLeft)}</strong> while you pay.
+          {t("Your table is kept for")} <strong className="tabular" role="timer">{formatCountdown(secondsLeft)}</strong> {t("while you pay.")}
         </p>
       )}
       {secondsLeft === 0 && (
         <p className="rb-notice rb-notice-warning" role="status">
-          The time to pay is over. Your table may already have been released.
+          {t("The time to pay is over. Your table may already have been released.")}
         </p>
       )}
       {declined && (
         <p className="rb-notice rb-notice-error" role="alert">
-          The pretend card was declined. Your table is still held; try again, or give it up below.
+          {t("The pretend card was declined. Your table is still held; try again, or give it up below.")}
         </p>
       )}
       {problem && (
@@ -118,13 +121,13 @@ function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: Dem
       )}
       <div className="rb-actions">
         <Button busy={busy === "ok"} disabled={busy !== null && busy !== "ok"} onClick={() => void act("ok")}>
-          Pay {formatEuros(amountCents)} (demo)
+          {t("Pay {amount} (demo)", { amount: formatEuros(amountCents) })}
         </Button>
         <Button variant="secondary" busy={busy === "decline"} disabled={busy !== null && busy !== "decline"} onClick={() => void act("decline")}>
-          Simulate a declined card
+          {t("Simulate a declined card")}
         </Button>
         <Button variant="ghost" busy={busy === "abandon"} disabled={busy !== null && busy !== "abandon"} onClick={() => void act("abandon")}>
-          Give up and release the table
+          {t("Give up and release the table")}
         </Button>
       </div>
     </section>

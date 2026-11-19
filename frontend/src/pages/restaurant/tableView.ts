@@ -3,22 +3,24 @@
 import type { DinerMap, DinerTable } from "../../api/restaurant";
 import type { MapTable, MapZone, SeatState } from "../../api/types";
 import type { DescribeItem } from "../../seatmap/describe";
+import { tr } from "../../i18n/locale";
 
 /** "2 to 4 people", or "4 people" when the table takes one size only. */
 export function partyRange(table: { min_party: number; max_party: number }): string {
-  return table.min_party === table.max_party ? `${table.max_party} people` : `${table.min_party} to ${table.max_party} people`;
+  return table.min_party === table.max_party ? tr("{count} people", { count: table.max_party }) : tr("{min} to {max} people", { min: table.min_party, max: table.max_party });
 }
 
 // The shared map's default words are for event seats ("0 seats", "your seat");
 // a diner picks whole tables, so the map reads these words instead.
-const DINER_STATE_WORDS: Record<SeatState, string> = {
-  free: "free",
-  mine: "held for you",
-  held: "someone else is choosing it",
-  taken: "booked",
-  blocked: "does not suit your party",
-  friend: "free", // never used on a diner map
-};
+const dinerStateWord = (state: SeatState): string =>
+  ({
+    free: tr("free"),
+    mine: tr("held for you"),
+    held: tr("someone else is choosing it"),
+    taken: tr("booked"),
+    blocked: tr("does not suit your party"),
+    friend: tr("free"), // never used on a diner map
+  })[state];
 
 /**
  * The spoken name of each table on the diner map, e.g. "Table 7, 2 to 4
@@ -34,8 +36,8 @@ export function describeDinerTables(map: DinerMap): DescribeItem {
     // The map draws three looks (available, yours, unavailable), but a screen reader keeps the whole story:
     // booked, being chosen by someone else, or not suiting the party. Our own hold is the one thing only the drawn state knows.
     const spoken: SeatState = item.table.state === "mine" ? "mine" : dinerState(table, null);
-    const parts = [`Table ${table.label}`, partyRange(table), DINER_STATE_WORDS[spoken]];
-    if (table.accessible) parts.push("accessible");
+    const parts = [tr("Table {label}", { label: table.label }), partyRange(table), dinerStateWord(spoken)];
+    if (table.accessible) parts.push(tr("accessible"));
     return parts.join(", ");
   };
 }
@@ -98,15 +100,15 @@ export function tableFeatures(table: DinerTable, zones: MapZone[]): string[] {
   const zone = zoneName(table, zones);
   if (zone) features.push(zone);
   features.push(partyRange(table));
-  if (table.accessible) features.push("Accessible");
-  if (table.high_chair_ok) features.push("High chair OK");
+  if (table.accessible) features.push(tr("Accessible"));
+  if (table.high_chair_ok) features.push(tr("High chair OK"));
   return features;
 }
 
 /** Why a table cannot be picked, in words (shown in the table list). */
 export function unavailableReason(table: DinerTable): string | null {
-  if (table.state === "taken") return "Booked";
-  if (table.state === "held") return "Someone is choosing it";
-  if (!table.fits_party) return "Does not suit your party";
+  if (table.state === "taken") return tr("Booked");
+  if (table.state === "held") return tr("Someone is choosing it");
+  if (!table.fits_party) return tr("Does not suit your party");
   return null;
 }

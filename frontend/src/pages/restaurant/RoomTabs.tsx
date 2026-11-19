@@ -3,6 +3,7 @@
 // tabs; the map below is the panel of whichever tab is open.
 import { useRef } from "react";
 import type { KeyboardEvent } from "react";
+import { useT } from "../../i18n/I18nProvider";
 import type { RoomTab } from "./ambienceView";
 
 interface RoomTabsProps {
@@ -21,6 +22,7 @@ function nextIndex(key: string, index: number, count: number): number | null {
 }
 
 export function RoomTabs({ tabs, current, onChange }: RoomTabsProps) {
+  const { t } = useT();
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const onKeyDown = (event: KeyboardEvent, index: number): void => {
     const next = nextIndex(event.key, index, tabs.length);
@@ -30,7 +32,7 @@ export function RoomTabs({ tabs, current, onChange }: RoomTabsProps) {
     buttons.current[next]?.focus();
   };
   return (
-    <div role="tablist" aria-label="Rooms" className="rb-room-tabs">
+    <div role="tablist" aria-label={t("Rooms")} className="rb-room-tabs">
       {tabs.map((tab, index) => {
         const open = tab.id === current;
         return (
@@ -48,7 +50,7 @@ export function RoomTabs({ tabs, current, onChange }: RoomTabsProps) {
             onKeyDown={(event) => onKeyDown(event, index)}
           >
             {tab.name}
-            <span className="rb-room-tab-count"> · {tab.free} free</span>
+            <span className="rb-room-tab-count">{` · ${t("{n} free", { n: tab.free })}`}</span>
           </button>
         );
       })}

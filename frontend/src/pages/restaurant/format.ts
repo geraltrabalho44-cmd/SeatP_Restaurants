@@ -1,6 +1,7 @@
 // Small pure helpers for dates, times and messages on the restaurant screens.
 // Pure functions (no React, no fetch) so they are easy to test and explain.
 import { ApiError } from "../../api/client";
+import { activeTag, tr } from "../../i18n/locale";
 
 /** Today's date as "YYYY-MM-DD" in the browser's time zone. */
 export function todayIso(now: Date = new Date()): string {
@@ -18,35 +19,35 @@ export function formatDate(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
   if (!year || !month || !day) return iso;
   const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  return date.toLocaleDateString(activeTag(), { weekday: "long", day: "numeric", month: "long" });
 }
 
 /** "2026-11-12" -> "Thu 12 Nov": the short form for one-line summaries. */
 export function shortDate(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
   if (!year || !month || !day) return iso;
-  return new Date(year, month - 1, day).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "");
+  return new Date(year, month - 1, day).toLocaleDateString(activeTag(), { weekday: "short", day: "numeric", month: "short" }).replace(",", "");
 }
 
 /** 2 -> "2 guests", 1 -> "1 guest". */
 export function guests(count: number): string {
-  return count === 1 ? "1 guest" : `${count} guests`;
+  return count === 1 ? tr("1 guest") : tr("{count} guests", { count });
 }
 
 /** A table's name for a heading: "R1", but "Table 7" when the label is only a number. */
 export function tableName(label: string): string {
-  return /^\d+$/.test(label) ? `Table ${label}` : label;
+  return /^\d+$/.test(label) ? tr("Table {label}", { label }) : label;
 }
 
 /** "2026-11-12" -> "Thursday". */
 export function weekdayName(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
-  return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1).toLocaleDateString("en-GB", { weekday: "long" });
+  return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1).toLocaleDateString(activeTag(), { weekday: "long" });
 }
 
 /** 4 -> "4 people", 1 -> "1 person". */
 export function people(count: number): string {
-  return count === 1 ? "1 person" : `${count} people`;
+  return count === 1 ? tr("1 person") : tr("{count} people", { count });
 }
 
 /** 270 seconds -> "4:30". */
@@ -77,12 +78,12 @@ export function percent(rate: number): string {
 
 /** "Table 4" or "Tables 4 + 5" for combined tables. */
 export function tablesText(labels: string[]): string {
-  if (labels.length === 0) return "No table yet";
-  return labels.length === 1 ? `Table ${labels[0]}` : `Tables ${labels.join(" + ")}`;
+  if (labels.length === 0) return tr("No table yet");
+  return labels.length === 1 ? tr("Table {label}", { label: labels[0] ?? "" }) : tr("Tables {labels}", { labels: labels.join(" + ") });
 }
 
 /** A friendly sentence for any error, preferring the server's own words. */
-export function errorMessage(error: unknown, fallback = "Something went wrong. Please try again."): string {
+export function errorMessage(error: unknown, fallback = tr("Something went wrong. Please try again.")): string {
   if (error instanceof ApiError) return error.message || fallback;
   return fallback;
 }

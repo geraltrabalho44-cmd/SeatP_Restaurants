@@ -6,8 +6,10 @@
 import { useEffect, useState } from "react";
 import { getTableSeats } from "../../api/restaurant";
 import { Button, Skeleton } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { guests } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
+import { serverText } from "./serverText";
 import { SeatPicker } from "./SeatPicker";
 import { StepHeading } from "./StepHeading";
 import type { Hold } from "./StepTable";
@@ -29,6 +31,7 @@ interface ChooseSeatProps {
 export { seatLabel } from "./SeatPicker";
 
 export function ChooseSeat({ venueId, hold, party, secondsLeft, seatId, onDone, onBackToMap }: ChooseSeatProps) {
+  const { t } = useT();
   const tableIds = hold.tableIds ?? [hold.tableId];
   const { state } = useLoad(() => getTableSeats(venueId, tableIds), tableIds.join(","));
   const [picked, setPicked] = useState<number | null>(seatId);
@@ -40,40 +43,40 @@ export function ChooseSeat({ venueId, hold, party, secondsLeft, seatId, onDone, 
     if (nothingToChoose) onDone(null);
   }, [nothingToChoose]);
 
-  if (!data || nothingToChoose) return <Skeleton lines={4} label="Loading the chairs" />;
+  if (!data || nothingToChoose) return <Skeleton lines={4} label={t("Loading the chairs")} />;
   const chosen = data.seats.find((s) => s.id === picked) ?? null;
 
   return (
     <section className="rb-step rb5-chair">
       <div className="rb5-chair-top">
         <Button variant="ghost" onClick={onBackToMap}>
-          <span aria-hidden="true">‹</span> Your details
+          <span aria-hidden="true">‹</span> {t("Your details")}
         </Button>
         {secondsLeft !== null && <HoldCountdown variant="chip" tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
       </div>
-      <StepHeading>Request a chair</StepHeading>
-      <p className="rb-muted">Optional · The restaurant will see your preference. It does not change your booking.</p>
+      <StepHeading>{t("Request a chair")}</StepHeading>
+      <p className="rb-muted">{t("Optional · The restaurant will see your preference. It does not change your booking.")}</p>
       <p className="rb5-chair-table">
-        <strong>Table {hold.tableLabel}</strong>
+        <strong>{t("Table {label}", { label: hold.tableLabel })}</strong>
         {party ? <span className="rb5-chip">{guests(party)}</span> : null}
       </p>
-      <SeatPicker label={`Chairs at table ${hold.tableLabel}`} data={data} picked={picked} onPick={setPicked} />
+      <SeatPicker label={t("Chairs at table {label}", { label: hold.tableLabel })} data={data} picked={picked} onPick={setPicked} />
       <div className="rb-card rb5-chair-note" aria-live="polite">
         {chosen ? (
           <>
-            <strong>{chosen.phrase ? `${hold.tableLabel}-${chosen.label} · ${chosen.phrase}` : `${hold.tableLabel}-${chosen.label}`}</strong>
-            <p className="rb-muted">A chair request is subject to the restaurant's confirmation.</p>
+            <strong>{chosen.phrase ? `${hold.tableLabel}-${chosen.label} · ${serverText(chosen.phrase)}` : `${hold.tableLabel}-${chosen.label}`}</strong>
+            <p className="rb-muted">{t("A chair request is subject to the restaurant's confirmation.")}</p>
           </>
         ) : (
-          <p className="rb-muted">Pick a chair on the plan or from the list. A chair request is subject to the restaurant's confirmation.</p>
+          <p className="rb-muted">{t("Pick a chair on the plan or from the list. A chair request is subject to the restaurant's confirmation.")}</p>
         )}
       </div>
       <div className="rb5-chair-actions">
         <Button disabled={chosen === null} onClick={() => onDone(picked, chosen ? `${hold.tableLabel}-${chosen.label}` : null)}>
-          Save chair request <span aria-hidden="true">→</span>
+          {t("Save chair request")} <span aria-hidden="true">→</span>
         </Button>
         <Button variant="ghost" onClick={() => onDone(null)}>
-          Continue without a request
+          {t("Continue without a request")}
         </Button>
       </div>
     </section>

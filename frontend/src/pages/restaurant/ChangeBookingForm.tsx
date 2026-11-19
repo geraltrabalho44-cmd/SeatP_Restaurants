@@ -6,6 +6,8 @@ import type { FormEvent } from "react";
 import { changeBooking, getSlots } from "../../api/restaurant";
 import type { BookingView, TimeSlot } from "../../api/restaurant";
 import { Button, Select } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import type { SelectOption } from "../../design/components";
 import { SLOT_TEXT } from "./SlotButton";
 import { errorMessage, people } from "./format";
@@ -18,6 +20,7 @@ interface ChangeBookingFormProps {
 }
 
 export function ChangeBookingForm({ token, booking, onChanged }: ChangeBookingFormProps) {
+  const { t } = useT();
   const [party, setParty] = useState(booking.party_size);
   const [time, setTime] = useState(booking.time);
   const [busy, setBusy] = useState(false);
@@ -32,7 +35,7 @@ export function ChangeBookingForm({ token, booking, onChanged }: ChangeBookingFo
     try {
       onChanged(await changeBooking(token, { time, party_size: party }));
     } catch (error) {
-      setProblem(errorMessage(error, "We could not change the booking. Nothing was changed."));
+      setProblem(errorMessage(error, t("We could not change the booking. Nothing was changed.")));
     } finally {
       setBusy(false);
     }
@@ -40,11 +43,11 @@ export function ChangeBookingForm({ token, booking, onChanged }: ChangeBookingFo
 
   return (
     <form className="rb-card rb-form" onSubmit={submit} noValidate>
-      <h2 className="rb-service-title">Change time or party size</h2>
-      <Select label="Party size" options={partyOptions(largestChoice(booking))} value={String(party)} onChange={(e) => setParty(Number(e.target.value))} />
+      <h2 className="rb-service-title">{t("Change time or party size")}</h2>
+      <Select label={t("Party size")} options={partyOptions(largestChoice(booking))} value={String(party)} onChange={(e) => setParty(Number(e.target.value))} />
       <Select
-        label="Time"
-        hint={slots.state.status === "loading" ? "Checking which times are free..." : "Only times with a free table are listed."}
+        label={t("Time")}
+        hint={slots.state.status === "loading" ? t("Checking which times are free...") : t("Only times with a free table are listed.")}
         options={timeOptions(slots.state.status === "ready" ? slots.state.data.slots : [], booking.time)}
         value={time}
         onChange={(e) => setTime(e.target.value)}
@@ -55,7 +58,7 @@ export function ChangeBookingForm({ token, booking, onChanged }: ChangeBookingFo
         </p>
       )}
       <Button type="submit" busy={busy} disabled={unchanged}>
-        Save changes
+        {t("Save changes")}
       </Button>
     </form>
   );
@@ -77,7 +80,7 @@ function partyOptions(max: number): SelectOption[] {
 /** The current time is always listed, so the select never shows an empty value. */
 function timeOptions(slots: TimeSlot[], current: string): SelectOption[] {
   const open = slots.filter((slot) => slot.status !== "full" || slot.time === current);
-  const options = open.map((slot) => ({ value: slot.time, label: `${slot.time}, ${slot.time === current ? "your current time" : SLOT_TEXT[slot.status].toLowerCase()}` }));
+  const options = open.map((slot) => ({ value: slot.time, label: `${slot.time}, ${slot.time === current ? tr("your current time") : SLOT_TEXT[slot.status].toLowerCase()}` }));
   if (!open.some((slot) => slot.time === current)) options.unshift({ value: current, label: `${current}, your current time` });
   return options;
 }

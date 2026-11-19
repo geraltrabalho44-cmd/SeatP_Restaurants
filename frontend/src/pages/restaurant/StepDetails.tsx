@@ -9,6 +9,7 @@ import { ApiError } from "../../api/client";
 import { createBooking, getDepositTerms } from "../../api/restaurant";
 import type { BookingConfirmation, ContactDetails, DepositTerms, PartyNeeds } from "../../api/restaurant";
 import { Button, Field, Select } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { ConsentBoxes } from "./ConsentBoxes";
 import { DepositNotice } from "./DepositNotice";
 import { errorMessage } from "./format";
@@ -58,6 +59,7 @@ const FIELD_ORDER: (keyof ContactDetails)[] = ["name", "email", "phone", "notes"
 export function StepDetails(props: StepDetailsProps) {
   const { venueId, needs, time = null, hold, seatId, seatLabel, summary, secondsLeft, contact, onContactChange, agreements, onAgreementsChange, onBooked, onHoldLost, onSubmittingChange, onBack, onChooseSeat, onClearSeat, variant = "step" } = props;
   const panel = variant === "panel";
+  const { t } = useT();
   const [touched, setTouched] = useState<Partial<Record<keyof ContactDetails, boolean>>>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -103,17 +105,17 @@ export function StepDetails(props: StepDetailsProps) {
     if (errors.phone || errors.notes) setMoreOpen(true);
     if (focusFirstError(errors)) return;
     if (terms && !accepted) {
-      setTermsError("Please accept the deposit terms to book this table.");
+      setTermsError(t("Please accept the deposit terms to book this table."));
       document.getElementById("rb-accept-deposit")?.focus();
       return;
     }
     if (!consent.terms) {
-      setConsentError("Please accept the terms and conditions to book this table.");
+      setConsentError(t("Please accept the terms and conditions to book this table."));
       document.getElementById("rb-accept-terms")?.focus();
       return;
     }
     if (phone.wanted && !phone.verificationId) {
-      setPhoneError("Verify your number, or untick the box to book without phone messages.");
+      setPhoneError(t("Verify your number, or untick the box to book without phone messages."));
       document.getElementById("rb-phone-code")?.focus();
       return;
     }
@@ -143,10 +145,10 @@ export function StepDetails(props: StepDetailsProps) {
         return;
       }
       if (error instanceof ApiError && (error.code === "hold_expired" || error.code === "seat_taken")) {
-        onHoldLost(`Your hold on table ${hold.tableLabel} ended before we could book it. Your details are not lost: pick a table again.`);
+        onHoldLost(t("Your hold on table {label} ended before we could book it. Your details are not lost: pick a table again.", { label: hold.tableLabel }));
         return;
       }
-      setProblem(errorMessage(error, "We could not finish the booking. Please try again."));
+      setProblem(errorMessage(error, t("We could not finish the booking. Please try again.")));
     } finally {
       setBusy(false);
       onSubmittingChange?.(false);
@@ -162,35 +164,35 @@ export function StepDetails(props: StepDetailsProps) {
   });
 
   return (
-    <form className={panel ? "rb-card rb-form rb-details-panel" : "rb-step rb-form"} onSubmit={submit} noValidate aria-label={panel ? "Your details" : undefined}>
+    <form className={panel ? "rb-card rb-form rb-details-panel" : "rb-step rb-form"} onSubmit={submit} noValidate aria-label={panel ? t("Your details") : undefined}>
       {panel ? (
         <div className="rb5-details-head">
-          <StepHeading>Your details</StepHeading>
+          <StepHeading>{t("Your details")}</StepHeading>
           <HoldCountdown variant="chip" tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />
         </div>
       ) : (
         <>
-          <StepHeading>Your details</StepHeading>
+          <StepHeading>{t("Your details")}</StepHeading>
           <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />
         </>
       )}
       {panel && summary && <p className="rb5-summary-band">{summary}</p>}
-      <Field label="Name for the booking" autoComplete="name" required placeholder="e.g. Maria Costa" {...bind("name")} />
-      <Field label="Email" hint="We send the confirmation and a calendar invite here." type="email" autoComplete="email" inputMode="email" required placeholder="e.g. maria@example.com" {...bind("email")} />
+      <Field label={t("Name for the booking")} autoComplete="name" required placeholder={t("e.g. Maria Costa")} {...bind("name")} />
+      <Field label={t("Email")} hint={t("We send the confirmation and a calendar invite here.")} type="email" autoComplete="email" inputMode="email" required placeholder={t("e.g. maria@example.com")} {...bind("email")} />
       {/* Name and email are all a booking needs: the rest opens on request, or when it holds something. */}
       <details
         className="rb5-more-fields"
         open={moreOpen || contact.phone !== "" || contact.notes !== "" || Boolean(shown("phone") || shown("notes"))}
         onToggle={(event) => setMoreOpen(event.currentTarget.open)}
       >
-        <summary>Add a phone number or a note for the restaurant</summary>
-        <Field label="Phone (optional)" hint="Only used if we need to reach you on the day." type="tel" autoComplete="tel" placeholder="Phone number" {...bind("phone")} />
-        <Field label="Notes for the restaurant (optional)" hint="Anything else we should know about your visit." placeholder="Add a note" {...bind("notes")} />
+        <summary>{t("Add a phone number or a note for the restaurant")}</summary>
+        <Field label={t("Phone (optional)")} hint={t("Only used if we need to reach you on the day.")} type="tel" autoComplete="tel" placeholder={t("Phone number")} {...bind("phone")} />
+        <Field label={t("Notes for the restaurant (optional)")} hint={t("Anything else we should know about your visit.")} placeholder={t("Add a note")} {...bind("notes")} />
       </details>
-      <Select label="Occasion (optional)" value={contact.occasion ?? ""} onChange={event => onContactChange({ ...contact, occasion: event.target.value || null })}
-        options={[{ value: "", label: "Just a meal" }, { value: "birthday", label: "Birthday" }, { value: "anniversary", label: "Anniversary" }, { value: "proposal", label: "Marriage proposal" }, { value: "business", label: "Business meal" }, { value: "date", label: "Date night" }, { value: "celebration", label: "Celebration" }]} />
-      <Field label="Dietary preferences (optional)" maxLength={500} placeholder="Vegetarian, vegan…" value={contact.dietary_requirements ?? ""} onChange={event => onContactChange({ ...contact, dietary_requirements: event.target.value })} />
-      <Field label="Food allergies (optional)" maxLength={500} hint="The staff will see this. Please confirm safe preparation directly with the restaurant." placeholder="Tell us about any food allergies" value={contact.allergies ?? ""} onChange={event => onContactChange({ ...contact, allergies: event.target.value })} />
+      <Select label={t("Occasion (optional)")} value={contact.occasion ?? ""} onChange={event => onContactChange({ ...contact, occasion: event.target.value || null })}
+        options={[{ value: "", label: t("Just a meal") }, { value: "birthday", label: t("Birthday") }, { value: "anniversary", label: t("Anniversary") }, { value: "proposal", label: t("Marriage proposal") }, { value: "business", label: t("Business meal") }, { value: "date", label: t("Date night") }, { value: "celebration", label: t("Celebration") }]} />
+      <Field label={t("Dietary preferences (optional)")} maxLength={500} placeholder={t("Vegetarian, vegan…")} value={contact.dietary_requirements ?? ""} onChange={event => onContactChange({ ...contact, dietary_requirements: event.target.value })} />
+      <Field label={t("Food allergies (optional)")} maxLength={500} hint={t("The staff will see this. Please confirm safe preparation directly with the restaurant.")} placeholder={t("Tell us about any food allergies")} value={contact.allergies ?? ""} onChange={event => onContactChange({ ...contact, allergies: event.target.value })} />
       {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} disabled={busy} />}
       <PhoneOptIn venueId={venueId} value={phone} onChange={(value) => { setPhone(value); setPhoneError(null); }} disabled={busy} error={phoneError} />
       {terms && <DepositNotice terms={terms} accepted={accepted} disabled={busy} error={termsError} onChange={(value) => { setAccepted(value); if (value) setTermsError(null); }} />}
@@ -204,11 +206,11 @@ export function StepDetails(props: StepDetailsProps) {
       <div className={panel ? "rb-actions" : "rb-actions rb-actions-sticky"}>
         {!panel && (
           <Button variant="secondary" disabled={busy} onClick={onBack}>
-            Back to the map
+            {t("Back to the map")}
           </Button>
         )}
         <Button type="submit" busy={busy} disabled={secondsLeft === 0 && !busy}>
-          {terms ? `Pay ${formatEuros(terms.total_cents)} deposit` : "Confirm booking"} {panel && <span aria-hidden="true">→</span>}
+          {terms ? t("Pay {amount} deposit", { amount: formatEuros(terms.total_cents) }) : t("Confirm booking")} {panel && <span aria-hidden="true">→</span>}
         </Button>
       </div>
     </form>
@@ -217,30 +219,31 @@ export function StepDetails(props: StepDetailsProps) {
 
 /** The optional chair, folded into the form: nothing to open unless the diner wants a chair. */
 function ChairRequest({ seatId, seatLabel, onChoose, onClear, disabled }: { seatId: number | null; seatLabel: string | null; onChoose: () => void; onClear?: () => void; disabled: boolean }) {
+  const { t } = useT();
   return (
-    <section className="rb-chair-request" aria-label="Chair request">
+    <section className="rb-chair-request" aria-label={t("Chair request")}>
       <div className="rb5-chair-row">
         <div>
-          <h4 className="rb-chair-request-title">Request a chair</h4>
-          <p className="rb-muted">Optional · The restaurant will see your request. It does not change your booking.</p>
+          <h4 className="rb-chair-request-title">{t("Request a chair")}</h4>
+          <p className="rb-muted">{t("Optional · The restaurant will see your request. It does not change your booking.")}</p>
         </div>
         {seatId === null && (
           <Button variant="secondary" disabled={disabled} onClick={onChoose}>
-            Choose a chair
+            {t("Choose a chair")}
           </Button>
         )}
       </div>
       {seatId !== null && (
         <div className="rb-chair-request-chosen">
           <p>
-            <strong>Chair requested{seatLabel ? `: ${seatLabel}` : ""}</strong>
+            <strong>{t("Chair requested")}{seatLabel ? `: ${seatLabel}` : ""}</strong>
           </p>
           <Button variant="ghost" disabled={disabled} onClick={onChoose}>
-            Change chair
+            {t("Change chair")}
           </Button>
           {onClear && (
             <Button variant="ghost" disabled={disabled} onClick={onClear}>
-              Remove request
+              {t("Remove request")}
             </Button>
           )}
         </div>

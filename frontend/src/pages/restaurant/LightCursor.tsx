@@ -4,6 +4,7 @@
 // "your meal", with the sunset marked on it when it falls inside the stay. Moving the thumb only
 // repaints the light: the booking time, the table and the hold are not touched.
 import { useId, useState } from "react";
+import { useT } from "../../i18n/I18nProvider";
 import { toMinutes } from "./format";
 
 interface LightCursorProps {
@@ -46,6 +47,7 @@ function startsOpen(): boolean {
 }
 
 export function LightCursorControl({ steps, index, onChange, failed, bookingTime, sunset, summary, tableLabel }: LightCursorProps) {
+  const { t } = useT();
   const id = useId();
   const regionId = useId();
   const [open, setOpen] = useState(startsOpen);
@@ -55,34 +57,34 @@ export function LightCursorControl({ steps, index, onChange, failed, bookingTime
   // After dark for the whole visit there is nothing to move: say so, instead of a slider that seems broken.
   if (sunSetBeforeStay(steps, sunset)) {
     return (
-      <section className="rb-light-cursor rb-light-still" aria-label="Light during your visit">
-        <h3 className="rb-light-title">Light during your visit</h3>
+      <section className="rb-light-cursor rb-light-still" aria-label={t("Light during your visit")}>
+        <h3 className="rb-light-title">{t("Light during your visit")}</h3>
         <p className="rb-muted">
-          The sun sets at {sunset}, before your table time of {bookingTime}. It is dark for the whole visit, so the light does not change.
+          {t("The sun sets at {sunset}, before your table time of {booking}. It is dark for the whole visit, so the light does not change.", { sunset: sunset ?? "", booking: bookingTime })}
         </p>
       </section>
     );
   }
   return (
-    <section className="rb-light-cursor" aria-label="Light during your visit">
+    <section className="rb-light-cursor" aria-label={t("Light during your visit")}>
       <div className="rb-light-head">
         <div>
           <h3 className="rb-light-title">
-            <span className="rb-light-title-wide">Light during your visit</span>
-            <span className="rb-light-title-narrow">Light preview{summary ? ` · ${summary}` : ""}</span>
+            <span className="rb-light-title-wide">{t("Light during your visit")}</span>
+            <span className="rb-light-title-narrow">{t("Light preview")}{summary ? ` · ${summary}` : ""}</span>
           </h3>
-          <p className="rb-muted rb-light-booking tabular">Booking stays at {bookingTime}</p>
+          <p className="rb-muted rb-light-booking tabular">{t("Booking stays at {time}", { time: bookingTime })}</p>
         </div>
         <span className="rb-light-chip tabular" aria-hidden="true">
-          Preview {steps[index]}
+          {t("Preview {time}", { time: steps[index] })}
         </span>
         <button type="button" className="rb-light-explore" aria-expanded={open} aria-controls={regionId} onClick={() => setOpen(!open)}>
-          {open ? "Hide" : "Explore"}
+          {open ? t("Hide") : t("Explore")}
         </button>
       </div>
       <div id={regionId} className="rb-light-body" hidden={!open}>
         <label htmlFor={id} className="visually-hidden">
-          Preview light (does not change your booking)
+          {t("Preview light (does not change your booking)")}
         </label>
         <div className="rb-light-track">
           <div className="st-scrubber-row">
@@ -97,13 +99,13 @@ export function LightCursorControl({ steps, index, onChange, failed, bookingTime
                 max={steps.length - 1}
                 step={1}
                 value={index}
-                aria-valuetext={`${steps[index]}, during your stay from ${first} to ${last}`}
+                aria-valuetext={t("{time}, during your stay from {first} to {last}", { time: steps[index], first, last })}
                 onChange={(event) => onChange(Number(event.target.value))}
               />
               {sun !== null && (
                 <span className="rb-light-sunset" style={{ left: `${sun}%` }} aria-hidden="true">
                   <span className="rb-light-sunset-mark" />
-                  <span className="rb-light-sunset-label tabular">Sunset {sunset}</span>
+                  <span className="rb-light-sunset-label tabular">{t("Sunset {time}", { time: sunset ?? "" })}</span>
                 </span>
               )}
             </div>
@@ -113,14 +115,14 @@ export function LightCursorControl({ steps, index, onChange, failed, bookingTime
           </div>
         </div>
         <p className="rb-muted rb-light-live" aria-live="polite">
-          <strong>Light preview at {steps[index]}.</strong> Booking at {bookingTime}.
-          {tableLabel && summary ? ` Table ${tableLabel}: ${summary.toLowerCase()}.` : ""}
-          {sun !== null && sunset ? ` The sun sets at ${sunset}.` : ""}
+          <strong>{t("Light preview at {time}.", { time: steps[index] })}</strong> {t("Booking at {time}.", { time: bookingTime })}
+          {tableLabel && summary ? ` ${t("Table {label}: {light}.", { label: tableLabel, light: summary.toLowerCase() })}` : ""}
+          {sun !== null && sunset ? ` ${t("The sun sets at {time}.", { time: sunset })}` : ""}
         </p>
-        <p className="rb-muted rb-light-legend">Yellow is where the sun reaches the floor. After sunset the floor turns dark and the free tables get a candle.</p>
+        <p className="rb-muted rb-light-legend">{t("Yellow is where the sun reaches the floor. After sunset the floor turns dark and the free tables get a candle.")}</p>
         {failed && (
           <p className="rb-notice" role="status">
-            We could not update the light just now. The picture shows an earlier time.
+            {t("We could not update the light just now. The picture shows an earlier time.")}
           </p>
         )}
       </div>

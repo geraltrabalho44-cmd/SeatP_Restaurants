@@ -1,5 +1,11 @@
 // Values are ordered pt-PT, es, fr. English keys preserve the current UI copy.
-export const catalogue = {
+// This file holds discovery and the public page; the booking flow, the booking page and the other
+// services (payments, messages, offers, sign-in) have their own files, merged at the bottom.
+import { booking } from "./catalogue.booking";
+import { manage } from "./catalogue.manage";
+import { server } from "./catalogue.server";
+import { services } from "./catalogue.services";
+const discovery = {
   "Find a table you will love": ["Encontra uma mesa de que vais gostar","Encuentra una mesa que te encante","Trouvez une table qui vous plaira"],
   "Select a time to book": ["Escolhe uma hora para reservar","Elige una hora para reservar","Choisissez un horaire pour réserver"],
   "Close summary": ["Fechar resumo","Cerrar resumen","Fermer le résumé"],
@@ -264,4 +270,6 @@ export const catalogue = {
   "Something went wrong": ["Algo correu mal","Algo salió mal","Une erreur est survenue"],
   "Loading": ["A carregar","Cargando","Chargement"],
 } as const satisfies Record<string, readonly [string,string,string]>;
+
+export const catalogue = { ...discovery, ...booking, ...manage, ...services, ...server } as const;
 export type Message=keyof typeof catalogue;
