@@ -4,7 +4,10 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError, login } from "../api/client";
-import { signInThroughService, useIdentityProvider } from "../api/identity";
+import { signInThroughService, startSocialSignIn, useIdentityConfig } from "../api/identity";
+import type { SecondStep, SocialProvider } from "../api/identity";
+import type { LoginResponse } from "../api/types";
+import { SecondStepForm } from "./owner/SecondStepForm";
 import { Button, Field, PageShell, useToast } from "../design/components";
 import "./login.css";
 
@@ -31,7 +34,10 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   // Owners and staff sign in through the sign-in service when the site uses one; organisers never do.
-  const provider = useIdentityProvider();
+  const identityConfig = useIdentityConfig();
+  const provider = identityConfig.provider;
+  // Set when the password was right but the account also has two-step verification.
+  const [second, setSecond] = useState<SecondStep | null>(null);
   // Coming from the restaurant owner's area, the page speaks to owners; every other entry keeps its own words.
   const next = params.get("next") ?? defaultNext;
   const owner = next.startsWith("/owner");
@@ -39,6 +45,22 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   const staff = !owner && (next === "/staff" || next.startsWith("/staff/"));
   const throughService = provider === "supabase" && (owner || staff);
   const title = owner ? "Sign in to manage your restaurant" : staff ? "Sign in to open the service floor" : "Sign in";
+
+  const welcome = (result: LoginResponse): void => {
+    toast.show(`Welcome back, ${result.user.name}.`, "success");
+    navigate(safeNextPath(params.get("next") ?? defaultNext));
+  };
+
+  const social = async (which: SocialProvider): Promise<void> => {
+    setBusy(true);
+    setError(null);
+    try {
+      await startSocialSignIn(which);
+    } catch (caught) {
+      setError(messageFor(caught));
+      setBusy(false);
+    }
+  };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -49,9 +71,17 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
     setBusy(true);
     setError(null);
     try {
-      const result = throughService ? await signInThroughService(email.trim(), password) : await login(email.trim(), password);
-      toast.show(`Welcome back, ${result.user.name}.`, "success");
-      navigate(safeNextPath(params.get("next") ?? defaultNext));
+      if (throughService) {
+        const result = await signInThroughService(email.trim(), password);
+        if ("second" in result) {
+          setSecond(result.second);
+          setPassword("");
+        } else {
+          welcome(result.signed);
+        }
+      } else {
+        welcome(await login(email.trim(), password));
+      }
     } catch (caught) {
       setError(messageFor(caught));
     } finally {
@@ -73,6 +103,9 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
             <Link to="/my/sign-in">sign in on the guest page</Link>.
           </p>
         )}
+        {second ? (
+          <SecondStepForm step={second} onDone={welcome} onCancel={() => setSecond(null)} />
+        ) : (
         <form onSubmit={onSubmit} noValidate>
           <Field label="Email" type="email" name="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field
@@ -94,6 +127,16 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
             Sign in
           </Button>
         </form>
+        )}
+        {throughService && !second && identityConfig.oauth.length > 0 && (
+          <div className="login-social" role="group" aria-label="Or continue with">
+            {identityConfig.oauth.map((which) => (
+              <Button key={which} variant="secondary" disabled={busy} onClick={() => void social(which)}>
+                Continue with {which === "google" ? "Google" : "Apple"}
+              </Button>
+            ))}
+          </div>
+        )}
         {owner && (
           <p>
             <Link to="/owner/sign-up">Create a restaurant owner account</Link>

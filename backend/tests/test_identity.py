@@ -96,7 +96,7 @@ def fake(monkeypatch: pytest.MonkeyPatch) -> FakeSupabase:
     fake = FakeSupabase()
     client = SupabaseAuth(URL, KEY, httpx.Client(transport=httpx.MockTransport(fake)))
     monkeypatch.setattr(router, "get_client", lambda: client)
-    router._ready_until.clear()
+    router._ready.clear()
     return fake
 
 
@@ -126,6 +126,8 @@ def test_the_built_in_sign_in_is_the_default_and_the_other_routes_do_not_exist(
     assert client.get("/api/identity/config").json() == {
         "provider": "local",
         "password_reset": False,
+        "oauth": [],
+        "two_step": False,
     }
     assert _signup(client).status_code == 404
     assert _login(client).status_code == 404
@@ -165,6 +167,8 @@ def test_signing_up_sends_the_service_a_confirmation_and_makes_no_account_yet(
     assert client.get("/api/identity/config").json() == {
         "provider": "supabase",
         "password_reset": True,
+        "oauth": [],
+        "two_step": True,
     }
     answer = _signup(client)
     assert answer.status_code == 202 and answer.json() == {"status": "check_email"}
@@ -349,7 +353,7 @@ def test_when_the_service_is_down_the_owner_is_told_and_nothing_breaks(
     _signup(client)
     fake.confirm("owner@example.com")
     fake.down = True
-    router._ready_until.clear()
+    router._ready.clear()
     answer = _login(client)
     assert answer.status_code == 502 and answer.json()["error"]["code"] == "identity_unavailable"
     assert KEY not in answer.text

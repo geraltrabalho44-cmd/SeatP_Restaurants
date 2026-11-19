@@ -970,4 +970,6 @@ class AuthIdentity(Base):
         ForeignKey("organisers.id", ondelete="CASCADE"), index=True
     )
     email: Mapped[str] = mapped_column(String(254))
+    # Whether the person has a verified authenticator app, as the service last told us.
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("FALSE"))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)

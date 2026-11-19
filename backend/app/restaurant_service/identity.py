@@ -95,3 +95,15 @@ def organiser_for(session: Session, identity: Identity) -> Organiser:
             except IntegrityError:
                 session.rollback()
     return organiser
+
+
+def remember_second_step(session: Session, subject: str, enabled: bool) -> None:
+    """Keep what the service last said about this person's second step, so the settings page can show it."""
+    link = session.scalar(
+        select(AuthIdentity).where(
+            AuthIdentity.provider == PROVIDER, AuthIdentity.subject == subject
+        )
+    )
+    if link is not None and link.mfa_enabled != enabled:
+        link.mfa_enabled = enabled
+        session.commit()

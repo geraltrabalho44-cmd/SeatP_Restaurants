@@ -3,7 +3,8 @@
 ## Purpose
 
 Lets restaurant owners and staff sign in with Supabase Auth instead of the built-in email and password,
-**when it is switched on**. Off by default: with `AUTH_PROVIDER` unset nothing changes and these routes
+**when it is switched on**: with email and password, with Google or Apple, and with a second step (a six-digit
+code from an authenticator app). Off by default: with `AUTH_PROVIDER` unset nothing changes and these routes
 answer 404.
 
 Supabase answers one question only: *does this person own this email address?* SeatPlan keeps its own
@@ -20,8 +21,13 @@ accounts and its own session tokens, so every other page works exactly as before
 1. Make a project at supabase.com. In **Authentication > Providers > Email**, keep **Confirm email ON**.
    If it is off, anyone could sign up with somebody else's address, so SeatPlan refuses to work until it is on
    (it asks the project's settings before every 10 minutes of use).
-2. In **Authentication > URL Configuration**, add `https://<your site>/owner/sign-in` and
-   `https://<your site>/owner/reset-password` as redirect URLs.
+2. In **Authentication > URL Configuration**, add `https://<your site>/owner/sign-in`,
+   `https://<your site>/owner/reset-password` and `https://<your site>/owner/sign-in/callback**` (the `**`
+   lets the one-time check value after the `?` through) as redirect URLs.
+   For Google and Apple, switch each on in **Authentication > Providers** and paste the client id and secret
+   from Google Cloud Console / Apple Developer (Apple needs a paid developer account). SeatPlan offers a
+   "Continue with ..." button only for the providers the project has on. Two-step verification (TOTP) is on by
+   default in Supabase; check **Authentication > Multi-factor** if the setup page reports an error.
 3. Set up an email sender (SMTP) in Supabase: its built-in sender is for tests and allows only a few emails an hour.
 4. In Vercel: `AUTH_PROVIDER=supabase`, `SUPABASE_URL=https://<project>.supabase.co`,
    `SUPABASE_ANON_KEY=<the project's anon (public) key>`. The app refuses to start with the provider set and a
@@ -44,11 +50,27 @@ The anon key is public by design, but it is still kept out of logs and `repr()`.
 - Accounts made before the switch still sign in with their password (the sign-in page tries the service first,
   then the built-in sign-in).
 
+## Google, Apple and the second step
+
+- The "Continue with Google / Apple" button is an ordinary link to Supabase's sign-in page. It comes back to
+  `/owner/sign-in/callback?n=<nonce>#access_token=...`. The page keeps the nonce in this tab and refuses the
+  return if it does not match (so a link someone else made cannot sign a visitor in as them), then SeatPlan
+  asks Supabase who the token belongs to. A Google address is accepted only if Google confirmed it.
+- An account with two-step verification is **never** signed in by a password, or by Google or Apple, alone:
+  the answer is "a code is needed" (`mfa_required`), nothing is made or linked, and the session is made only
+  after the code is checked (`POST /identity/owner/mfa`).
+- The owner turns it on at **Security** (needs the password again and a first code, so it is on only when it
+  really works) and off with the password and a current code. The QR code is drawn by SeatPlan's own
+  generator (`frontend/src/qr/`) from the `otpauth://` address: no image from anyone else.
+- **There are no recovery codes** (Supabase has none). An owner who loses the phone is locked out of that
+  account until somebody with the project's admin access removes the factor in the Supabase dashboard
+  (Authentication > Users > the user > remove the factor). The Security page says so before it turns on.
+
 ## Not done (and why)
 
 - **Diner accounts on the restaurant pages.** They are `GuestAccount`s, shared with Events (Simao and Federico),
   and creating them from here would make accounts Events also sees. Needs their agreement first.
-- **Google or Apple sign-in, two-step verification.** Supabase supports them; not wired.
+- **Recovery codes, passkeys, SMS codes.** Not offered by Supabase's authenticator-app step.
 - **Event organisers** keep the built-in sign-in: it is shared with Events and is not touched.
 
 ## Likely walkthrough questions

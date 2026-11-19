@@ -546,3 +546,11 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
 }
+
+/* Two-step verification set-up steps. */
+.ow-steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}

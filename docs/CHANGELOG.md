@@ -39,6 +39,11 @@ through Resend, usability sessions with real users.
   confirmation link, "Forgot your password?", and a refusal to work if the project does not ask people to
   confirm their email. Accounts made before the switch still sign in with their password. Event organisers
   and diner accounts keep the built-in sign-in (they are shared with Events). 1 new table (`auth_identities`).
+- "Continue with Google / Apple" and two-step verification (authenticator app) for owners and staff, through the
+  same Supabase Auth set-up. A nonce kept in the browser tab stops a link someone else made from signing a
+  visitor in; an account with two-step verification is never signed in by a password or Google or Apple alone;
+  turning it on needs the password and a first code, turning it off the password and a current code. New
+  "Security" page; the QR code is drawn by the generator in `frontend/src/qr/`. There are no recovery codes.
 - Offers (discount coupons). The restaurant bears the cost: SeatPlan records the offer and who used it, and
   tells the staff what to take off the bill; nothing is paid or refunded through SeatPlan. The owner makes
   offers (a percentage, an amount or a free item, with dates, weekdays, a smallest party and a limit) and
