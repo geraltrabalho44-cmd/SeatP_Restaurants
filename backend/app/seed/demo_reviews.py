@@ -1,5 +1,12 @@
-"""Add clearly labelled sample reviews to a local SeatPlan demo."""
+"""Add sample reviews to the demo restaurants.
 
+By default every review says "Demo review". With `--plain` the reviews read like ordinary ones, so the
+sample data looks right while testing. The site says "Demo · Nova SBE Programming" on its landing page and
+"Demo data only" in every footer; keep that if the site is ever shown beyond the course, because the Lisbon
+catalogue lists real businesses and their reviews and availability are invented.
+"""
+
+import argparse
 from datetime import timedelta
 from random import Random
 
@@ -9,6 +16,8 @@ from sqlalchemy.orm import Session
 from app import db
 from app.config import get_settings
 from app.models import GuestAccount, RestaurantReview, Venue, utc_now
+
+LABEL = "Demo review — "
 
 NAMES = (
     "Inês",
@@ -90,7 +99,8 @@ DETAILS = (
 )
 
 
-def seed(session: Session) -> tuple[int, int]:
+def seed(session: Session, plain: bool = False) -> tuple[int, int]:
+    """Add reviews. `plain` drops the per-review "Demo review" label."""
     venues = session.scalars(
         select(Venue)
         .where(Venue.kind == "restaurant", Venue.is_demo.is_(True), Venue.status == "published")
@@ -146,7 +156,7 @@ def seed(session: Session) -> tuple[int, int]:
             score = random.choices((2, 3, 4, 5), weights=(1, 2, 5, 5))[0]
             table_type = random.choice(table_types)
             pieces = (random.choice(COMMENTS[table_type][score]), random.choice(DETAILS))
-            comment = "Demo review — " + " ".join(piece for piece in pieces if piece)
+            comment = ("" if plain else LABEL) + " ".join(piece for piece in pieces if piece)
             created_at = now - timedelta(days=2 * index + random.randint(0, 6))
             if (venue.id, account.id) not in existing:
                 db.insert_ignoring_duplicates(
@@ -163,19 +173,35 @@ def seed(session: Session) -> tuple[int, int]:
                     },
                 )
                 added += 1
+    if plain:
+        for review in session.scalars(
+            select(RestaurantReview).where(
+                RestaurantReview.venue_id.in_(venue_ids), RestaurantReview.comment.startswith(LABEL)
+            )
+        ):
+            review.comment = review.comment[len(LABEL) :]
     return len(venues), added
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--plain", action="store_true", help="no 'Demo review' label on each review")
+    parser.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="also run on a Postgres database (only a database that holds nothing but demo data)",
+    )
+    args = parser.parse_args()
     settings = get_settings()
-    if not settings.demo_mode or not settings.database_url.startswith("sqlite:"):
-        raise SystemExit("Use DEMO_MODE=1 with a local SQLite demo database.")
+    local = settings.demo_mode and settings.database_url.startswith("sqlite:")
+    if not local and not args.allow_remote:
+        raise SystemExit("Use DEMO_MODE=1 with a local SQLite demo database, or pass --allow-remote.")
     db.init_engine(settings.database_url)
     db.create_all()
     with db.new_session() as session:
-        venues, reviews = seed(session)
+        venues, reviews = seed(session, plain=args.plain)
         session.commit()
-    print(f"Demo reviews: {reviews} added across {venues} published demo restaurants.")
+    print(f"Reviews: {reviews} added across {venues} published demo restaurants.")
 
 
 if __name__ == "__main__":

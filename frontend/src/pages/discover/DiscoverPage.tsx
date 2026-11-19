@@ -231,6 +231,7 @@ export default function DiscoverPage() {
   // Hover and selection share one outline, including when the pointer is over the selected card.
   const previewId = highlighted === pinned ? null : highlighted;
   return <div className={`discover-route${!wide && view === "map" ? " is-map-view" : ""}`}><PageShell title={t("Find a table you will love")} width="wide" restaurantBrand headerActions={<PublicHeaderActions />} footerContent={showMap && <MapCredits />}>
+    <p className="discover-demo-banner" role="note">Demo · Nova SBE Programming</p>
     <section className={`discover-top${!wide && view === "map" ? " discover-top-compact" : ""}`} aria-labelledby="discover-heading">
       <h1 id="discover-heading" aria-label={wide || headline !== FIRST_HEADLINE ? label(headline) : t("Find your table.")}><span className="discover-desktop-title">{label(headline)}</span><span className="discover-mobile-title">{headline === FIRST_HEADLINE ? t("Find your table.") : label(headline)}</span></h1><p>{t("See the room and choose where you’ll sit.")}</p>
     </section>

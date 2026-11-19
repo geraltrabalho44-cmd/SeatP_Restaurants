@@ -124,7 +124,7 @@ function Page({ data }: { data: PublicRestaurant }) {
         </div>
         {!data.preview && (
           <a className="btn btn-primary rp-cta" href="#book" onClick={goToBooking}>
-            {data.demo_booking ? t("Try a booking") : t("Book a table")}
+            {t("Book a table")}
           </a>
         )}
       </header>
@@ -133,8 +133,7 @@ function Page({ data }: { data: PublicRestaurant }) {
 
       {/* The booking comes right after the identity: nothing has to be scrolled past to reserve. */}
       <section ref={book} id="book" className="rp-book" aria-labelledby="rp-book-title">
-        <h2 id="rp-book-title">{data.demo_booking ? t("Try a booking") : t("Book a table")}</h2>
-        {data.demo_booking && <p className="rb-notice rb-notice-warning rp-demo-note">{t("SeatPlan demo. The opening hours, floor plan and table availability are simulated.")}</p>}
+        <h2 id="rp-book-title">{t("Book a table")}</h2>
         {data.preview ? (
           <p className="rb-muted">{t("Booking opens as soon as you publish {name}.", {name:data.name})}</p>
         ) : (
@@ -163,7 +162,7 @@ function Page({ data }: { data: PublicRestaurant }) {
             </section>
           )}
           <section aria-labelledby="rp-hours">
-            <h2 id="rp-hours">{data.demo_booking ? t("Demo hours") : t("Hours")}</h2>
+            <h2 id="rp-hours">{t("Hours")}</h2>
             {rows.length === 0 ? (
               <p className="rb-muted">{t("Opening hours are not published yet.")}</p>
             ) : (

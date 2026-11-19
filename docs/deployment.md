@@ -150,6 +150,13 @@ accounts (the production database included). Tested on 2026-11-10 on a
 throwaway Postgres 16.2 loaded with the old schema
 (`backend/tests/fixtures/schema_2026_11_10.postgres.sql`), not on Neon.
 
+**This repository does it for you.** `.github/workflows/database.yml` runs the migrate command on every push
+to `main` (and from the Actions tab, with "Run workflow"), using the secret `NEON_DATABASE_URL_UNPOOLED`. If the
+repository variable `DEMO_SEED` is `true`, it also loads the Lisbon demo restaurants and sample reviews
+(`python -m app.seed.public_catalogue`, repeatable, deletes nothing). Set the secret and the variable once under
+GitHub, Settings, Secrets and variables, Actions; nobody needs to run anything on their own computer. The manual
+steps below are for a database this workflow does not cover.
+
 The new code reads 7 columns that an older database does not have
 (`events.share_enabled`, `share_version`, `share_token_hash`, `share_cap`,
 `guests.account_id`, `guests.source`, `email_outbox.image_png`), plus two new

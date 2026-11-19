@@ -21,10 +21,14 @@ Commands, run from `backend/`:
   the regular seed. Re-running it keeps existing listings, bookings and
   galleries. Each restaurant has researched public details, a licensed cover,
   an approximate price band and a direct Google Maps link. The public page
-  labels opening hours, floor plan and table availability as simulated.
+  is flagged `demo_booking`; the site itself says it is a demo.
 - `python -m app.seed.demo_reviews` adds labelled fictional reviews to all
   published demo restaurants in local SQLite with `DEMO_MODE=1`. Re-running
   it preserves existing reviews and adds only missing entries.
+  With `--plain` the reviews carry no "Demo review" label; the landing page banner and the footer say it is a demo.
+- `python -m app.seed.public_catalogue --allow-remote` is for the shared demo database (Neon on Vercel):
+  it adds the 20 Lisbon restaurants, turns every other demo restaurant into a draft (nothing is deleted) and
+  adds plain reviews so each restaurant has a rating. Repeatable. Never run it on a database with real data.
 
 `POST /api/demo/reset` (in `routers/demo.py`) wipes the data and calls the
 same `seed_all()`.

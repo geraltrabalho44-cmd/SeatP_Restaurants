@@ -1,0 +1,84 @@
+# Keeps the Neon database in step with the code, without anyone running commands on their own computer.
+#
+# On every push to main (and on demand from the Actions tab) it
+#   1. creates any missing tables and columns (`python -m app.seed.migrate`, safe to repeat);
+#   2. if the repository variable DEMO_SEED is "true", loads the Lisbon demo restaurants and their sample
+#      reviews (`python -m app.seed.public_catalogue`, safe to repeat, deletes nothing).
+#
+# Vercel deploys the code on its own at the same time. The migrate step only ever adds tables and columns, so
+# the old code keeps working until it finishes. Never point this at a database that holds real data with
+# DEMO_SEED switched on.
+#
+# One-time setup (GitHub: Settings, Secrets and variables, Actions):
+#   Secret   NEON_DATABASE_URL_UNPOOLED   the Neon address WITHOUT "-pooler" (Vercel keeps it as DATABASE_URL_UNPOOLED)
+#   Variable DEMO_SEED                    "true" while this is the shared demo site
+
+name: database
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "requirements.txt"
+      - ".github/workflows/database.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run at a time, so two quick pushes never migrate the same database together.
+concurrency:
+  group: database
+  cancel-in-progress: false
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_UNPOOLED }}
+    steps:
+      - name: Check the secret is set
+        id: configured
+        working-directory: .
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::NEON_DATABASE_URL_UNPOOLED is not set, so the database was left alone."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif echo "$DATABASE_URL" | grep -q -- '-pooler'; then
+            echo "::error::NEON_DATABASE_URL_UNPOOLED has -pooler in it. Use the unpooled address."
+            exit 1
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.configured.outputs.ready == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.configured.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        if: steps.configured.outputs.ready == 'true'
+        run: pip install -r ../requirements.txt
+
+      - name: Create missing tables and columns
+        if: steps.configured.outputs.ready == 'true'
+        env:
+          # The app wants a long key on Postgres; migrating signs nothing, so a throwaway one is fine.
+          SECRET_KEY: ${{ github.sha }}${{ github.run_id }}${{ github.run_attempt }}-database-workflow
+        run: python -m app.seed.migrate
+
+      - name: Load the demo restaurants and reviews
+        if: steps.configured.outputs.ready == 'true' && vars.DEMO_SEED == 'true'
+        env:
+          SECRET_KEY: ${{ github.sha }}${{ github.run_id }}${{ github.run_attempt }}-database-workflow
+        run: python -m app.seed.public_catalogue --allow-remote
