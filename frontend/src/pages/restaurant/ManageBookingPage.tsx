@@ -15,6 +15,7 @@ import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 import { useLoad } from "./useLoad";
 import { ArrivalNotice } from "./ArrivalNotice";
 import { OffersChoice } from "./OffersChoice";
+import { RainCard } from "./WeatherRainOffer";
 import { cancelNote, depositStatus } from "./money";
 import "./restaurant.css";
 
@@ -27,6 +28,7 @@ export default function ManageBookingPage() {
         <h1 className="rb-title rb5-page-title">Manage your booking</h1>
         {state.status === "loading" && <Skeleton lines={5} label="Loading your booking" />}
         {state.status === "error" && <ManageError error={state.error} onRetry={() => reload()} />}
+        {state.status === "ready" && <RainCard key={token} path={"/b/"+encodeURIComponent(token)+"/rain"} />}
         {state.status === "ready" && <ManageBooking token={token} booking={state.data} onUpdate={setData} />}
       </div>
     </PageShell>

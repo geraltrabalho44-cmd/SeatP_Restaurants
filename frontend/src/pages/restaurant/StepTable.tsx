@@ -18,6 +18,7 @@ import { DINER_KEY, DINER_KEY_HELD, MapKey, SCENE_NOTE } from "./MapKey";
 import { RoomTabs } from "./RoomTabs";
 import { StepDetails } from "./StepDetails";
 import { StepHeading } from "./StepHeading";
+import { WeatherPanel } from "./WeatherPanel";
 import { TableCard } from "./TableCard";
 import { ConflictNotice, SuggestionCard, TableList } from "./TablePanels";
 import { alternatives, describeDinerTables, isPickable, tablesForMap, zoneName } from "./tableView";
@@ -159,6 +160,7 @@ export function StepTable(props: StepTableProps) {
   return (
     <section className="rb-step">
       {(phoneHeader || !map) && <ChooseHeader needs={needs} time={time} onBack={props.onBack} />}
+      {map && !hold && !busy && <WeatherPanel venueId={venueId} needs={needs} time={time} onTable={id=>void take(id)} />}
       {phoneHeader && props.onAccessibilityChange && (
         <Checkbox
           label="I need a wheelchair-accessible table"

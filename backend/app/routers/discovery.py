@@ -44,6 +44,7 @@ def search(
     request: Request,
     session: db.SessionDep,
     q: Annotated[str, Query(max_length=80)] = "",
+    understand: bool = False,
     cuisine: Annotated[list[str] | None, Query(max_length=len(CUISINES))] = None,
     price: Annotated[list[int] | None, Query(max_length=4)] = None,
     features: Annotated[list[str] | None, Query(max_length=len(discovery.FEATURES))] = None,
@@ -56,6 +57,25 @@ def search(
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
     offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
 ) -> dict[str, Any]:
+    if understand and q:
+        return natural_search(
+            NaturalSearch(
+                q=q,
+                cuisine=cuisine or [],
+                features=features or [],
+                price=price or [],
+                lat=lat,
+                lng=lng,
+                date=date,
+                time=time,
+                party=party,
+                available=available,
+                limit=limit,
+                offset=offset,
+            ),
+            request,
+            session,
+        )
     _read_limit(session, request)
     if (lat is None) != (lng is None):
         raise _invalid("Send both lat and lng, or neither.")
@@ -84,6 +104,67 @@ def search(
             offset=offset,
         ),
     )
+
+
+class NaturalSearch(Strict):
+    q: PlainText = Field(min_length=1, max_length=140)
+    cuisine: list[str] = Field(default_factory=list, max_length=len(CUISINES))
+    price: list[int] = Field(default_factory=list, max_length=4)
+    features: list[str] = Field(default_factory=list, max_length=len(discovery.FEATURES))
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+    date: dt.date | None = None
+    time: dt.time | None = None
+    party: int | None = Field(default=None, ge=1, le=MAX_ONLINE_PARTY)
+    available: bool = False
+    limit: int = Field(default=20, ge=1, le=50)
+    offset: int = Field(default=0, ge=0, le=100000)
+
+
+@router.post("/restaurants/search")
+def natural_search(body: NaturalSearch, request: Request, session: db.SessionDep):
+    from zoneinfo import ZoneInfo
+
+    from app.restaurant_service.search_query import RuleSearch
+
+    _read_limit(session, request)
+    if (
+        (body.lat is None) != (body.lng is None)
+        or any(key not in discovery.FEATURES for key in body.features)
+        or any(c not in CUISINES for c in body.cuisine)
+        or any(not 1 <= p <= 4 for p in body.price)
+    ):
+        raise _invalid("Invalid search filters.")
+    today = dt.datetime.now(ZoneInfo("Europe/Lisbon")).date()
+    intent = RuleSearch().parse(body.q, today)
+    when = None
+    day = body.date or intent.day
+    at = body.time or intent.at
+    party = body.party or intent.party
+    if day or at or party:
+        day, at, party = day or today, at or dt.time(20), party or 2
+        when = {"date": day.isoformat(), "time": at.strftime("%H:%M"), "party": party}
+    lat, lng = intent.place or (body.lat, body.lng)
+    query = discovery.Search(
+        q=intent.text,
+        cuisines=tuple(body.cuisine or intent.cuisines),
+        prices=tuple(body.price or intent.prices),
+        features=tuple(set(body.features) | set(intent.features)),
+        lat=lat,
+        lng=lng,
+        day=day,
+        at=at,
+        party=party,
+        available=body.available or bool(intent.party or intent.day or intent.at),
+        within_m=intent.within,
+        river=intent.river,
+        quiet=intent.quiet,
+        limit=body.limit,
+        offset=body.offset,
+    )
+    return discovery.search_restaurants(session, query) | {
+        "understood": {"chips": intent.chips, "when": when}
+    }
 
 
 def _optional_user(session: db.SessionDep, authorization: str | None) -> Organiser | None:

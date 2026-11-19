@@ -2,12 +2,14 @@
 // Having them as components keeps every page honest about all three.
 import type { ReactNode } from "react";
 import { Button } from "./Button";
+import { useT } from "../../i18n/I18nProvider";
 
 /** Grey placeholder blocks shaped like the content that is loading. */
 export function Skeleton({ lines = 3, label = "Loading" }: { lines?: number; label?: string }) {
+  const {label:localLabel}=useT();
   return (
     <div className="skeleton" role="status" aria-live="polite">
-      <span className="visually-hidden">{label}...</span>
+      <span className="visually-hidden">{localLabel(label)}...</span>
       {Array.from({ length: lines }, (_, i) => (
         <span key={i} className="skeleton-line" aria-hidden="true" />
       ))}
@@ -48,6 +50,7 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({ title = "Something went wrong", headingLevel = 2, message, onRetry, children }: ErrorStateProps) {
+  const {label,t}=useT();
   const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
     <div className="state-box state-error" role="alert">
@@ -55,12 +58,12 @@ export function ErrorState({ title = "Something went wrong", headingLevel = 2, m
         <path d="M24 6L44 40H4Z" />
         <path d="M24 19v10M24 34v1" />
       </svg>
-      <Heading className="state-title">{title}</Heading>
+      <Heading className="state-title">{label(title)}</Heading>
       <p className="state-body">{message}</p>
       {children}
       {onRetry && (
         <Button variant="secondary" onClick={onRetry}>
-          Try again
+          {t("Try again")}
         </Button>
       )}
     </div>

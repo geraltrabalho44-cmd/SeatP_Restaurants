@@ -46,3 +46,5 @@ jobs:
             --request POST \
             --header "X-Cron-Secret: ${CRON_SECRET}" \
             "${SEATPLAN_URL}/api/internal/email/process"
+          curl --fail --silent --show-error --max-time 35 --request POST \
+            --header "X-Cron-Secret: ${CRON_SECRET}" "${SEATPLAN_URL}/api/internal/weather/process"

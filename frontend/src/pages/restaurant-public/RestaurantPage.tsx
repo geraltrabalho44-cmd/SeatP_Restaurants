@@ -1,3 +1,4 @@
+import { useT } from "../../i18n/I18nProvider";
 // Route /restaurants/:slug: the public page of a restaurant (spec 9.2) with the
 // booking flow embedded under "Book a table". A link from the discovery page
 // brings ?date=&time=&party=, and the booking flow starts with them filled in.
@@ -27,14 +28,15 @@ import "./restaurantPage.css";
 const ResultsMap = lazy(() => import("../../maps/ResultsMap"));
 
 export default function RestaurantPage() {
+  const {t} = useT();
   const { slug = "" } = useParams();
   const { state, reload } = useLoad(() => getPublicRestaurant(slug), slug);
-  const title = state.status === "ready" ? state.data.name : "Restaurant";
+  const title = state.status === "ready" ? state.data.name : t("Restaurant");
   const hasMap = state.status === "ready" && state.data.lat !== null && state.data.lng !== null;
   return (
     <PageShell title={title} width="wide" restaurantBrand headerActions={<PublicHeaderActions />}
       footerContent={<>{hasMap && <MapCredits />}{state.status === "ready" && <GalleryCredits photos={state.data.photos} />}</>}>
-      {state.status === "loading" && <Skeleton lines={6} label="Loading the restaurant" />}
+      {state.status === "loading" && <Skeleton lines={6} label={t("Loading the restaurant")} />}
       {state.status === "error" && <LoadError error={state.error} onRetry={() => reload()} />}
       {state.status === "ready" && <Page data={state.data} />}
     </PageShell>
@@ -42,17 +44,20 @@ export default function RestaurantPage() {
 }
 
 function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const {t} = useT();
   if (error instanceof ApiError && error.code === "not_found") {
     return (
-      <EmptyState title="We cannot find this restaurant" action={<Link to="/">Find another restaurant</Link>}>
-        <p>It may have been unpublished, or the address may be mistyped.</p>
+      <EmptyState title={t("We cannot find this restaurant")} action={<Link to="/">{t("Find another restaurant")}</Link>}>
+        <p>{t("It may have been unpublished, or the address may be mistyped.")}</p>
       </EmptyState>
     );
   }
-  return <ErrorState title="We could not open this restaurant" message={errorMessage(error)} onRetry={onRetry} />;
+  return <ErrorState title={t("We could not open this restaurant")} message={errorMessage(error)} onRetry={onRetry} />;
 }
 
 function Page({ data }: { data: PublicRestaurant }) {
+  const {t} = useT();
+  const {tag,label} = useT();
   const { pathname, search, hash } = useLocation();
   const book = useRef<HTMLElement>(null);
   const reviewSection = useRef<HTMLElement>(null);
@@ -79,9 +84,9 @@ function Page({ data }: { data: PublicRestaurant }) {
   const place = loadPlace();
   const meters = place && data.lat !== null && data.lng !== null ? metersBetween(place, { lat: data.lat, lng: data.lng }) : null;
   const price = priceText(data.price_level);
-  const rows = weeklyRows(data.schedule.service_periods);
+  const rows = weeklyRows(data.schedule.service_periods,tag);
   const closed = data.schedule.blackout_dates;
-  const highlights = data.demo_booking ? [] : FEATURE_KEYS.filter((key) => data.features[key]).map((key) => FEATURE_LABELS[key]);
+  const highlights = data.demo_booking ? [] : FEATURE_KEYS.filter((key) => data.features[key]).map((key) => label(FEATURE_LABELS[key]));
   const tel = telHref(data.phone);
   const site = websiteHref(data.website);
   const instagram = instagramHref(data.instagram);
@@ -90,27 +95,27 @@ function Page({ data }: { data: PublicRestaurant }) {
     <article className={`rp${data.preview ? " is-preview" : ""}`}>
       {data.preview && (
         <p role="status" className="rp-preview">
-          Preview: this restaurant is not published yet. Only you can see this page.
+          {t("Preview: this restaurant is not published yet. Only you can see this page.")}
         </p>
       )}
-      <Link className="rp-back" to="/">← Back to restaurants</Link>
+      <Link className="rp-back" to="/">{t("← Back to restaurants")}</Link>
       <header className="rp-head">
         <div className="rp-head-main">
           <h1>{data.name}</h1>
           <p className="rp-line">
-            {data.cuisines.map(cuisineLabel).join(", ")}
+            {data.cuisines.map(c=>label(cuisineLabel(c))).join(", ")}
             {price && (
               <>
                 {" · "}
                 <span aria-hidden="true">{price}</span>
-                <span className="visually-hidden">Price level {data.price_level} of 4</span>
+                <span className="visually-hidden">{t("Price level")} {data.price_level} {t("of 4")}</span>
               </>
             )}
-            {meters !== null && ` · ${formatDistance(meters)} from you`}
+            {meters !== null && ` · ${t("{distance} from you", {distance:formatDistance(meters)})}`}
           </p>
           {data.address && <p className="rp-line">{data.address}</p>}
           {highlights.length > 0 && (
-            <ul className="discover-features" aria-label="Highlights">
+            <ul className="discover-features" aria-label={t("Highlights")}>
               {highlights.map((name) => (
                 <li key={name}>{name}</li>
               ))}
@@ -119,19 +124,19 @@ function Page({ data }: { data: PublicRestaurant }) {
         </div>
         {!data.preview && (
           <a className="btn btn-primary rp-cta" href="#book" onClick={goToBooking}>
-            {data.demo_booking ? "Try a booking" : "Book a table"}
+            {data.demo_booking ? t("Try a booking") : t("Book a table")}
           </a>
         )}
       </header>
       {!data.preview && data.slug && <FavoriteButton slug={data.slug} />}
-      <div className="rp-hero-layout"><aside className="rp-visit" aria-label="Your visit"><Gallery photos={data.photos} name={data.name} preview={data.preview} /><div className="rp-visit-info"><p>Your visit</p><h2>{data.name}</h2><p>Located at {data.address}</p></div></aside>
+      <div className="rp-hero-layout"><aside className="rp-visit" aria-label={t("Your visit")}><Gallery photos={data.photos} name={data.name} preview={data.preview} /><div className="rp-visit-info"><p>{t("Your visit")}</p><h2>{data.name}</h2><p>{t("Located at")} {data.address}</p></div></aside>
 
       {/* The booking comes right after the identity: nothing has to be scrolled past to reserve. */}
       <section ref={book} id="book" className="rp-book" aria-labelledby="rp-book-title">
-        <h2 id="rp-book-title">{data.demo_booking ? "Try a booking" : "Book a table"}</h2>
-        {data.demo_booking && <p className="rb-notice rb-notice-warning rp-demo-note">SeatPlan demo. The opening hours, floor plan and table availability are simulated.</p>}
+        <h2 id="rp-book-title">{data.demo_booking ? t("Try a booking") : t("Book a table")}</h2>
+        {data.demo_booking && <p className="rb-notice rb-notice-warning rp-demo-note">{t("SeatPlan demo. The opening hours, floor plan and table availability are simulated.")}</p>}
         {data.preview ? (
-          <p className="rb-muted">Booking opens as soon as you publish {data.name}.</p>
+          <p className="rb-muted">{t("Booking opens as soon as you publish {name}.", {name:data.name})}</p>
         ) : (
           <div className="rb-page">
             <BookingEmbed venueId={data.public_id} />
@@ -140,44 +145,43 @@ function Page({ data }: { data: PublicRestaurant }) {
       </section>
 
       </div>
-      {!data.preview && <nav className="rp-section-nav" aria-label="Restaurant sections">
-        <Link to={{ pathname, search, hash: "#details" }} aria-current={!showReviews && !showMenu ? "page" : undefined}>Details</Link>
-        <Link to={{ pathname, search, hash: "#menu" }} aria-current={showMenu ? "page" : undefined}>Menu</Link>
-        <Link to={{ pathname, search, hash: "#reviews" }} aria-current={showReviews ? "page" : undefined}>Reviews</Link>
+      {!data.preview && <nav className="rp-section-nav" aria-label={t("Restaurant sections")}>
+        <Link to={{ pathname, search, hash: "#details" }} aria-current={!showReviews && !showMenu ? "page" : undefined}>{t("Details")}</Link>
+        <Link to={{ pathname, search, hash: "#menu" }} aria-current={showMenu ? "page" : undefined}>{t("Menu")}</Link>
+        <Link to={{ pathname, search, hash: "#reviews" }} aria-current={showReviews ? "page" : undefined}>{t("Reviews")}</Link>
       </nav>}
-      {showMenu && data.slug && <section id="menu" ref={menuSection} aria-label="Restaurant menu"><RestaurantMenu key={data.slug} slug={data.slug} /></section>}
-      {showReviews && data.slug && <section id="reviews" ref={reviewSection} aria-label="Restaurant reviews">
+      {showMenu && data.slug && <section id="menu" ref={menuSection} aria-label={t("Restaurant menu")}><RestaurantMenu key={data.slug} slug={data.slug} /></section>}
+      {showReviews && data.slug && <section id="reviews" ref={reviewSection} aria-label={t("Restaurant reviews")}>
         <RestaurantReviews key={data.slug} slug={data.slug} summary={data.reviews} />
       </section>}
       <div id="details" className="rp-columns" hidden={showReviews || showMenu}>
         <div>
           {data.description && (
             <section aria-labelledby="rp-about">
-              <h2 id="rp-about">About</h2>
+              <h2 id="rp-about">{t("About")}</h2>
               <p>{data.description}</p>
             </section>
           )}
           <section aria-labelledby="rp-hours">
-            <h2 id="rp-hours">{data.demo_booking ? "Demo hours" : "Hours"}</h2>
+            <h2 id="rp-hours">{data.demo_booking ? t("Demo hours") : t("Hours")}</h2>
             {rows.length === 0 ? (
-              <p className="rb-muted">Opening hours are not published yet.</p>
+              <p className="rb-muted">{t("Opening hours are not published yet.")}</p>
             ) : (
               <table className="rp-hours">
                 <tbody>
                   {rows.map((row) => (
                     <tr key={row.days}>
                       <th scope="row">{row.days}</th>
-                      <td>{row.hours}</td>
+                      <td>{label(row.hours)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
             {closed.length > 0 && (
-              <ul className="rp-closed" aria-label="Days closed">
+              <ul className="rp-closed" aria-label={t("Days closed")}>
                 {closed.slice(0, 6).map((day) => (
-                  <li key={day.date}>
-                    Closed {shortDate(day.date)}
+                  <li key={day.date}>{t("Closed")} {shortDate(day.date)}
                     {day.reason ? `: ${day.reason}` : ""}
                   </li>
                 ))}
@@ -185,18 +189,17 @@ function Page({ data }: { data: PublicRestaurant }) {
             )}
           </section>
         </div>
-        <aside aria-label="Where and how to reach us">
-          <h2>Find us</h2>
+        <aside aria-label={t("Where and how to reach us")}>
+          <h2>{t("Find us")}</h2>
           {data.lat !== null && data.lng !== null && (
             <div className="rp-map">
-              <Suspense fallback={<Skeleton label="Loading the map" lines={3} />}>
+              <Suspense fallback={<Skeleton label={t("Loading the map")} lines={3} />}>
                 <ResultsMap pins={[{ id: data.public_id, name: data.name, lat: data.lat, lng: data.lng }]} showNames />
               </Suspense>
             </div>
           )}
           <p>
-            <a href={data.maps_url} target="_blank" rel="noopener noreferrer">
-              Open in Google Maps<span className="visually-hidden"> (opens in a new tab)</span>
+            <a href={data.maps_url} target="_blank" rel="noopener noreferrer">{t("Open in Google Maps")}<span className="visually-hidden"> {t("(opens in a new tab)")}</span>
             </a>
           </p>
           <ul className="rp-contact">
@@ -207,15 +210,14 @@ function Page({ data }: { data: PublicRestaurant }) {
             )}
             {site && (
               <li>
-                <a href={site} target="_blank" rel="noopener noreferrer">
-                  Website<span className="visually-hidden"> (opens in a new tab)</span>
+                <a href={site} target="_blank" rel="noopener noreferrer">{t("Website")}<span className="visually-hidden"> {t("(opens in a new tab)")}</span>
                 </a>
               </li>
             )}
             {instagram && (
               <li>
                 <a href={instagram} target="_blank" rel="noopener noreferrer">
-                  Instagram<span className="visually-hidden"> (opens in a new tab)</span>
+                  Instagram<span className="visually-hidden"> {t("(opens in a new tab)")}</span>
                 </a>
               </li>
             )}

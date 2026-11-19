@@ -29,6 +29,7 @@ export interface RestaurantCard {
 }
 
 export interface SearchAnswer {
+  understood?: {chips:string[]; when:SearchWhen|null};
   items: RestaurantCard[];
   total: number;
 }
@@ -76,6 +77,13 @@ export function searchQueryString(query: SearchQuery): string {
 }
 
 export function searchRestaurants(query: SearchQuery): Promise<SearchAnswer> {
+  if (query.q.trim() && query.q.trim().length <= 80) {
+    return api.get<SearchAnswer>(`/restaurants?${searchQueryString(query)}&understand=true`, "none");
+  }
+  if(query.q.trim()) return api.post<SearchAnswer>("/restaurants/search",{
+    q:query.q.trim(),cuisine:query.cuisines,price:query.prices,features:query.features,
+    ...query.place,...query.when,available:query.availableOnly,limit:query.limit,offset:query.offset
+  },"none");
   return api.get<SearchAnswer>(`/restaurants?${searchQueryString(query)}`);
 }
 

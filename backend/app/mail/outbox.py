@@ -53,7 +53,7 @@ RETENTION_DAYS = 30
 # A personal link: optional "https://host" then /b/<token> (booking), /e/<token>
 # (attendee page), /a/<token> (attendee API) or /j/<token> (an event's shared
 # link). Tokens are url-safe base64.
-_PERSONAL_LINK = re.compile(r"(?:https?://[^\s\"'<>]*?)?/[abej]/[A-Za-z0-9_-]+")
+_PERSONAL_LINK = re.compile(r"(?:https?://[^\s\"'<>]*?)?/[abej]/(?:rain/)?[A-Za-z0-9_-]+")
 LINK_REMOVED = "[personal link removed]"
 # Emails whose words hold a 6-digit code (events_service/accounts.py).
 CODE_KINDS = ("account_code", "password_code")

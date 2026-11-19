@@ -12,6 +12,7 @@ import { WhenFields } from "./StepParty";
 import "./when.css";
 import { SlotButton } from "./SlotButton";
 import { StepHeading } from "./StepHeading";
+import { WeatherPanel } from "./WeatherPanel";
 import { useLoad } from "./useLoad";
 import { WaitlistDialog } from "./WaitlistDialog";
 interface StepTimeProps {
@@ -72,6 +73,7 @@ export function StepTime({ venueId, needs, wanted, onPick, onBack, info, onChang
         <span id="rb-time-title">{lost ? "Pick another time" : "Choose a time"}</span>
       </StepHeading>
       {info && onChange && <WhenFields info={info} needs={needs} onChange={onChange} />}
+      <WeatherPanel venueId={venueId} needs={needs} onTime={onPick} />
       <p className="rb-muted">
         {formatDate(needs.date)}, {people(needs.party)}.
       </p>

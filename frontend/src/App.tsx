@@ -27,6 +27,7 @@ import PhotoEditorPage from "./pages/owner/PhotoEditor";
 import BookingPage from "./pages/restaurant/BookingPage";
 import RestaurantPage from "./pages/restaurant-public/RestaurantPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
+import WeatherRainOffer from "./pages/restaurant/WeatherRainOffer";
 import StaffPage from "./pages/restaurant/StaffPage";
 import HoursPage from "./pages/owner/HoursPage";
 import MenuPage from "./pages/owner/MenuPage";
@@ -85,6 +86,7 @@ export default function App() {
       <Route path="/restaurants/:slug" element={<RestaurantPage />} />
       <Route path="/r/:venueId" element={<BookingPage />} />
       <Route path="/b/:token" element={<ManageBookingPage />} />
+      <Route path="/b/rain/:token" element={<WeatherRainOffer />} />
       {/* Deposits: the pretend payment page (demo only) and where every payment page sends the diner back. */}
       <Route path="/pay/demo/:paymentId" element={<DemoCheckoutPage />} />
       <Route path="/pay/return/:paymentId" element={<PaymentReturnPage />} />

@@ -30,6 +30,7 @@ who is calling and what they sent, calls a helper (in `events_service/`,
 | `phone_messages.py` | `/r/{vid}/phone/start` and `/verify`, `/m/{token}` (view, confirm, cancel, stop) | Anyone may ask for a code (rate limited per browser, number and app); `/m/` needs the signed token from a message, every wrong one is a 404 |
 | `legal.py` | `/r/{vid}/terms` (the words), `/u/{token}` (view, stop, resume offers), `/b/{manage_token}/offers` | Anyone for the words; `/u/` needs the signed token from a message and a wrong one is a 404 |
 | `owner_terms.py` | `/owner/restaurants/{vid}/terms` (the restaurant's own words) | The restaurant's owner (`CurrentOrganiser`); another owner gets 404 |
+| `weather.py` | `/r/{vid}/weather` (forecast and sunset tables), `/b/{token}/rain` and `/rain/{token}` (the diner's rain offer), `/owner/restaurants/{vid}/rain-plan` (opt in), `/internal/weather/process` (cron) | Anyone for the forecast; the offer needs its random token; the owner switch needs the owner; the cron needs the secret |
 | `owner_insights.py` | `/owner/restaurants/{vid}/insights` (totals and busiest tables), `/guests` (the guest book) | The restaurant's owner (`CurrentOrganiser`); another owner gets 404 |
 | `owner_messages.py` | `/owner/restaurants/{vid}/messages` (settings, usage, recent messages) | The restaurant's owner (`CurrentOrganiser`); another owner gets 404 |
 | `owner_payments.py` | `/owner/restaurants/{vid}/payments` (read and replace the deposit rules) | The restaurant's owner (`CurrentOrganiser`); another owner gets 404 |

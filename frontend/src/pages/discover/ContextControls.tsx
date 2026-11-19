@@ -1,3 +1,4 @@
+import { useT } from "../../i18n/I18nProvider";
 // Where and when: a city (or "near me"), and optionally a date, a time and how many people.
 // On a wide screen it is one compact capsule in the command bar; on a phone the same four
 // controls sit stacked, with visible labels, inside the filters drawer. Only one of the two
@@ -45,6 +46,8 @@ function CapsuleSelect({ label, name, value, onChange, options }: {
   </select></label>;
 }
 export function ContextControls({ place, onPlace, date, time, party, onDate, onTime, onParty, onClearWhen, variant }: Props) {
+  const {t,label} = useT();
+  const options=(rows:{value:string;label:string}[])=>rows.map(row=>({...row,label:row.label.endsWith(' people')?t('{count} people',{count:row.value}):label(row.label)}));
   const cityValue = place ? (place.label === "Near me" ? NEAR : place.label) : "";
   const changeCity = (value: string): void => {
     if (value === NEAR) return;
@@ -53,21 +56,21 @@ export function ContextControls({ place, onPlace, date, time, party, onDate, onT
   if (variant === "stacked") {
     return (
       <div className="discover-stacked">
-        <Select className="select-themed" label="Choose a city" value={cityValue} options={cityOptions(place)} onChange={(event) => changeCity(event.target.value)} />
+        <Select className="select-themed" label={t("Choose a city")} value={cityValue} options={options(cityOptions(place))} onChange={(event) => changeCity(event.target.value)} />
         <DiscoveryDate value={date} onChange={onDate} stacked />
-        <Select className="select-themed" label="Time" value={time} options={timeOptions(time)} onChange={event => onTime(event.target.value)} />
-        <Select className="select-themed" label="People" value={party} options={PARTIES} onChange={(event) => onParty(event.target.value)} />
+        <Select className="select-themed" label={t("Time")} value={time} options={options(timeOptions(time))} onChange={event => onTime(event.target.value)} />
+        <Select className="select-themed" label={t("People")} value={party} options={options(PARTIES)} onChange={(event) => onParty(event.target.value)} />
       </div>
     );
   }
   return (
-    <div className="discover-capsule" role="group" aria-label="Where and when">
-      <CapsuleSelect label="Where" name="Choose a city" value={cityValue} options={cityOptions(place)} onChange={changeCity} />
+    <div className="discover-capsule" role="group" aria-label={t("Where and when")}>
+      <CapsuleSelect label={t("Where")} name={t("Choose a city")} value={cityValue} options={options(cityOptions(place))} onChange={changeCity} />
       <DiscoveryDate value={date} onChange={onDate} stacked={false} />
-      <CapsuleSelect label="Around" name="Time" value={time} options={timeOptions(time)} onChange={onTime} />
-      <CapsuleSelect label="Guests" name="People" value={party} options={PARTIES} onChange={onParty} />
+      <CapsuleSelect label={t("Around")} name={t("Time")} value={time} options={options(timeOptions(time))} onChange={onTime} />
+      <CapsuleSelect label={t("Guests")} name={t("People")} value={party} options={options(PARTIES)} onChange={onParty} />
       {date && (
-        <button type="button" className="discover-capsule-clear" aria-label="Clear the date" onClick={onClearWhen}>
+        <button type="button" className="discover-capsule-clear" aria-label={t("Clear the date")} onClick={onClearWhen}>
           ×
         </button>
       )}

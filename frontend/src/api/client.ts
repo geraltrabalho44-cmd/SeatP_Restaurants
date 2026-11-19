@@ -33,6 +33,8 @@ export type Auth = "organiser" | "guest" | "none";
 export class ApiError extends Error {
   readonly status: number;
   readonly code: ErrorCode;
+  readonly key?: string;
+  readonly params?: Record<string,string>;
   /** The whole `error` object the server sent, for the few answers that carry more than a message (for example the tables that block a save). */
   readonly details?: Record<string, unknown>;
 
@@ -42,6 +44,8 @@ export class ApiError extends Error {
     this.status = status;
     this.code = code;
     this.details = details;
+    if(typeof details?.key === "string") this.key=details.key;
+    if(details?.params && typeof details.params==="object") this.params=Object.fromEntries(Object.entries(details.params).filter((entry):entry is [string,string]=>typeof entry[1]==="string").map(([k,v])=>[k,v.slice(0,100)]));
   }
 }
 

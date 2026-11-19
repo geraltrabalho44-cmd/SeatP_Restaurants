@@ -9,12 +9,12 @@ and let the database decide, at the flush in write_slots.
 from datetime import date
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError, SeatTaken
-from app.models import Booking, TableSlot, Venue, VenueTable
+from app.models import Booking, Hold, RainOffer, TableSlot, Venue, VenueTable
 from app.optimiser.restaurant_model import choice_problem
 from app.restaurant_service import chosen_seat, occupancy
 from app.restaurant_service.availability import PartyNeeds, table_specs_for
@@ -48,6 +48,12 @@ def write_slots(
 def release_slots(session: Session, booking: Booking) -> tuple[int, ...]:
     """Give the booking's tables back. Returns the table ids it had."""
     table_ids = occupancy.tables_of(session, booking)
+    session.execute(delete(Hold).where(Hold.holder_key == f"rain:{booking.id}"))
+    session.execute(
+        update(RainOffer)
+        .where(RainOffer.booking_id == booking.id, RainOffer.status == "offered")
+        .values(status="withdrawn")
+    )
     session.execute(delete(TableSlot).where(TableSlot.booking_id == booking.id))
     return table_ids
 

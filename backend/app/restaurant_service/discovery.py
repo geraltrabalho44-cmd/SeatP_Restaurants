@@ -17,7 +17,7 @@ from urllib.parse import quote
 from sqlalchemy import select
 from sqlalchemy.orm import Session, defer
 
-from app.models import Room, Venue, VenuePhoto
+from app.models import Room, RoomOpening, Venue, VenuePhoto, Zone
 from app.restaurant_service import photos, reviews
 from app.restaurant_service.availability import PartyNeeds, max_party, slot_statuses
 from app.restaurant_service.schedule_edit import read_schedule
@@ -44,6 +44,9 @@ class Search:
     available: bool = False
     limit: int = 20
     offset: int = 0
+    within_m: int | None = None
+    quiet: bool = False
+    river: bool = False
 
 
 def fold(text: str) -> str:
@@ -161,6 +164,22 @@ def search_restaurants(session: Session, search: Search) -> dict[str, Any]:
         )
     ).all()
     found = [(venue, _distance(venue, search)) for venue in venues if _matches(venue, search)]
+    if search.within_m is not None:
+        found = [(venue, m) for venue, m in found if m is not None and m <= search.within_m]
+    if search.quiet:
+        quiet = set(session.scalars(select(Zone.venue_id).where(Zone.kind == "quiet")))
+        found = [item for item in found if item[0].id in quiet]
+    if search.river:
+        river = {
+            vid
+            for vid, tags, description in session.execute(
+                select(Room.venue_id, RoomOpening.view_tags, RoomOpening.view_text).join(
+                    RoomOpening, RoomOpening.room_id == Room.id
+                )
+            )
+            if {"river", "rio"} & set(fold(" ".join([*(tags or []), description or ""])).split())
+        }
+        found = [item for item in found if item[0].id in river]
     # Nearest first when we know where the diner is; restaurants without a pin go last.
     found.sort(
         key=lambda item: (

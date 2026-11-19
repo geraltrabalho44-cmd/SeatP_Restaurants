@@ -1,3 +1,4 @@
+import { useT } from "../../i18n/I18nProvider";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getGuestToken } from "../../api/client";
@@ -7,12 +8,13 @@ import { errorMessage } from "../restaurant/format";
 import { useLoad } from "../restaurant/useLoad";
 
 export function FavoriteButton({ slug }: { slug: string }) {
+  const {t} = useT();
   const signedIn = Boolean(getGuestToken());
   const { state, reload } = useLoad(() => signedIn ? getFavorites() : Promise.resolve({ items: [] }), `${slug}:${signedIn}`);
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   const location = useLocation();
-  if (!signedIn) return <Link className="btn btn-secondary" to="/restaurants/account" state={{ returnTo: location.pathname }}>Save restaurant</Link>;
+  if (!signedIn) return <Link className="btn btn-secondary" to="/restaurants/account" state={{ returnTo: location.pathname }}>{t("Save restaurant")}</Link>;
   const saved = state.status === "ready" && state.data.items.some(row => row.slug === slug);
   async function toggle() {
     setBusy(true);
@@ -20,5 +22,5 @@ export function FavoriteButton({ slug }: { slug: string }) {
     catch (error) { toast.show(errorMessage(error), "danger"); }
     finally { setBusy(false); }
   }
-  return <Button variant="secondary" aria-pressed={saved} busy={busy} disabled={state.status === "loading"} onClick={() => void toggle()}>{saved ? "Saved restaurant" : "Save restaurant"}</Button>;
+  return <Button variant="secondary" aria-pressed={saved} busy={busy} disabled={state.status === "loading"} onClick={() => void toggle()}>{saved ? t("Saved restaurant") : t("Save restaurant")}</Button>;
 }

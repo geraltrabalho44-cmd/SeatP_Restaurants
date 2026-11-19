@@ -859,3 +859,31 @@ class OffersConsent(Base):
     version: Mapped[str] = mapped_column(String(20))
     opted_in_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
     withdrawn_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+
+
+class WeatherCache(Base):
+    __tablename__ = "weather_cache"
+    cell: Mapped[str] = mapped_column(String(160), primary_key=True)
+    refresh_lease_until: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    refreshed: Mapped[datetime] = mapped_column(UtcDateTime)
+    hours: Mapped[list] = mapped_column(JSON)
+
+
+class RainPlanPolicy(Base):
+    __tablename__ = "rain_plan_policies"
+    venue_id: Mapped[int] = mapped_column(
+        ForeignKey("venues.id", ondelete="CASCADE"), primary_key=True
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class RainOffer(Base):
+    __tablename__ = "rain_offers"
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("bookings.id", ondelete="CASCADE"), primary_key=True
+    )
+    checked: Mapped[datetime] = mapped_column(UtcDateTime)
+    status: Mapped[str] = mapped_column(String(16), default="watching")
+    token_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)

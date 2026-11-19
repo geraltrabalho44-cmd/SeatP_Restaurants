@@ -58,6 +58,10 @@ class Settings:
     whatsapp_phone_number_id: str = ""
     # With a real provider, demo restaurants only message these numbers (E.164).
     message_allowlist: tuple[str, ...] = ()
+    weather_max_fetches_per_hour: int = 200
+    weather_provider: str = "demo"
+    weather_demo_scenario: str = "clear"
+    open_meteo_api_key: str = field(default="", repr=False)
 
     @property
     def is_postgres(self) -> bool:
@@ -188,6 +192,9 @@ def load_settings() -> Settings:
     """Build a fresh Settings object from the current environment."""
     database_url = _choose_database_url()
     is_postgres = database_url.startswith("postgresql")
+    weather_provider = os.environ.get("WEATHER_PROVIDER", "demo") or "demo"
+    if weather_provider not in {"demo", "open-meteo"}:
+        raise RuntimeError("Unknown WEATHER_PROVIDER")
     payment_provider = os.environ.get("PAYMENT_PROVIDER", "demo").strip().lower() or "demo"
     stripe_key = os.environ.get("STRIPE_SECRET_KEY", "").strip()
     stripe_webhook = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
@@ -236,6 +243,12 @@ def load_settings() -> Settings:
         whatsapp_access_token=wa_token,
         whatsapp_phone_number_id=wa_phone_id,
         message_allowlist=_read_list("MESSAGE_ALLOWLIST"),
+        weather_max_fetches_per_hour=max(
+            0, int(os.environ.get("WEATHER_MAX_FETCHES_PER_HOUR", "200"))
+        ),
+        weather_provider=weather_provider,
+        weather_demo_scenario=os.environ.get("WEATHER_DEMO_SCENARIO", "clear"),
+        open_meteo_api_key=os.environ.get("OPEN_METEO_API_KEY", ""),
     )
 
 

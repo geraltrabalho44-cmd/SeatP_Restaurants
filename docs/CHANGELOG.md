@@ -1,5 +1,11 @@
 # Changelog
 
+## Restaurant discovery and weather (unreleased)
+
+- Restaurant booking shows the forecast and bookable sunset tables. Restaurants can enable optional indoor table offers for rainy terrace bookings.
+- Discovery interprets English and Portuguese search phrases into editable search terms and booking context.
+- Restaurant discovery and public pages support gated Portuguese, Spanish and French translations.
+
 What changed in SeatPlan, newest first. Each line comes from an entry in
 [`decisions-log.md`](decisions-log.md) (named in brackets), where the reasons
 are written out in full. Two short names: "platform fixes" means the section
@@ -26,6 +32,18 @@ through Resend, usability sessions with real users.
   (`backend/app/payments/READ_ME_FIRST.md`). Hosted Checkout only, so no card data reaches SeatPlan and the
   Content-Security-Policy is unchanged; webhooks are signature-checked, deduplicated and re-read from Stripe.
 - Staff see each booking's deposit on the floor. New owner page "Deposits".
+- Weather, sunset and a rain plan. The booking page shows the day's forecast (a simulated one by default; Open-Meteo
+  behind `WEATHER_PROVIDER=open-meteo`, no account needed for the free service, but its commercial terms must be
+  reviewed before production) and the table that catches the sunset (worked out locally from the room's windows and
+  the sun's position). An owner can opt in to a rain plan: when rain is forecast for a terrace booking the diner is
+  offered a held indoor table by email and on their booking page, and only their click moves them. 3 new tables
+  (`weather_cache`, `rain_plan_policies`, `rain_offers`).
+- Natural-language search on the discovery page ("sushi for four near the river on Saturday", "esplanada para 2
+  amanha as 19h30 ate 30 euros", "table pour deux demain soir terrasse"): English, Portuguese, Spanish and French
+  words, number words, typos, days, times, budget and distance, shown as chips that can be taken back out. Rules
+  only, offline, nothing stored; a `SearchProvider` interface lets a language model be plugged in later.
+- The base of the languages (pt-PT, es, fr) with discovery and the public restaurant page translated, a language
+  picker in the header and `?lang=`; hidden until `VITE_I18N_LOCALES` lists a language. English stays the default.
 - Terms, privacy and offers on the last step of a booking (GDPR). Two separate boxes: the terms and privacy
   notice (required, also enforced by the server: `terms_not_accepted`; the words open in a window and carry a
   version) and, separately, optional and never pre-ticked, "offers from this restaurant". The terms say the

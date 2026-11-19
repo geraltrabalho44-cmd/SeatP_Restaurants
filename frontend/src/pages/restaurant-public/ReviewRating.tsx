@@ -1,3 +1,4 @@
+import { useT } from "../../i18n/I18nProvider";
 import type { ReviewSummary } from "../../api/discovery";
 import chair from "../../design/review-chair.webp";
 import twoChairs from "../../design/review-chairs-two.webp";
@@ -39,15 +40,16 @@ function RatingChairs({ score }: { score: number }) {
 }
 
 export function ReviewRating({ summary }: { summary: ReviewSummary }) {
-  if (summary.average === null) return <span className="review-count">No reviews yet</span>;
+  const {t,tag,locale} = useT();
+  if (summary.average === null) return <span className="review-count">{t("No reviews yet")}</span>;
   return (
     <span className="review-rating">
       <span className="review-score">
-        <span className="visually-hidden">Rated </span>{number.format(summary.average)}
-        <span className="visually-hidden"> out of 10</span>
+        <span className="visually-hidden">{t("Rated")} </span>{(locale==="en"?number:new Intl.NumberFormat(tag,{minimumFractionDigits:1,maximumFractionDigits:1})).format(summary.average)}
+        <span className="visually-hidden"> {t("out of 10")}</span>
         <RatingChairs score={summary.average} />
       </span>
-      <span className="review-count">From {summary.count} {summary.count === 1 ? "review" : "reviews"}</span>
+      <span className="review-count">{t("From")} {summary.count} {summary.count === 1 ? t("review") : t("reviews")}</span>
     </span>
   );
 }

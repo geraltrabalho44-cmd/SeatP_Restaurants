@@ -50,6 +50,7 @@ from app.routers import (
     staff,
     venues,
     visitor,
+    weather,
 )
 
 # Standard HTTP statuses mapped to the error codes of contract section 5.
@@ -163,6 +164,7 @@ def _register_routers(app: FastAPI) -> None:
         legal,
         owner_insights,
         owner_terms,
+        weather,
         owner_messages,
         payments,
         phone_messages,

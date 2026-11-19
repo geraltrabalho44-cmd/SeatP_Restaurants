@@ -97,6 +97,11 @@ Set these for **Production** in the Vercel project. Every name is read by
 | `RESEND_API_KEY` | Empty until step 6 | Needed only for `resend` |
 | `EMAIL_FROM` | Until step 6: `SeatPlan <noreply@example.com>`; after: an address on your verified domain | Resend sends only from a verified domain |
 | `EMAIL_ALLOWLIST` | Comma-separated addresses of the team's own test inboxes | Everyone else is stored as `skipped`, so a demo never mails a stranger |
+| `WEATHER_MAX_FETCHES_PER_HOUR` | Global cap on external forecast calls per hour. Defaults to 200. |
+| `WEATHER_PROVIDER` | `demo` or `open-meteo` | Offline simulation by default. The real service requests hourly forecasts using rounded restaurant coordinates. |
+| `WEATHER_DEMO_SCENARIO` | `clear`, `overcast`, `showers` or `rain-evening` | The last scenario simulates rain tomorrow evening in the venue timezone. |
+| `OPEN_METEO_API_KEY` | Deployment secret, optional | Uses the customer host when configured. Review the Open-Meteo commercial terms before enabling real forecasts in production. |
+| `VITE_I18N_LOCALES` | `en` by default | Comma-separated build-time release list. Use `en,pt,es,fr` in a preview. |
 | `PAYMENT_PROVIDER` | Unset (or `demo`) until Stripe is set up, then `stripe` | `demo` is a pretend payment page: no money moves. Deposits only work for demo restaurants while it is on |
 | `STRIPE_SECRET_KEY` | Empty until Stripe is set up. `sk_test_...` first | Needed only for `stripe`. The app refuses to start without it, and with a live key on a non-https `PUBLIC_BASE_URL` |
 | `STRIPE_WEBHOOK_SECRET` | Empty until Stripe is set up. `whsec_...` | Needed only for `stripe`. Checks that webhooks really come from Stripe. Endpoint: `/api/payments/webhooks/stripe` |

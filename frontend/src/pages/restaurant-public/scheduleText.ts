@@ -10,14 +10,15 @@ export interface ScheduleRow {
   hours: string;
 }
 
-function dayRange(first: number, last: number): string {
-  if (first === last) return DAYS[first];
-  if (last - first === 1) return `${DAYS[first]}, ${DAYS[last]}`;
-  return `${DAYS[first]}-${DAYS[last]}`;
+function dayRange(first: number, last: number, days:readonly string[]): string {
+  if (first === last) return days[first];
+  if (last - first === 1) return `${days[first]}, ${days[last]}`;
+  return `${days[first]}-${days[last]}`;
 }
 
 /** One row per run of consecutive days with the same hours; closed days are rows too. */
-export function weeklyRows(periods: Pick<ServicePeriod, "weekday" | "start_time" | "end_time">[]): ScheduleRow[] {
+export function weeklyRows(periods: Pick<ServicePeriod, "weekday" | "start_time" | "end_time">[], locale="en-GB"): ScheduleRow[] {
+  const days=locale==="en-GB"?DAYS:DAYS.map((_,i)=>new Intl.DateTimeFormat(locale,{weekday:"short"}).format(new Date(2024,0,1+i)));
   const hoursOf = DAYS.map((_, weekday) =>
     periods
       .filter((p) => p.weekday === weekday)
@@ -30,7 +31,7 @@ export function weeklyRows(periods: Pick<ServicePeriod, "weekday" | "start_time"
   let first = 0;
   for (let day = 1; day <= DAYS.length; day += 1) {
     if (day === DAYS.length || hoursOf[day] !== hoursOf[first]) {
-      rows.push({ days: dayRange(first, day - 1), hours: hoursOf[first] || "Closed" });
+      rows.push({ days: dayRange(first, day - 1,days), hours: hoursOf[first] || "Closed" });
       first = day;
     }
   }
