@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { signUpThroughService, useIdentityProvider } from "../../api/identity";
 import { registerOwner, verifyOwner } from "../../api/owner";
 import type { OwnerCode } from "../../api/owner";
 import { Button, Checkbox, Field, PageShell } from "../../design/components";
@@ -13,6 +14,9 @@ export default function OwnerSignUpPage() {
   const [password, setPassword] = useState("");
   const [consent, setConsent] = useState(false);
   const [pending, setPending] = useState<OwnerCode | null>(null);
+  // With the sign-in service the confirmation is a link in an email, not a code typed here.
+  const provider = useIdentityProvider();
+  const [linkSent, setLinkSent] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -42,7 +46,12 @@ export default function OwnerSignUpPage() {
         await verifyOwner(email, code, pending.signup_id);
         navigate("/owner", { replace: true });
       } else {
-        setPending(await registerOwner({ name, email, password, consent: true }));
+        if (provider === "supabase") {
+          await signUpThroughService({ name: name.trim(), email: email.trim(), password, consent: true });
+          setLinkSent(true);
+        } else {
+          setPending(await registerOwner({ name, email, password, consent: true }));
+        }
         setPassword("");
       }
     } catch (caught) {
@@ -50,6 +59,12 @@ export default function OwnerSignUpPage() {
     } finally { setBusy(false); }
   };
 
+  if (linkSent) {
+    return <PageShell title="Check your email"><div className="owner-auth">
+      <h1>Check your email</h1>
+      <p role="status">We sent a confirmation link to {email}. Open it, then <Link to="/owner/sign-in">sign in</Link>. If nothing arrives in a few minutes, look in your spam folder.</p>
+    </div></PageShell>;
+  }
   return <PageShell title="Create an owner account"><div className="owner-auth">
     <h1>{pending ? "Check your email" : "Create an owner account"}</h1>
     {pending ? <p>Enter the six-digit code sent to {email}. It expires in 15 minutes.</p> : <p>Set up your restaurant and let guests choose their table.</p>}
@@ -57,7 +72,7 @@ export default function OwnerSignUpPage() {
       {Object.keys(problems).length > 1 && <div role="alert" className="owner-error owner-summary"><p>Please fix {Object.keys(problems).length} things:</p><ul>{(["name", "email", "password", "consent"] as const).filter((field) => problems[field]).map((field) => <li key={field}><a href={`#owner-${field}`}>{problems[field]}</a></li>)}</ul></div>}
       {!pending && <>
         <Field id="owner-name" label="Name" autoComplete="name" required maxLength={120} value={name} error={problems.name} onChange={e => setName(e.target.value)} />
-        <Field id="owner-email" label="Email" type="email" autoComplete="email" required maxLength={254} value={email} error={problems.email} hint="We email you a six-digit code to confirm it is yours." onChange={e => setEmail(e.target.value)} />
+        <Field id="owner-email" label="Email" type="email" autoComplete="email" required maxLength={254} value={email} error={problems.email} hint={provider === "supabase" ? "We email you a link to confirm it is yours." : "We email you a six-digit code to confirm it is yours."} onChange={e => setEmail(e.target.value)} />
         <Field id="owner-password" label="Password" type="password" autoComplete="new-password" hint="Use at least 10 characters." required minLength={10} maxLength={200} value={password} error={problems.password} onChange={e => setPassword(e.target.value)} />
         <Checkbox id="owner-consent" label="I agree to create a restaurant owner account." required checked={consent} onChange={e => setConsent(e.target.checked)} />
         {problems.consent && <p role="alert" className="owner-error">{problems.consent}</p>}

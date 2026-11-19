@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError, login } from "../api/client";
+import { signInThroughService, useIdentityProvider } from "../api/identity";
 import { Button, Field, PageShell, useToast } from "../design/components";
 import "./login.css";
 
@@ -29,11 +30,14 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Owners and staff sign in through the sign-in service when the site uses one; organisers never do.
+  const provider = useIdentityProvider();
   // Coming from the restaurant owner's area, the page speaks to owners; every other entry keeps its own words.
   const next = params.get("next") ?? defaultNext;
   const owner = next.startsWith("/owner");
   // Coming to open a restaurant's service floor, the page says so; the staff keep the plain form.
   const staff = !owner && (next === "/staff" || next.startsWith("/staff/"));
+  const throughService = provider === "supabase" && (owner || staff);
   const title = owner ? "Sign in to manage your restaurant" : staff ? "Sign in to open the service floor" : "Sign in";
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
@@ -45,7 +49,7 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
     setBusy(true);
     setError(null);
     try {
-      const result = await login(email.trim(), password);
+      const result = throughService ? await signInThroughService(email.trim(), password) : await login(email.trim(), password);
       toast.show(`Welcome back, ${result.user.name}.`, "success");
       navigate(safeNextPath(params.get("next") ?? defaultNext));
     } catch (caught) {
@@ -93,6 +97,11 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
         {owner && (
           <p>
             <Link to="/owner/sign-up">Create a restaurant owner account</Link>
+          </p>
+        )}
+        {throughService && (
+          <p>
+            <Link to="/owner/forgot-password">Forgot your password?</Link>
           </p>
         )}
       </div>

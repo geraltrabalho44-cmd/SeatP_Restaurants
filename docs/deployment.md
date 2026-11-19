@@ -97,6 +97,8 @@ Set these for **Production** in the Vercel project. Every name is read by
 | `RESEND_API_KEY` | Empty until step 6 | Needed only for `resend` |
 | `EMAIL_FROM` | Until step 6: `SeatPlan <noreply@example.com>`; after: an address on your verified domain | Resend sends only from a verified domain |
 | `EMAIL_ALLOWLIST` | Comma-separated addresses of the team's own test inboxes | Everyone else is stored as `skipped`, so a demo never mails a stranger |
+| `AUTH_PROVIDER` | Unset (or `local`) until Supabase is set up, then `supabase` | `local` is the built-in email and password. `supabase` signs restaurant owners and staff in through Supabase Auth; SeatPlan keeps its own sessions. The app refuses to start with it set and a key missing |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY` | Empty until Supabase is set up | The project's `https://<project>.supabase.co` and its public anon key. The project must have "Confirm email" ON, or sign-in refuses to work |
 | `WEATHER_MAX_FETCHES_PER_HOUR` | Global cap on external forecast calls per hour. Defaults to 200. |
 | `WEATHER_PROVIDER` | `demo` or `open-meteo` | Offline simulation by default. The real service requests hourly forecasts using rounded restaurant coordinates. |
 | `WEATHER_DEMO_SCENARIO` | `clear`, `overcast`, `showers` or `rain-evening` | The last scenario simulates rain tomorrow evening in the venue timezone. |

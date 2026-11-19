@@ -32,6 +32,13 @@ through Resend, usability sessions with real users.
   (`backend/app/payments/READ_ME_FIRST.md`). Hosted Checkout only, so no card data reaches SeatPlan and the
   Content-Security-Policy is unchanged; webhooks are signature-checked, deduplicated and re-read from Stripe.
 - Staff see each booking's deposit on the floor. New owner page "Deposits".
+- Sign-in for restaurant owners and staff through Supabase Auth, prepared and switched off by default
+  (`AUTH_PROVIDER=supabase` plus the project's URL and public key). Supabase only proves who owns an email
+  address; SeatPlan keeps its own accounts and session tokens, so no other page changes. The browser talks
+  only to SeatPlan (no new dependency, no change to the Content-Security-Policy). Includes sign-up with a
+  confirmation link, "Forgot your password?", and a refusal to work if the project does not ask people to
+  confirm their email. Accounts made before the switch still sign in with their password. Event organisers
+  and diner accounts keep the built-in sign-in (they are shared with Events). 1 new table (`auth_identities`).
 - Offers (discount coupons). The restaurant bears the cost: SeatPlan records the offer and who used it, and
   tells the staff what to take off the bill; nothing is paid or refunded through SeatPlan. The owner makes
   offers (a percentage, an amount or a free item, with dates, weekdays, a smallest party and a limit) and

@@ -58,6 +58,11 @@ class Settings:
     whatsapp_phone_number_id: str = ""
     # With a real provider, demo restaurants only message these numbers (E.164).
     message_allowlist: tuple[str, ...] = ()
+    # Sign-in for restaurant owners and staff: "local" (the built-in email and password, the default)
+    # or "supabase" (Supabase Auth proves who they are; SeatPlan keeps its own sessions and accounts).
+    auth_provider: str = "local"
+    supabase_url: str = ""
+    supabase_anon_key: str = field(default="", repr=False)
     weather_max_fetches_per_hour: int = 200
     weather_provider: str = "demo"
     weather_demo_scenario: str = "clear"
@@ -188,6 +193,18 @@ def _check_message_settings(
         )
 
 
+def _check_auth_settings(provider: str, url: str, key: str) -> None:
+    """Refuse to start with a half-set sign-in service (the built-in one needs nothing)."""
+    if provider not in ("local", "supabase"):
+        raise RuntimeError("AUTH_PROVIDER must be 'local' or 'supabase'.")
+    if provider == "supabase":
+        if not url or not key:
+            raise RuntimeError("AUTH_PROVIDER=supabase needs SUPABASE_URL and SUPABASE_ANON_KEY.")
+        local = url.startswith(("http://localhost", "http://127.0.0.1"))
+        if not (url.startswith("https://") or local):
+            raise RuntimeError("SUPABASE_URL must start with https://.")
+
+
 def load_settings() -> Settings:
     """Build a fresh Settings object from the current environment."""
     database_url = _choose_database_url()
@@ -216,6 +233,10 @@ def load_settings() -> Settings:
         wa_token,
         wa_phone_id,
     )
+    auth_provider = os.environ.get("AUTH_PROVIDER", "local").strip().lower() or "local"
+    supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+    supabase_key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
+    _check_auth_settings(auth_provider, supabase_url, supabase_key)
     return Settings(
         database_url=database_url,
         secret_key=_choose_secret_key(is_postgres),
@@ -249,6 +270,9 @@ def load_settings() -> Settings:
         weather_provider=weather_provider,
         weather_demo_scenario=os.environ.get("WEATHER_DEMO_SCENARIO", "clear"),
         open_meteo_api_key=os.environ.get("OPEN_METEO_API_KEY", ""),
+        auth_provider=auth_provider,
+        supabase_url=supabase_url,
+        supabase_anon_key=supabase_key,
     )
 
 

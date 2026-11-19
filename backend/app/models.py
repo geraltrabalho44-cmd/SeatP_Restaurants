@@ -951,3 +951,23 @@ class OfferRedemption(Base):
     email: Mapped[str] = mapped_column(String(254))
     redeemed_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
     released_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+
+
+class AuthIdentity(Base):
+    """Links a sign-in service's person to a SeatPlan account, by the service's own id.
+
+    A separate table, so the shared `organisers` table gets no new column. The link is made only after
+    the service has proven the person owns the email address (confirmed it).
+    """
+
+    __tablename__ = "auth_identities"
+    __table_args__ = (UniqueConstraint("provider", "subject", name="uq_auth_identity"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    provider: Mapped[str] = mapped_column(String(20))
+    subject: Mapped[str] = mapped_column(String(80))
+    organiser_id: Mapped[int] = mapped_column(
+        ForeignKey("organisers.id", ondelete="CASCADE"), index=True
+    )
+    email: Mapped[str] = mapped_column(String(254))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)

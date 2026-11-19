@@ -27,6 +27,7 @@ export type ErrorCode =
   | "payment_unavailable" // HTTP 502: the payment provider could not be reached
   | "payments_not_ready" // HTTP 422: deposits need online payments connected first
   | "terms_not_accepted" // HTTP 422: the terms and privacy notice were not accepted
+  | "identity_unavailable" // HTTP 502/503: the sign-in service could not be reached or is not safe to use
   | "offer_invalid" // HTTP 422: the offer code is not valid for this guest and booking
   | "messages_off" // HTTP 409: the restaurant does not send phone messages
   | "bad_phone" // HTTP 422: not a Portuguese mobile number

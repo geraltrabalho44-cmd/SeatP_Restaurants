@@ -34,9 +34,11 @@ import MenuPage from "./pages/owner/MenuPage";
 import PublishReview from "./pages/owner/PublishReview";
 import UnsubscribePage from "./pages/legal/UnsubscribePage";
 import InsightsPage from "./pages/owner/InsightsPage";
+import ForgotPasswordPage from "./pages/owner/ForgotPasswordPage";
 import MessagesPage from "./pages/owner/MessagesPage";
 import OffersPage from "./pages/owner/OffersPage";
 import PaymentsPage from "./pages/owner/PaymentsPage";
+import ResetPasswordPage from "./pages/owner/ResetPasswordPage";
 import TermsPage from "./pages/owner/TermsPage";
 import DemoCheckoutPage from "./pages/pay/DemoCheckoutPage";
 import MessageActionPage from "./pages/messages/MessageActionPage";
@@ -52,6 +54,8 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/owner" element={<OwnerHomePage />} />
       <Route path="/owner/sign-up" element={<OwnerSignUpPage />} />
+      <Route path="/owner/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/owner/reset-password" element={<ResetPasswordPage />} />
       <Route path="/owner/new" element={<NewRestaurantWizard />} />
       <Route path="/owner/:venueId/setup" element={<NewRestaurantWizard />} />
       <Route path="/owner/:venueId/profile" element={<ProfilePage />} />
