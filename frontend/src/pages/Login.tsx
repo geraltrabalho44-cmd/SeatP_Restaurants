@@ -9,6 +9,8 @@ import type { SecondStep, SocialProvider } from "../api/identity";
 import type { LoginResponse } from "../api/types";
 import { SecondStepForm } from "./owner/SecondStepForm";
 import { Button, Field, PageShell, useToast } from "../design/components";
+import { useT } from "../i18n/I18nProvider";
+import { tr } from "../i18n/locale";
 import "./login.css";
 
 /** Only allow in-app paths after login, so a link cannot send people to another site. */
@@ -18,13 +20,14 @@ export function safeNextPath(next: string | null): string {
 }
 
 function messageFor(error: unknown): string {
-  if (!(error instanceof ApiError)) return "Something went wrong. Please try again.";
-  if (error.code === "unauthorised" || error.code === "not_found") return "That email and password do not match an account.";
-  if (error.code === "rate_limited") return "Too many attempts. Please wait a minute and try again.";
+  if (!(error instanceof ApiError)) return tr("Something went wrong. Please try again.");
+  if (error.code === "unauthorised" || error.code === "not_found") return tr("That email and password do not match an account.");
+  if (error.code === "rate_limited") return tr("Too many attempts. Please wait a minute and try again.");
   return error.message;
 }
 
 export default function Login({ defaultNext = "/" }: { defaultNext?: string } = {}) {
+  const { t } = useT();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const toast = useToast();
@@ -44,10 +47,10 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   // Coming to open a restaurant's service floor, the page says so; the staff keep the plain form.
   const staff = !owner && (next === "/staff" || next.startsWith("/staff/"));
   const throughService = provider === "supabase" && (owner || staff);
-  const title = owner ? "Sign in to manage your restaurant" : staff ? "Sign in to open the service floor" : "Sign in";
+  const title = owner ? t("Sign in to manage your restaurant") : staff ? t("Sign in to open the service floor") : t("Sign in");
 
   const welcome = (result: LoginResponse): void => {
-    toast.show(`Welcome back, ${result.user.name}.`, "success");
+    toast.show(t("Welcome back, {name}.", { name: result.user.name }), "success");
     navigate(safeNextPath(params.get("next") ?? defaultNext));
   };
 
@@ -65,7 +68,7 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (email.trim() === "" || password === "") {
-      setError("Enter your email and your password.");
+      setError(t("Enter your email and your password."));
       return;
     }
     setBusy(true);
@@ -94,22 +97,22 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
       <div className="login">
         <h1>{title}</h1>
         {owner ? (
-          <p className="login-lede">Use the email and password of your restaurant owner account.</p>
+          <p className="login-lede">{t("Use the email and password of your restaurant owner account.")}</p>
         ) : staff ? (
-          <p className="login-lede">Use the email and password of your restaurant staff account.</p>
+          <p className="login-lede">{t("Use the email and password of your restaurant staff account.")}</p>
         ) : (
           <p className="login-lede">
-            For organisers and restaurant staff. Invited guests only need their personal link. Guests who made an account on a shared link{" "}
-            <Link to="/my/sign-in">sign in on the guest page</Link>.
+            {t("For organisers and restaurant staff. Invited guests only need their personal link. Guests who made an account on a shared link")}{" "}
+            <Link to="/my/sign-in">{t("sign in on the guest page")}</Link>.
           </p>
         )}
         {second ? (
           <SecondStepForm step={second} onDone={welcome} onCancel={() => setSecond(null)} />
         ) : (
         <form onSubmit={onSubmit} noValidate>
-          <Field label="Email" type="email" name="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field label={t("Email")} type="email" name="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field
-            label="Password"
+            label={t("Password")}
             type={owner && showPassword ? "text" : "password"}
             name="password"
             autoComplete="current-password"
@@ -120,31 +123,31 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
           />
           {owner && (
             <Button variant="ghost" aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? "Hide password" : "Show password"}
+              {showPassword ? t("Hide password") : t("Show password")}
             </Button>
           )}
           <Button type="submit" busy={busy} className="login-submit">
-            Sign in
+            {t("Sign in")}
           </Button>
         </form>
         )}
         {throughService && !second && identityConfig.oauth.length > 0 && (
-          <div className="login-social" role="group" aria-label="Or continue with">
+          <div className="login-social" role="group" aria-label={t("Or continue with")}>
             {identityConfig.oauth.map((which) => (
               <Button key={which} variant="secondary" disabled={busy} onClick={() => void social(which)}>
-                Continue with {which === "google" ? "Google" : "Apple"}
+                {t("Continue with {provider}", { provider: which === "google" ? "Google" : "Apple" })}
               </Button>
             ))}
           </div>
         )}
         {owner && (
           <p>
-            <Link to="/owner/sign-up">Create a restaurant owner account</Link>
+            <Link to="/owner/sign-up">{t("Create a restaurant owner account")}</Link>
           </p>
         )}
         {throughService && (
           <p>
-            <Link to="/owner/forgot-password">Forgot your password?</Link>
+            <Link to="/owner/forgot-password">{t("Forgot your password?")}</Link>
           </p>
         )}
       </div>

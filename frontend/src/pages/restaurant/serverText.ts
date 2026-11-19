@@ -2,10 +2,10 @@
 // the reasons for a suggestion in English. They come from a closed set, so this puts the ones it
 // knows in the language in use. Anything else, such as a restaurant's own words ("Tagus river"), is
 // shown as it came: it is the restaurant's text, not ours.
-import { catalogue, type Message } from "../../i18n/catalogue";
-import { tr } from "../../i18n/locale";
+import type { Message } from "../../i18n/catalogue";
+import { hasMessage, tr } from "../../i18n/locale";
 
-const known = (text: string): boolean => Object.hasOwn(catalogue, text);
+const known = hasMessage;
 
 /** "table T5" or "tables T5 + T6", as the optimiser writes them. */
 function tablesText(text: string): string {

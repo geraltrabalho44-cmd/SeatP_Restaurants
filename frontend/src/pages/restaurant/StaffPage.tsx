@@ -12,6 +12,8 @@ import type { RestaurantInfo } from "../../api/restaurant";
 import { getOwnerProfile } from "../../api/owner";
 import { Wordmark } from "../../design/components/PageShell";
 import { PageShell } from "../../design/components";
+import type { Message } from "../../i18n/catalogue";
+import { useT } from "../../i18n/I18nProvider";
 import { formatDate, todayIso } from "./format";
 import { StaffDashboard } from "./StaffDashboard";
 import { StaffFloor } from "./StaffFloor";
@@ -22,7 +24,7 @@ import "./staff.css";
 
 type Tab = "floor" | "dashboard" | "optimise" | "schedule";
 
-const TABS: { id: Tab; label: string }[] = [
+const TABS: { id: Tab; label: Message }[] = [
   { id: "floor", label: "Floor" },
   { id: "dashboard", label: "Dashboard" },
   { id: "optimise", label: "Optimise" },
@@ -30,6 +32,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function StaffPage() {
+  const { t } = useT();
   const { venueId = "" } = useParams();
   const [tab, setTab] = useState<Tab>("floor");
   const [scheduleVisited, setScheduleVisited] = useState(false);
@@ -45,18 +48,18 @@ export default function StaffPage() {
     return () => { current = false; };
   }, [venueId, ownerEntry]);
   return (
-    <PageShell title="Service floor" width="wide">
+    <PageShell title={t("Service floor")} width="wide">
       <div className="st-page">
-        <aside className="st-sidebar"><Wordmark/><p className="st-workspace-label">Staff workspace</p><TabList current={tab} onChange={changeTab} /><Link className="st-home-link" to={ownerEntry ? "/owner" : "/"}>{ownerEntry ? "My restaurants" : "Find restaurants"}</Link></aside>
+        <aside className="st-sidebar"><Wordmark/><p className="st-workspace-label">{t("Staff workspace")}</p><TabList current={tab} onChange={changeTab} /><Link className="st-home-link" to={ownerEntry ? "/owner" : "/"}>{ownerEntry ? t("My restaurants") : t("Find restaurants")}</Link></aside>
         <div className="st-content">
         <div className="st-top">
           <div>
-            <p className="st-restaurant-name">{restaurant?.name ?? `Restaurant ${venueId}`}</p>
-            <h1 className="st-title">Service floor</h1>
+            <p className="st-restaurant-name">{restaurant?.name ?? t("Restaurant {id}", { id: venueId })}</p>
+            <h1 className="st-title">{t("Service floor")}</h1>
             <p className="rb-muted">{formatDate(date)}</p>
           </div>
           <label className="st-date">
-            <span className="field-label">Day</span>
+            <span className="field-label">{t("Day")}</span>
             <input className="field-input" type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
           </label>
         </div>
@@ -73,6 +76,7 @@ export default function StaffPage() {
 }
 
 function TabList({ current, onChange }: { current: Tab; onChange: (tab: Tab) => void }) {
+  const { t: say } = useT();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const [vertical,setVertical]=useState(()=>window.innerWidth>1024);
   useEffect(()=>{const resize=()=>setVertical(window.innerWidth>1024);window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[]);
@@ -86,7 +90,7 @@ function TabList({ current, onChange }: { current: Tab; onChange: (tab: Tab) => 
     refs.current[next]?.focus();
   };
   return (
-    <div role="tablist" aria-orientation={vertical ? "vertical" : "horizontal"} aria-label="Staff views" className="st-tabs" onKeyDown={onKeyDown}>
+    <div role="tablist" aria-orientation={vertical ? "vertical" : "horizontal"} aria-label={say("Staff views")} className="st-tabs" onKeyDown={onKeyDown}>
       {TABS.map((t, i) => (
         <button
           key={t.id}
@@ -102,7 +106,7 @@ function TabList({ current, onChange }: { current: Tab; onChange: (tab: Tab) => 
           className="st-tab"
           onClick={() => onChange(t.id)}
         >
-          {t.label}
+          {say(t.label)}
         </button>
       ))}
     </div>

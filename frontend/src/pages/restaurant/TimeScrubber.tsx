@@ -2,6 +2,8 @@
 // A native range input: arrow keys, Page Up/Down, Home and End work for free,
 // and screen readers announce the time through aria-valuetext.
 import { Button } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import { fromMinutes, toMinutes } from "./format";
 
 export const STEP_MINUTES = 15;
@@ -38,17 +40,18 @@ export function nowTime(now: Date = new Date()): string {
 
 function serviceAt(services: Service[], minutes: number): string {
   const found = services.find((s) => toMinutes(s.start_time) <= minutes && minutes < toMinutes(s.end_time));
-  return found ? found.name : "Between services";
+  return found ? found.name : tr("Between services");
 }
 
 export function TimeScrubber({ services, time, onChange }: TimeScrubberProps) {
+  const { t } = useT();
   const { min, max } = serviceRange(services);
   const value = Math.min(Math.max(toMinutes(time), min), max);
   const label = `${fromMinutes(value)}, ${serviceAt(services, value)}`;
   return (
     <div className="st-scrubber">
       <label htmlFor="st-time" className="field-label">
-        Floor at <strong className="tabular st-scrubber-time">{fromMinutes(value)}</strong>{" "}
+        {t("Floor at")} <strong className="tabular st-scrubber-time">{fromMinutes(value)}</strong>{" "}
         <span className="rb-muted">({serviceAt(services, value)})</span>
       </label>
       <div className="st-scrubber-row">
@@ -69,7 +72,7 @@ export function TimeScrubber({ services, time, onChange }: TimeScrubberProps) {
           {fromMinutes(max)}
         </span>
         <Button variant="ghost" onClick={() => onChange(nowTime())}>
-          Now
+          {t("Now")}
         </Button>
       </div>
     </div>

@@ -1,5 +1,6 @@
-import {expect,it} from "vitest";
-import {detect,released,translate} from "./locale";
+import {beforeAll,expect,it} from "vitest";
+import {detect,loadCatalogue,released,translate} from "./locale";
+beforeAll(()=>loadCatalogue());
 it("uses explicit, saved and browser locales in order",()=>{
  const all=released("en,pt,es,fr");
  expect(detect("es","fr",["pt-BR"],all)).toBe("es");

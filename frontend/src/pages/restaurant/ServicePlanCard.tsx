@@ -8,6 +8,8 @@ import { useState } from "react";
 import { applyServicePlan, previewServicePlan } from "../../api/restaurant";
 import type { PlanScore, ServicePlan } from "../../api/restaurant";
 import { Button } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import { errorMessage, people, tablesText, todayIso } from "./format";
 
 interface ServicePlanCardProps {
@@ -17,8 +19,8 @@ interface ServicePlanCardProps {
 }
 
 /** "1 booking", "2 bookings". */
-function count(n: number, noun: string): string {
-  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+function bookings(n: number): string {
+  return n === 1 ? tr("1 booking") : tr("{n} bookings", { n });
 }
 
 /** What the plan gains, e.g. "2 more guests seated and 2 empty chairs fewer". */
@@ -26,12 +28,13 @@ export function gainText(before: PlanScore, after: PlanScore): string {
   const parts: string[] = [];
   const guests = after.covers_seated - before.covers_seated;
   const chairs = before.wasted_seats - after.wasted_seats;
-  if (guests > 0) parts.push(`${count(guests, "more guest")} seated`);
-  if (chairs > 0) parts.push(`${count(chairs, "empty chair")} fewer`);
-  return parts.length > 0 ? parts.join(" and ") : "no change in guests seated or empty chairs";
+  if (guests > 0) parts.push(guests === 1 ? tr("1 more guest seated") : tr("{n} more guests seated", { n: guests }));
+  if (chairs > 0) parts.push(chairs === 1 ? tr("1 empty chair fewer") : tr("{n} empty chairs fewer", { n: chairs }));
+  return parts.length > 0 ? parts.join(` ${tr("and")} `) : tr("no change in guests seated or empty chairs");
 }
 
 export function ServicePlanCard({ venueId, date, service }: ServicePlanCardProps) {
+  const { t } = useT();
   const [plan, setPlan] = useState<ServicePlan | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -52,25 +55,25 @@ export function ServicePlanCard({ venueId, date, service }: ServicePlanCardProps
     }
   };
   const preview = (): Promise<void> =>
-    run(async () => setPlan(await previewServicePlan(venueId, date, service)), "The optimiser did not answer. Nothing was changed.");
+    run(async () => setPlan(await previewServicePlan(venueId, date, service)), t("The optimiser did not answer. Nothing was changed."));
   const apply = (planId: string): Promise<void> =>
     run(async () => {
       const applied = await applyServicePlan(venueId, date, service, planId);
       setPlan(null);
-      setDone(`Done: ${count(applied.moves.length, "booking")} moved.`);
-    }, "The moves were not applied. Nothing was changed.");
+      setDone(t("Done: {bookings} moved.", { bookings: bookings(applied.moves.length) }));
+    }, t("The moves were not applied. Nothing was changed."));
 
-  const title = date === todayIso() ? "Optimise tonight's tables" : `Optimise the ${service} tables`;
+  const title = date === todayIso() ? t("Optimise tonight's tables") : t("Optimise the {service} tables", { service });
   return (
     <section className="rb-card" aria-labelledby="st-plan-title">
       <h2 id="st-plan-title" className="rb-service-title">
         {title}
       </h2>
       <p className="rb-muted st-small">
-        Finds a better table for {service} bookings that the system placed. Diners who chose their own table or asked for sun, a view or the like, and parties already seated, never move.
+        {t("Finds a better table for {service} bookings that the system placed. Diners who chose their own table or asked for sun, a view or the like, and parties already seated, never move.", { service })}
       </p>
       <Button variant={plan ? "secondary" : "primary"} busy={busy && !plan} onClick={() => void preview()}>
-        Preview moves
+        {t("Preview moves")}
       </Button>
       <div aria-live="polite">
         {plan && <PlanPreview plan={plan} busy={busy} onApply={() => void apply(plan.plan_id)} />}
@@ -86,29 +89,30 @@ export function ServicePlanCard({ venueId, date, service }: ServicePlanCardProps
 }
 
 function PlanPreview({ plan, busy, onApply }: { plan: ServicePlan; busy: boolean; onApply: () => void }) {
-  const stays = `${count(plan.fixed, "booking")} stay where they are (the diner chose the table or asked for something, or the party is already seated).`;
+  const { t } = useT();
+  const stays = t("{bookings} stay where they are (the diner chose the table or asked for something, or the party is already seated).", { bookings: bookings(plan.fixed) });
   if (plan.moves.length === 0) {
     return (
       <div className="st-answer">
-        <p className="st-answer-best">Nothing to improve: every booking that may move already has the best table.</p>
+        <p className="st-answer-best">{t("Nothing to improve: every booking that may move already has the best table.")}</p>
         <p className="rb-muted st-small">{stays}</p>
       </div>
     );
   }
   return (
     <div className="st-answer">
-      <p className="st-answer-best">With this plan: {gainText(plan.before, plan.after)}.</p>
-      <p>These bookings would move:</p>
+      <p className="st-answer-best">{t("With this plan:")} {gainText(plan.before, plan.after)}.</p>
+      <p>{t("These bookings would move:")}</p>
       <ul className="st-displaced">
         {plan.moves.map((move) => (
           <li key={move.booking_id}>
-            {move.name}, {people(move.party_size)} at {move.time}: from {tablesText(move.from_tables)} to {tablesText(move.to_tables)}
+            {t("{name}, {people} at {time}: from {from} to {to}", { name: move.name, people: people(move.party_size), time: move.time, from: tablesText(move.from_tables), to: tablesText(move.to_tables) })}
           </li>
         ))}
       </ul>
       <p className="rb-muted st-small">{stays}</p>
       <Button busy={busy} onClick={onApply}>
-        Apply these moves
+        {t("Apply these moves")}
       </Button>
     </div>
   );

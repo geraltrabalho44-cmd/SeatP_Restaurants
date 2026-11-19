@@ -1,14 +1,15 @@
 // Every translation must say the same thing as its English key: present, not empty, and with the
 // same {placeholders}, so a sentence can never lose the name or the number it is about.
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { catalogue } from "./catalogue";
-import { detect, names, released, tags, translate } from "./locale";
+import { detect, loadCatalogue, names, released, tags, translate } from "./locale";
 import type { Locale } from "./locale";
 import type { Message } from "./catalogue";
 
 const placeholders = (text: string): string[] => [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1] ?? "").sort();
 
 describe("the catalogue", () => {
+  beforeAll(() => loadCatalogue());
   const entries = Object.entries(catalogue) as [Message, readonly [string, string, string]][];
 
   it("has Portuguese, Spanish and French for every English sentence", () => {

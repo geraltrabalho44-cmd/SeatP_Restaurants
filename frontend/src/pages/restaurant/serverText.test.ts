@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { setActiveLocale } from "../../i18n/locale";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { loadCatalogue, setActiveLocale } from "../../i18n/locale";
 import { serverText } from "./serverText";
 
+beforeAll(() => loadCatalogue());
 afterEach(() => setActiveLocale("en"));
 
 describe("serverText", () => {

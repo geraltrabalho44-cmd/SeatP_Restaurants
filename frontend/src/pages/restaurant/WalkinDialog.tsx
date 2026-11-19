@@ -5,8 +5,10 @@ import type { RefObject } from "react";
 import { askWhatIf, seatWalkin } from "../../api/restaurant";
 import type { StaffBooking, WhatIfAnswer } from "../../api/restaurant";
 import { Button, Checkbox, Dialog, Select } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import { errorMessage, formatDate, tablesText } from "./format";
-import { PARTY_CHOICES, WhatIfAnswerView } from "./WhatIf";
+import { partyChoices, WhatIfAnswerView } from "./WhatIf";
 
 interface WalkinDialogProps {
   venueId: string;
@@ -26,7 +28,7 @@ interface WalkinForm {
   highChairs: number;
 }
 
-const HIGH_CHAIRS: { value: string; label: string }[] = [0, 1, 2, 3].map((n) => ({ value: String(n), label: n === 0 ? "None" : String(n) }));
+const highChairChoices = (): { value: string; label: string }[] => [0, 1, 2, 3].map((n) => ({ value: String(n), label: n === 0 ? tr("None") : String(n) }));
 
 /**
  * Moves focus to the returned element whenever `value` becomes set. Used for
@@ -43,6 +45,7 @@ function useFocusWhenSet<T extends HTMLElement>(value: unknown): RefObject<T> {
 }
 
 export function WalkinDialog({ venueId, date, time, inService = true, serviceName, open, onClose, onSeated }: WalkinDialogProps) {
+  const { t } = useT();
   const [form, setForm] = useState<WalkinForm>({ party: 2, accessible: false, highChairs: 0 });
   const [answer, setAnswer] = useState<WhatIfAnswer | null>(null);
   const [busy, setBusy] = useState(false);
@@ -68,7 +71,7 @@ export function WalkinDialog({ venueId, date, time, inService = true, serviceNam
       await action();
     } catch (error) {
       setAnswer(null);
-      setProblem(errorMessage(error, "That did not work. Please try again."));
+      setProblem(errorMessage(error, t("That did not work. Please try again.")));
     } finally {
       setBusy(false);
     }
@@ -86,30 +89,30 @@ export function WalkinDialog({ venueId, date, time, inService = true, serviceNam
   const actions = (
     <>
       <Button variant="secondary" disabled={busy} onClick={close}>
-        Cancel
+        {t("Cancel")}
       </Button>
       {tableIds ? (
         <Button busy={busy} onClick={() => void seat(tableIds)}>
-          Seat at {tablesText(answer?.table_labels ?? [])}
+          {t("Seat at {tables}", { tables: tablesText(answer?.table_labels ?? []) })}
         </Button>
       ) : (
         <Button busy={busy} onClick={() => void find()}>
-          {needsMoves ? "Check again" : "Find a table"}
+          {needsMoves ? t("Check again") : t("Find a table")}
         </Button>
       )}
     </>
   );
   return (
-    <Dialog open={open} title="New walk-in" onClose={close} actions={actions}>
-      <button type="button" className="st-walkin-close" aria-label="Cancel walk-in" disabled={busy} onClick={close}>×</button>
-      <p className="st-effective-time"><strong>Effective booking time · {time}</strong><span>{formatDate(date)}{serviceName ? ` · ${serviceName} service` : ""}</span></p>
-      {!inService && <p className="rb-notice rb-notice-warning" role="status">This reference is outside service hours. The request will use {time}, not the nearest opening time. Return to the floor to choose another time if needed.</p>}
-      <p className="rb-muted st-walkin-hint">Find a table previews a suggestion. You confirm before seating.</p>
-      <fieldset className="st-walkin-fields" disabled={busy}><legend className="visually-hidden">Walk-in needs</legend><WalkinFields form={form} onChange={update} /></fieldset>
+    <Dialog open={open} title={t("New walk-in")} onClose={close} actions={actions}>
+      <button type="button" className="st-walkin-close" aria-label={t("Cancel walk-in")} disabled={busy} onClick={close}>×</button>
+      <p className="st-effective-time"><strong>{t("Effective booking time · {time}", { time })}</strong><span>{formatDate(date)}{serviceName ? ` · ${t("{name} service", { name: serviceName })}` : ""}</span></p>
+      {!inService && <p className="rb-notice rb-notice-warning" role="status">{t("This reference is outside service hours. The request will use {time}, not the nearest opening time. Return to the floor to choose another time if needed.", { time })}</p>}
+      <p className="rb-muted st-walkin-hint">{t("Find a table previews a suggestion. You confirm before seating.")}</p>
+      <fieldset className="st-walkin-fields" disabled={busy}><legend className="visually-hidden">{t("Walk-in needs")}</legend><WalkinFields form={form} onChange={update} /></fieldset>
       {/* tabIndex -1: focusable by code only, so it does not add a Tab stop. */}
       <div aria-live="polite" ref={answerRef} tabIndex={-1} className="st-answer-focus">
         {answer && <WhatIfAnswerView answer={answer} party={form.party} />}
-        {needsMoves && <p className="rb-notice rb-notice-warning">Apply the table moves above from the service floor, then check again.</p>}
+        {needsMoves && <p className="rb-notice rb-notice-warning">{t("Apply the table moves above from the service floor, then check again.")}</p>}
       </div>
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
@@ -121,11 +124,12 @@ export function WalkinDialog({ venueId, date, time, inService = true, serviceNam
 }
 
 function WalkinFields({ form, onChange }: { form: WalkinForm; onChange: (form: WalkinForm) => void }) {
+  const { t } = useT();
   return (
     <div className="rb-form">
-      <Select label="How many people?" options={PARTY_CHOICES} value={String(form.party)} onChange={(e) => onChange({ ...form, party: Number(e.target.value) })} />
-      <Select label="High chairs" options={HIGH_CHAIRS} value={String(form.highChairs)} onChange={(e) => onChange({ ...form, highChairs: Number(e.target.value) })} />
-      <Checkbox label="Needs an accessible table" checked={form.accessible} onChange={(e) => onChange({ ...form, accessible: e.target.checked })} />
+      <Select label={t("How many people?")} options={partyChoices()} value={String(form.party)} onChange={(e) => onChange({ ...form, party: Number(e.target.value) })} />
+      <Select label={t("High chairs")} options={highChairChoices()} value={String(form.highChairs)} onChange={(e) => onChange({ ...form, highChairs: Number(e.target.value) })} />
+      <Checkbox label={t("Needs an accessible table")} checked={form.accessible} onChange={(e) => onChange({ ...form, accessible: e.target.checked })} />
     </div>
   );
 }

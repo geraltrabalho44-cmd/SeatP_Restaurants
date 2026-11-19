@@ -8,11 +8,14 @@
 import type { BookingStatus, FloorStatus, StaffBooking, StaffFloor, StaffTable } from "../../api/restaurant";
 import type { MapTable, SeatState } from "../../api/types";
 import type { DescribeItem } from "../../seatmap/describe";
+import type { Message } from "../../i18n/catalogue";
+import { tr } from "../../i18n/locale";
 import type { KeyEntry } from "./MapKey";
 import { toMinutes } from "./format";
 import { partyRange } from "./tableView";
 
-export const FLOOR_LOOK: Record<FloorStatus, { glyph: SeatState; label: string; hint: string }> = {
+// The words are English keys; the screens put them in the language in use (t(look.label)).
+export const FLOOR_LOOK: Record<FloorStatus, { glyph: SeatState; label: Message; hint: Message }> = {
   free: { glyph: "free", label: "Free", hint: "Ready to seat" },
   reserved: { glyph: "held", label: "Reserved", hint: "Booking due at this time" },
   seated: { glyph: "taken", label: "Seated", hint: "Guests at the table" },
@@ -43,10 +46,10 @@ export function describeStaffTables(tables: StaffTable[]): DescribeItem {
     if (item.kind !== "table") return null;
     const table = byId.get(item.table.id);
     if (!table) return null;
-    const parts = [`Table ${table.label}`, partyRange(table), FLOOR_LOOK[table.status].label.toLowerCase()];
+    const parts = [tr("Table {label}", { label: table.label }), partyRange(table), tr(FLOOR_LOOK[table.status].label).toLowerCase()];
     if (table.name) parts.push(table.name);
-    if (table.party_size !== null) parts.push(`party of ${table.party_size}`);
-    if (table.accessible) parts.push("accessible");
+    if (table.party_size !== null) parts.push(tr("party of {n}", { n: table.party_size }));
+    if (table.accessible) parts.push(tr("accessible"));
     return parts.join(", ");
   };
 }
@@ -63,7 +66,7 @@ export function upcomingArrivals(bookings: StaffBooking[]): StaffBooking[] {
   return bookings.filter((b) => b.status === "confirmed").sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
 }
 
-export const BOOKING_LOOK: Record<BookingStatus, { label: string; tone: "neutral" | "warning" | "success" }> = {
+export const BOOKING_LOOK: Record<BookingStatus, { label: Message; tone: "neutral" | "warning" | "success" }> = {
   pending: { label: "Waiting for deposit", tone: "warning" },
   confirmed: { label: "Expected", tone: "warning" },
   seated: { label: "Seated", tone: "success" },
@@ -78,7 +81,7 @@ export function bookingOnTable(floor: StaffFloor, table: StaffTable): StaffBooki
 }
 
 /** Which next steps make sense for a booking in this status, in the order staff use them. */
-export function nextActions(status: BookingStatus): { status: BookingStatus; label: string }[] {
+export function nextActions(status: BookingStatus): { status: BookingStatus; label: Message }[] {
   switch (status) {
     case "confirmed":
       return [
@@ -99,12 +102,12 @@ export function nextActions(status: BookingStatus): { status: BookingStatus; lab
 
 /** Plain-language check before moving a booking to some tables. Null means fine. */
 export function moveProblem(tables: StaffTable[], party: number): string | null {
-  if (tables.length === 0) return "Choose at least one table.";
+  if (tables.length === 0) return tr("Choose at least one table.");
   const seats = tables.reduce((sum, t) => sum + t.max_party, 0);
-  if (seats < party) return `These tables seat ${seats}; the party is ${party}.`;
+  if (seats < party) return tr("These tables seat {seats}; the party is {party}.", { seats, party });
   if (tables.length > 1) {
     const group = tables[0]?.combine_group;
-    if (!group || tables.some((t) => t.combine_group !== group)) return "These tables cannot be pushed together. Pick tables from the same group.";
+    if (!group || tables.some((t) => t.combine_group !== group)) return tr("These tables cannot be pushed together. Pick tables from the same group.");
   }
   return null;
 }

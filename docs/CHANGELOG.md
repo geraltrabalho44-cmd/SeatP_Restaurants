@@ -68,6 +68,17 @@ through Resend, usability sessions with real users.
   only, offline, nothing stored; a `SearchProvider` interface lets a language model be plugged in later.
 - The base of the languages (pt-PT, es, fr) with discovery and the public restaurant page translated, a language
   picker in the header and `?lang=`; hidden until `VITE_I18N_LOCALES` lists a language. English stays the default.
+- The rest of the restaurant side now speaks pt-PT, es and fr too: the whole diner journey (party, time, table
+  plan and card, chairs, details, consent, deposit and payment pages, confirmation, manage page, SMS/WhatsApp
+  link page, offers unsubscribe, waitlist), the owner pages (profile, photos, hours, menu, deposits, guest
+  messages, insights, offers, terms, security, review and publish, sign-up and password pages), the staff
+  floor, schedule, dashboard and optimiser, and the sign-in page. The short sentences the server writes in
+  English (light, view, what is near a table, reasons for a suggestion) are translated on the page from their
+  closed set; a restaurant's own words stay as written. The translations are their own file, downloaded only
+  when a language other than English is on (the main script is about 25% smaller for everyone else). English
+  tests are unchanged. Still English: emails, calendar invites, the terms and privacy document, the
+  deposit-terms text, server error messages, Events and the home page. A native speaker must review the
+  translations before a language is released.
 - Terms, privacy and offers on the last step of a booking (GDPR). Two separate boxes: the terms and privacy
   notice (required, also enforced by the server: `terms_not_accepted`; the words open in a window and carry a
   version) and, separately, optional and never pre-ticked, "offers from this restaurant". The terms say the

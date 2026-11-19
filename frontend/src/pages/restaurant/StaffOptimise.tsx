@@ -6,6 +6,7 @@ import { useState } from "react";
 import { applyServicePlan, getSchedule, previewServicePlan } from "../../api/restaurant";
 import type { Schedule, ServicePlan } from "../../api/restaurant";
 import { Button, Dialog, EmptyState, ErrorState, Select, Skeleton } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
 import { ExactCheckCard } from "./ExactCheckCard";
 import { errorMessage, formatDate, needsSignIn, people, tablesText } from "./format";
 import { gainText } from "./ServicePlanCard";
@@ -21,17 +22,18 @@ export function servicesOn(schedule: Schedule, date: string): string[] {
 }
 
 export function StaffOptimise({ venueId, date }: { venueId: string; date: string }) {
+  const { t } = useT();
   const { state, reload } = useLoad(() => getSchedule(venueId), venueId);
-  if (state.status === "loading") return <Skeleton lines={4} label="Loading the services" />;
+  if (state.status === "loading") return <Skeleton lines={4} label={t("Loading the services")} />;
   if (state.status === "error") {
     if (needsSignIn(state.error)) return <SignInPrompt venueId={venueId} />;
-    return <ErrorState title="We could not load the services" message={errorMessage(state.error)} onRetry={() => reload()} />;
+    return <ErrorState title={t("We could not load the services")} message={errorMessage(state.error)} onRetry={() => reload()} />;
   }
   const services = servicesOn(state.data, date);
   if (services.length === 0) {
     return (
-      <EmptyState title="No service on this day">
-        <p>The restaurant is closed on {formatDate(date)}, so there is nothing to optimise. Pick another day above.</p>
+      <EmptyState title={t("No service on this day")}>
+        <p>{t("The restaurant is closed on {date}, so there is nothing to optimise. Pick another day above.", { date: formatDate(date) })}</p>
       </EmptyState>
     );
   }
@@ -39,6 +41,7 @@ export function StaffOptimise({ venueId, date }: { venueId: string; date: string
 }
 
 function OptimiseView({ venueId, date, services }: { venueId: string; date: string; services: string[] }) {
+  const { t } = useT();
   const [chosen, setChosen] = useState(services[0] ?? "");
   // The day above may change to one without the chosen service; fall back to the first.
   const service = services.includes(chosen) ? chosen : (services[0] ?? "");
@@ -46,16 +49,17 @@ function OptimiseView({ venueId, date, services }: { venueId: string; date: stri
   const key = `${date}|${service}`;
   return (
     <div className="st-dashboard">
-      <Select label="Service" options={services.map((name) => ({ value: name, label: name }))} value={service} onChange={(e) => setChosen(e.target.value)} />
+      <Select label={t("Service")} options={services.map((name) => ({ value: name, label: name }))} value={service} onChange={(e) => setChosen(e.target.value)} />
       <div className="st-optimise">
         <ServiceOperations key={`plan-${key}`} venueId={venueId} date={date} service={service} />
-        <details key={`exact-${key}`} className="rb-card st-exact-detail"><summary>Exact check · optional analysis</summary><p className="rb-muted">Compare the quick planner with the proven best plan. This analysis does not move bookings.</p><ExactCheckCard venueId={venueId} date={date} service={service} /></details>
+        <details key={`exact-${key}`} className="rb-card st-exact-detail"><summary>{t("Exact check · optional analysis")}</summary><p className="rb-muted">{t("Compare the quick planner with the proven best plan. This analysis does not move bookings.")}</p><ExactCheckCard venueId={venueId} date={date} service={service} /></details>
       </div>
     </div>
   );
 }
 
 function ServiceOperations({venueId,date,service}: {venueId:string;date:string;service:string}) {
+  const { t } = useT();
   const [plan,setPlan] = useState<ServicePlan | null>(null);
   const [busy,setBusy] = useState<"preview" | "apply" | null>(null);
   const [confirm,setConfirm] = useState(false);
@@ -65,7 +69,7 @@ function ServiceOperations({venueId,date,service}: {venueId:string;date:string;s
     if (busy) return;
     setBusy("preview");setPlan(null);setProblem("");setDone("");setConfirm(false);
     try { setPlan(await previewServicePlan(venueId,date,service)); }
-    catch(error) { setProblem(errorMessage(error,"The optimiser did not answer. Nothing was changed.")); }
+    catch(error) { setProblem(errorMessage(error,t("The optimiser did not answer. Nothing was changed."))); }
     finally { setBusy(null); }
   };
   const apply = async (): Promise<void> => {
@@ -73,37 +77,37 @@ function ServiceOperations({venueId,date,service}: {venueId:string;date:string;s
     setBusy("apply");setProblem("");
     try {
       const result = await applyServicePlan(venueId,date,service,plan.plan_id);
-      setDone(`Done: ${result.moves.length} booking${result.moves.length === 1 ? "" : "s"} moved.`);
+      setDone(t("Done: {bookings} moved.", { bookings: result.moves.length === 1 ? t("1 booking") : t("{n} bookings", { n: result.moves.length }) }));
       setPlan(null);
     } catch(error) {
       setPlan(null);
-      setProblem(errorMessage(error,"The moves were not applied. Preview again before applying."));
+      setProblem(errorMessage(error,t("The moves were not applied. Preview again before applying.")));
     } finally {setBusy(null);setConfirm(false);}
   };
   const count = plan?.moves.length ?? 0;
-  const action = `Apply ${count} move${count === 1 ? "" : "s"}`;
+  const action = count === 1 ? t("Apply 1 move") : t("Apply {n} moves", { n: count });
   return <section className="rb-card st-operation-plan" aria-labelledby="st-operation-title">
-    <h2 id="st-operation-title">Optimise {service}</h2>
+    <h2 id="st-operation-title">{t("Optimise {service}", { service })}</h2>
     <p className="st-effective-time">{formatDate(date)} · {service}</p>
-    <p className="rb-muted">Preview first. Diners' own table choices, ambience wishes and seated parties are protected by the planner.</p>
-    <Button variant={plan ? "secondary" : "primary"} disabled={busy === "apply"} busy={busy === "preview"} onClick={() => void preview()}>Preview moves</Button>
+    <p className="rb-muted">{t("Preview first. Diners' own table choices, ambience wishes and seated parties are protected by the planner.")}</p>
+    <Button variant={plan ? "secondary" : "primary"} disabled={busy === "apply"} busy={busy === "preview"} onClick={() => void preview()}>{t("Preview moves")}</Button>
     <div role="status" aria-live="polite">
-      {busy === "preview" && <p>Simulating {service} · no bookings are being changed.</p>}
+      {busy === "preview" && <p>{t("Simulating {service} · no bookings are being changed.", { service })}</p>}
       {done && <p className="rb-notice">{done}</p>}
       {plan && <div className="st-plan-preview">
-        <h3>Preview · nothing changed</h3>
-        {count === 0 ? <p>Nothing to improve: every booking that may move already has the best table.</p> : <>
-          <p>With this plan: {gainText(plan.before,plan.after)}.</p>
-          <ol className="st-plan-moves">{plan.moves.map(move => <li key={move.booking_id}>{move.name}, {people(move.party_size)} at {move.time}: from {tablesText(move.from_tables)} to {tablesText(move.to_tables)}</li>)}</ol>
+        <h3>{t("Preview · nothing changed")}</h3>
+        {count === 0 ? <p>{t("Nothing to improve: every booking that may move already has the best table.")}</p> : <>
+          <p>{t("With this plan:")} {gainText(plan.before,plan.after)}.</p>
+          <ol className="st-plan-moves">{plan.moves.map(move => <li key={move.booking_id}>{t("{name}, {people} at {time}: from {from} to {to}", { name: move.name, people: people(move.party_size), time: move.time, from: tablesText(move.from_tables), to: tablesText(move.to_tables) })}</li>)}</ol>
           <Button disabled={busy !== null} onClick={() => setConfirm(true)}>{action}</Button>
         </>}
-        <p className="rb-muted">{plan.fixed} bookings stay where they are (protected); {plan.movable} may be considered for a move.</p>
+        <p className="rb-muted">{t("{fixed} bookings stay where they are (protected); {movable} may be considered for a move.", { fixed: plan.fixed, movable: plan.movable })}</p>
       </div>}
     </div>
     {problem && <p role="alert" className="rb-notice rb-notice-error">{problem}</p>}
-    <Dialog open={confirm && plan !== null} title={`${action} for ${service}?`} onClose={() => {if (!busy) setConfirm(false);}} actions={<>
-      <Button variant="secondary" disabled={busy !== null} onClick={() => setConfirm(false)}>Keep current tables</Button>
-      <Button busy={busy === "apply"} onClick={() => void apply()}>Confirm {count} move{count === 1 ? "" : "s"}</Button>
-    </>}><p>{formatDate(date)} · {service}. Apply exactly the preview shown. If the floor changed, the server will refuse it and you must preview again.</p></Dialog>
+    <Dialog open={confirm && plan !== null} title={t("{action} for {service}?", { action, service })} onClose={() => {if (!busy) setConfirm(false);}} actions={<>
+      <Button variant="secondary" disabled={busy !== null} onClick={() => setConfirm(false)}>{t("Keep current tables")}</Button>
+      <Button busy={busy === "apply"} onClick={() => void apply()}>{count === 1 ? t("Confirm 1 move") : t("Confirm {n} moves", { n: count })}</Button>
+    </>}><p>{formatDate(date)} · {service}. {t("Apply exactly the preview shown. If the floor changed, the server will refuse it and you must preview again.")}</p></Dialog>
   </section>;
 }

@@ -6,8 +6,10 @@ import { useId } from "react";
 import type { DragEvent } from "react";
 import type { StaffBooking, StaffFloor, StaffTable } from "../../api/restaurant";
 import { Badge } from "../../design/components";
+import type { Message } from "../../i18n/catalogue";
 import { SEAT_RADIUS } from "../../seatmap/geometry";
 import { PatternDefs, SeatGlyph, safeId } from "../../seatmap/glyphs";
+import { useT } from "../../i18n/I18nProvider";
 import { people, tablesText } from "./format";
 import { staffDepositLabel } from "./money";
 import { BOOKING_LOOK, FLOOR_LOOK, bookingOnTable } from "./staffStatus";
@@ -27,13 +29,14 @@ interface TableBoardProps {
 }
 
 export function TableBoard({ floor, selectedId, onSelect, onDropBooking }: TableBoardProps) {
+  const { t } = useT();
   const drop = (event: DragEvent, table: StaffTable): void => {
     event.preventDefault();
     const bookingId = readDraggedBooking(event);
     if (bookingId) onDropBooking(bookingId, table.id);
   };
   return (
-    <ul className="st-board" aria-label="Tables">
+    <ul className="st-board" aria-label={t("Tables")}>
       {floor.tables.map((table) => {
         const look = FLOOR_LOOK[table.status];
         const booking = bookingOnTable(floor, table);
@@ -43,9 +46,9 @@ export function TableBoard({ floor, selectedId, onSelect, onDropBooking }: Table
               <span className="st-tile-label">{table.label}</span>
               <span className="st-tile-status">
                 <MiniGlyph table={table} />
-                {look.label}
+                {t(look.label)}
               </span>
-              <span className="st-tile-detail">{booking ? `${booking.name}, ${booking.party_size}` : `Seats ${table.max_party}`}</span>
+              <span className="st-tile-detail">{booking ? `${booking.name}, ${booking.party_size}` : t("Seats {n}", { n: table.max_party })}</span>
             </button>
           </li>
         );
@@ -76,29 +79,30 @@ interface ArrivalsProps {
 }
 
 export function ArrivalsList({ arrivals, selectedId, onSelect, services = [], label = "Upcoming arrivals", empty = "No more arrivals expected for this day." }: ArrivalsProps) {
-  if (arrivals.length === 0) return <p className="rb-muted">{empty}</p>;
+  const { t } = useT();
+  if (arrivals.length === 0) return <p className="rb-muted">{t(empty as Message)}</p>;
   const startDrag = (event: DragEvent, booking: StaffBooking): void => {
     event.dataTransfer.setData(BOOKING_DRAG_TYPE, booking.id);
     event.dataTransfer.effectAllowed = "move";
   };
   return (
-    <ol className="st-arrivals" aria-label={label}>
+    <ol className="st-arrivals" aria-label={t(label as Message)}>
       {arrivals.map((booking, index) => (
         <li key={booking.id} draggable onDragStart={(e) => startDrag(e, booking)} className="st-arrival">
-          {(index === 0 || arrivals[index - 1].time !== booking.time) && <p className="st-arrival-group">{services.find(service => service.start_time <= booking.time && booking.time < service.end_time)?.name ?? "Arrivals"} · {booking.time}</p>}
+          {(index === 0 || arrivals[index - 1].time !== booking.time) && <p className="st-arrival-group">{services.find(service => service.start_time <= booking.time && booking.time < service.end_time)?.name ?? t("Arrivals")} · {booking.time}</p>}
           <button type="button" className="st-arrival-button" aria-pressed={booking.id === selectedId} onClick={() => onSelect(booking.id)}>
             <span className="st-arrival-time tabular">{booking.time}</span>
             <span>
               <strong>{booking.name}</strong>
               <span className="st-arrival-table">{people(booking.party_size)} · {tablesText(booking.table_labels)}</span>
             </span>
-            <Badge tone={BOOKING_LOOK[booking.status].tone}>{BOOKING_LOOK[booking.status].label}</Badge>
+            <Badge tone={BOOKING_LOOK[booking.status].tone}>{t(BOOKING_LOOK[booking.status].label)}</Badge>
           </button>
           <span className="rb-badges">
-            {booking.needs_accessible && <Badge tone="info">Accessible</Badge>}
-            {booking.high_chairs > 0 && <Badge>High chair x{booking.high_chairs}</Badge>}
-            {booking.notes && <Badge tone="warning">Note</Badge>}
-            {booking.offer && <Badge tone="success">Offer: {booking.offer.what}</Badge>}
+            {booking.needs_accessible && <Badge tone="info">{t("Accessible")}</Badge>}
+            {booking.high_chairs > 0 && <Badge>{t("High chair x{n}", { n: booking.high_chairs })}</Badge>}
+            {booking.notes && <Badge tone="warning">{t("Note")}</Badge>}
+            {booking.offer && <Badge tone="success">{t("Offer: {what}", { what: booking.offer.what })}</Badge>}
             {staffDepositLabel(booking.payment) && <Badge tone="success">{staffDepositLabel(booking.payment)}</Badge>}
           </span>
         </li>

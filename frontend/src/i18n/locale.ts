@@ -1,4 +1,20 @@
-import { catalogue, type Message } from "./catalogue";
+import type { Message } from "./catalogue";
+
+// The sentences of the other languages are a separate chunk: someone using English never downloads them.
+// loadCatalogue() fetches it (the language picker and the provider do that when a language other than English
+// is on); until it has arrived, every sentence reads in English, which is always correct.
+type Sentences = Readonly<Record<string, readonly [string, string, string]>>;
+let loaded: Sentences | null = null;
+export function setCatalogue(value: Sentences): void {
+  loaded = value;
+}
+export async function loadCatalogue(): Promise<void> {
+  if (!loaded) loaded = (await import("./catalogue")).catalogue;
+}
+/** Whether a sentence has translations (false until the catalogue has loaded). */
+export function hasMessage(key: string): boolean {
+  return loaded !== null && Object.hasOwn(loaded, key);
+}
 export const names={en:"English",pt:"Português",es:"Español",fr:"Français"} as const;
 export type Locale=keyof typeof names;
 export const tags={en:"en-GB",pt:"pt-PT",es:"es-ES",fr:"fr-FR"} as const;
@@ -33,6 +49,6 @@ export function tr(key: Message, params: Record<string, string | number> = {}): 
 
 export function translate(locale:Locale,key:Message,params:Record<string,string|number>={}):string {
   const index=({pt:0,es:1,fr:2} as const)[locale as Exclude<Locale,"en">];
-  const text=locale==="en" || !Object.hasOwn(catalogue,key)? key:catalogue[key][index];
+  const text=locale==="en" || loaded===null || !Object.hasOwn(loaded,key)? key:loaded[key][index];
   return text.replace(/\{(\w+)\}/g,(match,name:string)=>Object.hasOwn(params,name)?String(params[name]):match);
 }

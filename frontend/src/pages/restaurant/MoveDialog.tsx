@@ -5,6 +5,8 @@ import { useState } from "react";
 import { moveBooking } from "../../api/restaurant";
 import type { StaffBooking, StaffTable } from "../../api/restaurant";
 import { Button, Checkbox, Dialog } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { tr } from "../../i18n/locale";
 import { errorMessage, people, tablesText } from "./format";
 import { FLOOR_LOOK, moveProblem } from "./staffStatus";
 
@@ -17,11 +19,12 @@ interface MoveDialogProps {
 }
 
 function tableHint(table: StaffTable): string {
-  const group = table.combine_group ? `, combines with group ${table.combine_group}` : "";
-  return `Seats ${table.min_party} to ${table.max_party}, ${FLOOR_LOOK[table.status].label.toLowerCase()}${group}`;
+  const group = table.combine_group ? `, ${tr("combines with group {group}", { group: table.combine_group })}` : "";
+  return `${tr("Seats {min} to {max}", { min: table.min_party, max: table.max_party })}, ${tr(FLOOR_LOOK[table.status].label).toLowerCase()}${group}`;
 }
 
 export function MoveDialog({ venueId, booking, tables, onClose, onMoved }: MoveDialogProps) {
+  const { t } = useT();
   const [chosen, setChosen] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export function MoveDialog({ venueId, booking, tables, onClose, onMoved }: MoveD
       onMoved(await moveBooking(venueId, booking.id, chosen));
       setChosen([]);
     } catch (error) {
-      setProblem(errorMessage(error, "We could not move the booking. Nothing was changed."));
+      setProblem(errorMessage(error, t("We could not move the booking. Nothing was changed.")));
     } finally {
       setBusy(false);
     }
@@ -52,17 +55,17 @@ export function MoveDialog({ venueId, booking, tables, onClose, onMoved }: MoveD
   const actions = (
     <>
       <Button variant="secondary" disabled={busy} onClick={close}>
-        Cancel
+        {t("Cancel")}
       </Button>
       <Button busy={busy} disabled={check !== null} onClick={() => void save()}>
-        {picked.length > 1 ? `Combine ${tablesText(picked.map((t) => t.label))}` : "Move here"}
+        {picked.length > 1 ? t("Combine {tables}", { tables: tablesText(picked.map((table) => table.label)) }) : t("Move here")}
       </Button>
     </>
   );
   return (
-    <Dialog open title={`Move ${booking.name}, ${people(booking.party_size)}`} onClose={close} actions={actions}>
-      <p className="st-effective-time">{booking.name} · booked at {booking.time} until {booking.end_time}. Moving tables keeps this time.</p>
-      <p>Now at {tablesText(booking.table_labels)}. Tick one table to move, or several from the same group to combine them.</p>
+    <Dialog open title={t("Move {name}, {people}", { name: booking.name, people: people(booking.party_size) })} onClose={close} actions={actions}>
+      <p className="st-effective-time">{t("{name} · booked at {from} until {to}. Moving tables keeps this time.", { name: booking.name, from: booking.time, to: booking.end_time })}</p>
+      <p>{t("Now at {tables}. Tick one table to move, or several from the same group to combine them.", { tables: tablesText(booking.table_labels) })}</p>
       <MoveChoices booking={booking} offered={offered} chosen={chosen} check={check} onToggle={toggle} />
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
@@ -83,17 +86,18 @@ interface MoveChoicesProps {
 
 /** The tick list of tables, plus one live sentence saying whether the choice works. */
 function MoveChoices({ booking, offered, chosen, check, onToggle }: MoveChoicesProps) {
+  const { t } = useT();
   const labels = offered.filter((t) => chosen.includes(t.id)).map((t) => t.label);
   return (
     <>
       <fieldset className="st-move-list">
-        <legend className="visually-hidden">Tables</legend>
+        <legend className="visually-hidden">{t("Tables")}</legend>
         {offered.map((table) => (
-          <Checkbox key={table.id} label={`Table ${table.label}`} hint={tableHint(table)} checked={chosen.includes(table.id)} onChange={() => onToggle(table.id)} />
+          <Checkbox key={table.id} label={t("Table {label}", { label: table.label })} hint={tableHint(table)} checked={chosen.includes(table.id)} onChange={() => onToggle(table.id)} />
         ))}
       </fieldset>
       <p className="rb-muted" role="status">
-        {chosen.length === 0 ? "No table ticked yet." : (check ?? `${tablesText(labels)} will seat ${people(booking.party_size)}.`)}
+        {chosen.length === 0 ? t("No table ticked yet.") : (check ?? t("{tables} will seat {people}.", { tables: tablesText(labels), people: people(booking.party_size) }))}
       </p>
     </>
   );

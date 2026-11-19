@@ -207,7 +207,7 @@ const discovery = {
   "Edit your review": ["Editar a tua avaliação","Editar tu reseña","Modifier votre avis"],
   "Write a review": ["Escrever avaliação","Escribir una reseña","Rédiger un avis"],
   "Sort by": ["Ordenar por","Ordenar por","Trier par"],
-  "Rating": ["Pontuação","Puntuación","Note"],
+  "Rating": ["Pontuação","Puntuación","Évaluation"],
   "Table type": ["Tipo de mesa","Tipo de mesa","Type de table"],
   "Any rating": ["Qualquer pontuação","Cualquier puntuación","Toutes les notes"],
   "Any table": ["Qualquer mesa","Cualquier mesa","Toutes les tables"],

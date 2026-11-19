@@ -6,17 +6,20 @@ import type { ComponentType } from "react";
 import { getSchedule, saveSchedule } from "../../api/restaurant";
 import type { Schedule, ServicePeriod } from "../../api/restaurant";
 import { Button, ErrorState, Skeleton, useToast } from "../../design/components";
+import type { Message } from "../../i18n/catalogue";
+import { useT } from "../../i18n/I18nProvider";
 import { errorMessage, needsSignIn } from "./format";
 import { SLOT_LENGTHS, WEEKDAYS, removeAt, scheduleProblems, updateAt } from "./scheduleRules";
 import { SignInPrompt } from "./SignInPrompt";
 import { useLoad } from "./useLoad";
 
 export function StaffSchedule({ venueId }: { venueId: string }) {
+  const { t } = useT();
   const { state, reload, setData } = useLoad(() => getSchedule(venueId), venueId);
-  if (state.status === "loading") return <Skeleton lines={6} label="Loading the schedule" />;
+  if (state.status === "loading") return <Skeleton lines={6} label={t("Loading the schedule")} />;
   if (state.status === "error") {
     if (needsSignIn(state.error)) return <SignInPrompt venueId={venueId} />;
-    return <ErrorState title="We could not load the schedule" message={errorMessage(state.error)} onRetry={() => reload()} />;
+    return <ErrorState title={t("We could not load the schedule")} message={errorMessage(state.error)} onRetry={() => reload()} />;
   }
   return <ScheduleEditor venueId={venueId} saved={state.data} onSaved={setData} />;
 }
@@ -36,6 +39,7 @@ export function ScheduleEditor({ venueId, saved, onSaved, servicesEditor: Servic
   /** The "Weekly schedule" heading and section links of the staff tab; the owner Hours page has its own heading. */
   heading?: boolean;
 }) {
+  const { t } = useT();
   const toast = useToast();
   const [draft, setDraft] = useState<Schedule>(saved);
   const [busy, setBusy] = useState(false);
@@ -55,29 +59,29 @@ export function ScheduleEditor({ venueId, saved, onSaved, servicesEditor: Servic
       const result = await saveSchedule(venueId, draft);
       onSaved(result);
       setDraft(result);
-      toast.show("Schedule saved.", "success");
+      toast.show(t("Schedule saved."), "success");
     } catch (error) {
-      setProblem(errorMessage(error, "We could not save the schedule. Your draft is still here."));
+      setProblem(errorMessage(error, t("We could not save the schedule. Your draft is still here.")));
     } finally {
       setBusy(false);
     }
   };
   return (
     <div className="st-schedule">
-      {heading && <header className="st-schedule-heading"><h2>Weekly schedule</h2><p className="rb-muted">Recurring opening hours for every week. The Day selector above only changes the floor and daily reports.</p><nav aria-label="Schedule sections"><a href="#st-services">Services</a><a href="#st-turn-times">Turn times</a><a href="#st-closed-days">Closed days</a></nav></header>}
+      {heading && <header className="st-schedule-heading"><h2>{t("Weekly schedule")}</h2><p className="rb-muted">{t("Recurring opening hours for every week. The Day selector above only changes the floor and daily reports.")}</p><nav aria-label={t("Schedule sections")}><a href="#st-services">{t("Services")}</a><a href="#st-turn-times">{t("Turn times")}</a><a href="#st-closed-days">{t("Closed days")}</a></nav></header>}
       <div className="rb-actions st-schedule-save">
-        <span role="status">{dirty ? "Unsaved changes" : "All changes saved"}</span>
-        <Button variant="secondary" disabled={busy || !dirty} onClick={() => setDraft(saved)}>Undo my changes</Button>
-        <Button busy={busy} disabled={!dirty || problems.length > 0} onClick={() => void save()}>Save schedule</Button>
+        <span role="status">{dirty ? t("Unsaved changes") : t("All changes saved")}</span>
+        <Button variant="secondary" disabled={busy || !dirty} onClick={() => setDraft(saved)}>{t("Undo my changes")}</Button>
+        <Button busy={busy} disabled={!dirty || problems.length > 0} onClick={() => void save()}>{t("Save schedule")}</Button>
       </div>
-      <fieldset className="st-schedule-fields" disabled={busy}><legend className="visually-hidden">Weekly schedule draft</legend>
+      <fieldset className="st-schedule-fields" disabled={busy}><legend className="visually-hidden">{t("Weekly schedule draft")}</legend>
       <Services services={draft.services} onChange={(services) => setDraft({ ...draft, services })} />
       <TurnTimesEditor draft={draft} onChange={setDraft} />
       <BlackoutEditor draft={draft} onChange={setDraft} />
       </fieldset>
       {problems.length > 0 && (
         <div className="rb-notice rb-notice-warning" role="status">
-          <p>Fix these before saving:</p>
+          <p>{t("Fix these before saving:")}</p>
           <ul>
             {problems.map((p) => (
               <li key={p}>{p}</li>
@@ -95,22 +99,23 @@ export function ScheduleEditor({ venueId, saved, onSaved, servicesEditor: Servic
 }
 
 function ServicesEditor({ services, onChange }: ServicesProps) {
+  const { t } = useT();
   return (
     <section id="st-services" className="rb-card">
-      <h2 className="rb-service-title">Services</h2>
-      <p className="rb-muted st-small">Capacity is guests arriving per slot. For example, 20 covers per 15 minutes; it is not the number of tables.</p>
+      <h2 className="rb-service-title">{t("Services")}</h2>
+      <p className="rb-muted st-small">{t("Capacity is guests arriving per slot. For example, 20 covers per 15 minutes; it is not the number of tables.")}</p>
       <div className="st-table-wrap">
         <table className="st-table">
           <thead>
             <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Day</th>
-              <th scope="col">Opens</th>
-              <th scope="col">Last slot ends</th>
-              <th scope="col">Slot length</th>
-              <th scope="col">Covers per slot</th>
+              <th scope="col">{t("Name")}</th>
+              <th scope="col">{t("Day")}</th>
+              <th scope="col">{t("Opens")}</th>
+              <th scope="col">{t("Last slot ends")}</th>
+              <th scope="col">{t("Slot length")}</th>
+              <th scope="col">{t("Covers per slot")}</th>
               <th scope="col">
-                <span className="visually-hidden">Remove</span>
+                <span className="visually-hidden">{t("Remove")}</span>
               </th>
             </tr>
           </thead>
@@ -122,7 +127,7 @@ function ServicesEditor({ services, onChange }: ServicesProps) {
         </table>
       </div>
       <Button variant="secondary" onClick={() => onChange([...services, NEW_SERVICE])}>
-        Add a service
+        {t("Add a service")}
       </Button>
     </section>
   );
@@ -136,8 +141,9 @@ interface ServiceRowProps {
 }
 
 function ServiceRow({ index, service, onChange, onRemove }: ServiceRowProps) {
-  const label = (what: string): string => `${what}, ${service.name || `service ${index + 1}`}`;
-  const problems = scheduleProblems({services:[service],turn_times:[],blackout_dates:[]}).map(problem => problem.replace("Service 1",`Service ${index + 1}`));
+  const { t } = useT();
+  const label = (what: Message): string => `${t(what)}, ${service.name || t("service {n}", { n: index + 1 })}`;
+  const problems = scheduleProblems({services:[service],turn_times:[],blackout_dates:[]}, index + 1);
   return (
     <><tr aria-describedby={problems.length ? `st-service-error-${index}` : undefined}>
       <td>
@@ -147,7 +153,7 @@ function ServiceRow({ index, service, onChange, onRemove }: ServiceRowProps) {
         <select className="field-input" aria-label={label("Day")} value={service.weekday} onChange={(e) => onChange({ weekday: Number(e.target.value) })}>
           {WEEKDAYS.map((day, d) => (
             <option key={day} value={d}>
-              {day}
+              {t(day as Message)}
             </option>
           ))}
         </select>
@@ -162,7 +168,7 @@ function ServiceRow({ index, service, onChange, onRemove }: ServiceRowProps) {
         <select className="field-input" aria-label={label("Slot length")} value={service.slot_minutes} onChange={(e) => onChange({ slot_minutes: Number(e.target.value) })}>
           {SLOT_LENGTHS.map((m) => (
             <option key={m} value={m}>
-              {m} min
+              {t("{n} min", { n: m })}
             </option>
           ))}
         </select>
@@ -172,7 +178,7 @@ function ServiceRow({ index, service, onChange, onRemove }: ServiceRowProps) {
       </td>
       <td>
         <Button variant="ghost" onClick={onRemove}>
-          Remove<span className="visually-hidden"> {service.name || `service ${index + 1}`}</span>
+          {t("Remove")}<span className="visually-hidden"> {service.name || t("service {n}", { n: index + 1 })}</span>
         </Button>
       </td>
     </tr>{problems.length > 0 && <tr className="st-service-errors"><td colSpan={7} id={`st-service-error-${index}`}><ul>{problems.map(problem => <li key={problem}>{problem}</li>)}</ul></td></tr>}</>
@@ -180,54 +186,56 @@ function ServiceRow({ index, service, onChange, onRemove }: ServiceRowProps) {
 }
 
 function TurnTimesEditor({ draft, onChange }: { draft: Schedule; onChange: (s: Schedule) => void }) {
+  const { t } = useT();
   const turns = draft.turn_times;
   const set = (next: Schedule["turn_times"]): void => onChange({ ...draft, turn_times: next });
   return (
     <section id="st-turn-times" className="rb-card">
-      <h2 className="rb-service-title">Turn times</h2>
-      <p className="rb-muted st-small">How long a party stays at the table. Each row covers parties up to that size.</p>
+      <h2 className="rb-service-title">{t("Turn times")}</h2>
+      <p className="rb-muted st-small">{t("How long a party stays at the table. Each row covers parties up to that size.")}</p>
       <ul className="st-rows">
         {turns.map((turn, i) => (
           <li key={i} className="st-inline">
             <label className="st-inline-label">
-              Up to <input className="field-input st-num" type="number" min={1} value={turn.max_party} onChange={(e) => set(updateAt(turns, i, { max_party: Number(e.target.value) }))} /> people
+              {t("Up to")} <input className="field-input st-num" type="number" min={1} value={turn.max_party} onChange={(e) => set(updateAt(turns, i, { max_party: Number(e.target.value) }))} /> {t("people")}
             </label>
             <label className="st-inline-label">
-              stay <input className="field-input st-num" type="number" min={15} step={15} value={turn.minutes} onChange={(e) => set(updateAt(turns, i, { minutes: Number(e.target.value) }))} /> minutes
+              {t("stay")} <input className="field-input st-num" type="number" min={15} step={15} value={turn.minutes} onChange={(e) => set(updateAt(turns, i, { minutes: Number(e.target.value) }))} /> {t("minutes")}
             </label>
             <Button variant="ghost" onClick={() => set(removeAt(turns, i))}>
-              Remove<span className="visually-hidden"> turn time for up to {turn.max_party}</span>
+              {t("Remove")}<span className="visually-hidden"> {t("turn time for up to {n}", { n: turn.max_party })}</span>
             </Button>
           </li>
         ))}
       </ul>
       <Button variant="secondary" onClick={() => set([...turns, { max_party: 8, minutes: 90 }])}>
-        Add a turn time
+        {t("Add a turn time")}
       </Button>
     </section>
   );
 }
 
 function BlackoutEditor({ draft, onChange }: { draft: Schedule; onChange: (s: Schedule) => void }) {
+  const { t } = useT();
   const days = draft.blackout_dates;
   const set = (next: Schedule["blackout_dates"]): void => onChange({ ...draft, blackout_dates: next });
   return (
     <section id="st-closed-days" className="rb-card">
-      <h2 className="rb-service-title">Closed days</h2>
-      <p className="rb-muted st-small">Diners see the reason when they pick that date.</p>
+      <h2 className="rb-service-title">{t("Closed days")}</h2>
+      <p className="rb-muted st-small">{t("Diners see the reason when they pick that date.")}</p>
       <ul className="st-rows">
         {days.map((day, i) => (
           <li key={i} className="st-inline">
-            <input className="field-input" type="date" aria-label={`Closed day ${i + 1}, date`} value={day.date} onChange={(e) => set(updateAt(days, i, { date: e.target.value }))} />
-            <input className="field-input" aria-label={`Closed day ${i + 1}, reason`} placeholder="Reason, e.g. Private event" value={day.reason} onChange={(e) => set(updateAt(days, i, { reason: e.target.value }))} />
+            <input className="field-input" type="date" aria-label={t("Closed day {n}, date", { n: i + 1 })} value={day.date} onChange={(e) => set(updateAt(days, i, { date: e.target.value }))} />
+            <input className="field-input" aria-label={t("Closed day {n}, reason", { n: i + 1 })} placeholder={t("Reason, e.g. Private event")} value={day.reason} onChange={(e) => set(updateAt(days, i, { reason: e.target.value }))} />
             <Button variant="ghost" onClick={() => set(removeAt(days, i))}>
-              Remove<span className="visually-hidden"> closed day {day.date}</span>
+              {t("Remove")}<span className="visually-hidden"> {t("closed day {date}", { date: day.date })}</span>
             </Button>
           </li>
         ))}
       </ul>
       <Button variant="secondary" onClick={() => set([...days, { date: "", reason: "" }])}>
-        Add a closed day
+        {t("Add a closed day")}
       </Button>
     </section>
   );
