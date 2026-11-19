@@ -68,6 +68,13 @@ through Resend, usability sessions with real users.
   only, offline, nothing stored; a `SearchProvider` interface lets a language model be plugged in later.
 - The base of the languages (pt-PT, es, fr) with discovery and the public restaurant page translated, a language
   picker in the header and `?lang=`; hidden until `VITE_I18N_LOCALES` lists a language. English stays the default.
+- Diners can create an account from the restaurant side (`/restaurants/account/sign-up`, with a link on the
+  log-in page): name, email, password and a required consent box, then a 6-digit code by email. It is the same
+  account events use, so one sign-in works on both sides; the code step is the existing `/guest/verify`, and
+  no event is involved. The answer is the same whether or not the address already has an account (an existing
+  account gets a note instead of a code), with the same limits on codes as event sign-ups. New: `POST
+  /api/diner/sign-up`, two email texts, no new table. The account page (bookings and saved restaurants) is
+  translated too. Nothing in the events code changed.
 - The rest of the restaurant side now speaks pt-PT, es and fr too: the whole diner journey (party, time, table
   plan and card, chairs, details, consent, deposit and payment pages, confirmation, manage page, SMS/WhatsApp
   link page, offers unsubscribe, waitlist), the owner pages (profile, photos, hours, menu, deposits, guest
