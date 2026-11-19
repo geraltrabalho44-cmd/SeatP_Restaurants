@@ -14,7 +14,9 @@ from app.seed.run import DEMO_ORGANISER_EMAIL
 
 def _comments(session: Session, venue: Venue) -> list[str]:
     return list(
-        session.scalars(select(RestaurantReview.comment).where(RestaurantReview.venue_id == venue.id))
+        session.scalars(
+            select(RestaurantReview.comment).where(RestaurantReview.venue_id == venue.id)
+        )
     )
 
 

@@ -54,7 +54,13 @@ def run(session: Session, owner: Organiser) -> dict[str, object]:
     hidden = unpublish_invented(session)
     venues, reviews = demo_reviews.seed(session, plain=True)
     session.commit()
-    return {"created": created, "covers": covers, "hidden": hidden, "venues": venues, "reviews": reviews}
+    return {
+        "created": created,
+        "covers": covers,
+        "hidden": hidden,
+        "venues": venues,
+        "reviews": reviews,
+    }
 
 
 def main() -> None:
@@ -68,17 +74,23 @@ def main() -> None:
     settings = get_settings()
     local = settings.demo_mode and settings.database_url.startswith("sqlite:")
     if not local and not args.allow_remote:
-        raise SystemExit("Use DEMO_MODE=1 with a local SQLite demo database, or pass --allow-remote.")
+        raise SystemExit(
+            "Use DEMO_MODE=1 with a local SQLite demo database, or pass --allow-remote."
+        )
     db.init_engine(settings.database_url)
     db.create_all()
     with db.new_session() as session:
         owner = session.scalar(select(Organiser).where(Organiser.email == DEMO_ORGANISER_EMAIL))
         if owner is None:
-            raise SystemExit("The demo organiser does not exist. Run app.seed.run on this database first.")
+            raise SystemExit(
+                "The demo organiser does not exist. Run app.seed.run on this database first."
+            )
         result = run(session, owner)
     print(f"Lisbon restaurants created: {result['created']}, covers added: {result['covers']}.")
     print(f"Unpublished (drafts, nothing deleted): {', '.join(result['hidden']) or 'none'}.")  # type: ignore[arg-type]
-    print(f"Reviews: {result['reviews']} added across {result['venues']} published demo restaurants.")
+    print(
+        f"Reviews: {result['reviews']} added across {result['venues']} published demo restaurants."
+    )
 
 
 if __name__ == "__main__":

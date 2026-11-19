@@ -185,7 +185,9 @@ def seed(session: Session, plain: bool = False) -> tuple[int, int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--plain", action="store_true", help="no 'Demo review' label on each review")
+    parser.add_argument(
+        "--plain", action="store_true", help="no 'Demo review' label on each review"
+    )
     parser.add_argument(
         "--allow-remote",
         action="store_true",
@@ -195,7 +197,9 @@ def main() -> None:
     settings = get_settings()
     local = settings.demo_mode and settings.database_url.startswith("sqlite:")
     if not local and not args.allow_remote:
-        raise SystemExit("Use DEMO_MODE=1 with a local SQLite demo database, or pass --allow-remote.")
+        raise SystemExit(
+            "Use DEMO_MODE=1 with a local SQLite demo database, or pass --allow-remote."
+        )
     db.init_engine(settings.database_url)
     db.create_all()
     with db.new_session() as session:
