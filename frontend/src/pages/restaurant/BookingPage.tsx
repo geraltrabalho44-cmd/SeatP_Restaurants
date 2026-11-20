@@ -190,7 +190,7 @@ function StageBar({ name, stage, showName }: { name: string; stage: number; show
     if (stage > 0) ref.current?.scrollIntoView?.({ block: "start" });
   }, [stage]);
   return (
-    <div className="rb5-stagebar" id="booking-stages" ref={ref}>
+    <div className="rb5-stagebar" id="booking-stages" data-stage={stage} ref={ref}>
       <div className="rb5-stage-meta">{showName && <strong>{name}</strong>}</div>
       <div className="rb5-stage-nav">
         <Stepper steps={names} current={stage} label={t("Booking steps")} />
