@@ -23,13 +23,15 @@ describe("what is named at each zoom", () => {
     expect(labelStyle("transportation_name", "minor", 15)?.kind).toBe("street");
     expect(labelStyle("transportation_name", "rail", 18)).toBeNull();
     expect(labelStyle("building", undefined, 16)).toBeNull();
-    // Places worth finding: the most important ones first, more as the map is zoomed in; artworks never.
-    expect(labelStyle("poi", "monument", 14, { rank: 2 })?.kind).toBe("place");
-    expect(labelStyle("poi", "monument", 14, { rank: 9 })).toBeNull();
-    expect(labelStyle("poi", "monument", 16, { rank: 9 })?.kind).toBe("place");
+    // Only green spaces are named from the poi layer. Monuments, viewpoints, museums, hospitals and clinics (the orange dots) are not,
+    // at any zoom or rank; artworks never.
+    for (const category of ["monument", "castle", "museum", "viewpoint", "attraction", "hospital", "theatre", "library", "cemetery"]) {
+      expect(labelStyle("poi", category, 14, { rank: 1 })).toBeNull();
+      expect(labelStyle("poi", category, 17, { rank: 1 })).toBeNull();
+    }
     expect(labelStyle("poi", "attraction", 17, { subclass: "artwork" })).toBeNull();
     expect(labelStyle("poi", "park", 14, { rank: 5 })?.kind).toBe("park");
-    expect(labelStyle("poi", "museum", 13, { rank: 1 })).toBeNull();
+    expect(labelStyle("poi", "park", 17, { subclass: "artwork" })).toBeNull();
     expect(labelStyle("poi", "restaurant", 17, { rank: 1 })).toBeNull();
   });
 });
@@ -41,8 +43,10 @@ describe("tile names", () => {
     expect(found).toHaveLength(1); // the unnamed one is skipped
     expect(found[0].text).toBe("Chiado");
     expect(found[0].lines[0][0]).toEqual({ x: 512, y: 256 }); // tile 2,1 of 256 px
-    const long: MapLayer = { extent: 4096, features: [{ kind: 1, category: "monument", rank: 1, name: "Biblioteca Histórica ou Antiga da Associação dos Arqueólogos Portugueses", geometry: Uint8Array.from([9, 0, 0]) }] };
-    expect(tileCandidates(new Map([["poi", long]]), { x: 0, y: 0, z: 14 }, 15)[0].text).toBe("Biblioteca Histórica ou Anti…"); // long names are cut short
+    const long: MapLayer = { extent: 4096, features: [{ kind: 1, category: "park", rank: 1, name: "Jardim Botânico Histórico da Associação dos Arqueólogos Portugueses", geometry: Uint8Array.from([9, 0, 0]) }] };
+    expect(tileCandidates(new Map([["poi", long]]), { x: 0, y: 0, z: 14 }, 15)[0].text).toBe("Jardim Botânico Histórico da…"); // long names are cut short
+    const sights: MapLayer = { extent: 4096, features: [{ kind: 1, category: "hospital", rank: 1, name: "Hospital São Francisco Xavier", geometry: Uint8Array.from([9, 0, 0]) }] };
+    expect(tileCandidates(new Map([["poi", sights]]), { x: 0, y: 0, z: 14 }, 17)).toHaveLength(0); // no orange dots
     expect(geometryLines(Uint8Array.from([9, 20, 10, 10, 7, 12]), 1)).toEqual([[{ x: 10, y: 5 }, { x: 6, y: 11 }]]);
   });
 });

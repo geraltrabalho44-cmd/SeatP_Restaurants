@@ -35,13 +35,17 @@ shared between the tiles cut from them, so one download serves many.
 
 
 Names on the map (discoveryLabels.ts, mapLabels.ts): main areas (districts and neighbourhoods, in small letter-spaced capitals), the
-city, rivers and the sea, parks, places worth finding (monuments, museums, castles, viewpoints, theatres...) and streets. They come from
+city, rivers and the sea, parks and gardens and streets. Hospitals, viewpoints, monuments and other points of interest are deliberately
+not named (the orange dots were removed; labelStyle returns null for them). They come from
 the same OpenFreeMap tiles (the place, water_name, waterway, park, poi and transportation_name layers) and are laid out once over the
 whole view, not tile by tile: pieces of a street cut at tile edges are stitched together, a name never overlaps another, the same name
 is not repeated close by, and street names follow the street. Smaller things appear as the map is zoomed in (labelStyle gates each
-class by zoom, and the poi layer by its importance rank within the tile; artworks and the like are never named). The text has a halo
+class by zoom, and the poi layer, used only for green spaces, by its importance rank within the tile; artworks and the like are never named). The text has a halo
 in the colour of the land so it reads as part of the map. The owner's location map (LeafletMap) uses the OpenStreetMap raster tiles,
 which already carry names.
+
+Pins (ResultsMap.tsx, spreadPins.ts): the numbered pins of the discovery map are 26 px discs in a 32 px target. Pins that would overlap on screen are
+nudged apart (at most 60 px from their true place), recomputed from the true place at every zoom, so the nudge fades as the map is zoomed in.
 
 Smoothness (discoveryBasemap.ts): a stored tile is decoded once and kept (40 tiles); each shape keeps its outline as a Path2D and its
 bounding box, so redrawing a tile skips decoding and every shape that is off screen (this matters most when zoomed in past the stored

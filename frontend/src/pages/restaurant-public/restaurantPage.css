@@ -81,3 +81,22 @@
 @media(max-width:60rem){.rp-hero-layout:has(.when-times) .rp-visit{grid-column:1;grid-row:2}.rp-hero-layout:has(.when-times) .rp-book{grid-row:1}}
 .rp.is-preview .rp-hero-layout .rp-visit {display:block}
 .rp.is-preview .rp-hero-layout .rp-gallery {display:grid}
+
+/* Booking in progress (table, details, confirmation): the page head gives way to the task. The big title, the "Book a table"
+   shortcut, the save button and the repeated name are all above the plan otherwise, pushing it far down a phone. */
+.rp > .btn { align-self: flex-start; }
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rp-cta,
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rp-back,
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rp-head .rp-line:first-of-type,
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rp-book > h2,
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rb5-stage-meta,
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) > .btn { display: none; }
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rp-head h1 { font-family: inherit; font-size: 1rem; font-weight: 600; margin: 0; }
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rp-head .rp-line { font-size: .8125rem; margin: 0; }
+.rp:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rb5-stagebar { justify-content: flex-end; }
+
+/* Fingers on a phone: the back link and the credits are at least 44 px tall to tap. */
+@media (max-width: 47.99rem) {
+  .rp .rp-back { min-height: 2.75rem; }
+  .rp-photo-credits a, .rp-contact a { min-height: 2.75rem; }
+}

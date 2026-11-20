@@ -1096,3 +1096,58 @@
   margin: 0;
   color: var(--c-primary);
 }
+
+/* ---------- One look for the small text actions of the booking ---------- */
+/* "Edit", "Choose another table", "Choose for me", "Use suggested table": quiet links in the accent colour, aligned to the
+   text beside them, instead of black bold text, a grey chip, or a link floating indented under a card. */
+.rb5-context .btn,
+.rb5-quick-more .btn,
+.rb-table-card-more .btn,
+.rb-suggestion .btn-ghost {
+  min-height: 2.75rem;
+  padding-inline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--c-primary);
+  font-weight: var(--fw-semibold, 600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rb5-context .btn:hover:not(:disabled),
+.rb5-quick-more .btn:hover:not(:disabled),
+.rb-table-card-more .btn:hover:not(:disabled),
+.rb-suggestion .btn-ghost:hover:not(:disabled) { background: transparent; text-decoration-thickness: 2px; }
+.rb-table-card-more { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+
+/* The summary of the held table is as wide as the fields under it. */
+.rb5-summary-band { align-self: stretch; width: 100%; box-sizing: border-box; }
+
+/* The weather folded into one line (phone, table step). */
+.rb-weather-compact { padding: 0; gap: 0; }
+.rb-weather-compact > summary { min-height: 2.75rem; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4); cursor: pointer; font-size: var(--fs-sm); }
+.rb-weather-compact[open] { padding-bottom: var(--space-3); gap: var(--space-2); }
+.rb-weather-compact[open] > :not(summary) { margin-inline: var(--space-4); }
+
+/* The sheet on a phone: tighter, so the plan keeps most of the screen. */
+@media (max-width: 47.99rem) {
+  .rb5-sheet { padding-block: var(--space-2); gap: 0; }
+  .rb5-sheet .rb-table-quick .rb-table-title { font-size: 1.25rem; }
+  .rb5-sheet .rb5-quick-more .btn { min-height: 2.25rem; }
+  .rb5-sheet .rb-actions-sticky .btn { min-height: 2.75rem; }
+}
+
+/* "Read the terms and privacy notice": the same quiet link, lined up with the text of the tick box above it. */
+.rb-consent-read .btn {
+  justify-content: flex-start;
+  min-height: 2.75rem;
+  margin-inline-start: 2rem;
+  padding-inline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--c-primary);
+  font-weight: var(--fw-semibold, 600);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rb-consent-read .btn:hover:not(:disabled) { background: transparent; text-decoration-thickness: 2px; }

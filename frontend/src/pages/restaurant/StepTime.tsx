@@ -128,7 +128,7 @@ function OpenDay({ slots, needs, wanted, back, onPick, selected, info }: OpenDay
   );
 }
 function SlotGroups({ slots, wanted, onPick, selected, starts }: { starts?: RestaurantInfo["services"]; slots: TimeSlot[]; wanted: string | null; selected:string|null; onPick: (slot: TimeSlot) => void }) {
-  const { t } = useT();
+  const { t, label } = useT();
   const [allTimes,setAllTimes]=useState(false);
   const allFull = slots.every((slot) => slot.status === "full");
   const near = closestTimes(slots, wanted);
@@ -151,7 +151,7 @@ function SlotGroups({ slots, wanted, onPick, selected, starts }: { starts?: Rest
       {near.length>0 && <button type="button" className="when-show-all" aria-expanded={allTimes} onClick={()=>setAllTimes(!allTimes)}>{allTimes ? t("Hide all service times") : t("See all service times")}</button>}
       {(near.length===0 || allTimes) && groups.map((group) => (
         <details key={group.service} className="rb-service when-service" open={group.service===preferred}>
-          <summary className="rb-service-title">{group.service}</summary>
+          <summary className="rb-service-title">{label(group.service)}</summary>
           <ul className="rb-slots">
             {group.slots.map((slot) => (
               <li key={slot.time}>

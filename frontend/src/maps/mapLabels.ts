@@ -18,7 +18,7 @@ export const LABEL_LAYERS: ReadonlySet<string> = new Set(["place", "water_name",
 const sans = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 // Names are drawn in soft tones with a halo in the colour of the land under them, so they read as part of the map.
 const LAND_HALO = "rgba(228, 240, 245, 0.92)", ROAD_HALO = "rgba(251, 254, 255, 0.9)";
-const AREA = "#7a7d99", WATER = "#5b9db8", PARK = "#4f8f6f", PLACE = "#9a7342", STREET = "#6c7580";
+const AREA = "#7a7d99", WATER = "#5b9db8", PARK = "#4f8f6f", STREET = "#6c7580";
 
 // [lowest zoom, highest zoom] in which a kind of place is named.
 const PLACES: Record<string, { zooms: [number, number]; rank: number; size: number; weight: number; spacing: number; color: string }> = {
@@ -36,11 +36,10 @@ const STREETS: Record<string, { from: number; rank: number; size: number }> = {
   secondary: { from: 13, rank: 23, size: 10.5 }, tertiary: { from: 14, rank: 24, size: 10 }, minor: { from: 15, rank: 25, size: 10 },
   pedestrian: { from: 16, rank: 26, size: 9.5 }, service: { from: 17, rank: 27, size: 9.5 }, path: { from: 17, rank: 28, size: 9.5 }, track: { from: 17, rank: 28, size: 9.5 },
 };
-// Places worth finding (the poi layer). Each class has a group; the group says how many of a tile's places show at each zoom
-// (a place's rank is its importance within its tile, 1 being the most). Artworks, picnic sites and the like are left out.
+// The poi layer is used only for green spaces (parks, gardens). Monuments, viewpoints, hospitals, clinics and the like are not
+// named: the orange dots cluttered the map and have nothing to do with finding a table. A park's rank is its importance within
+// its tile, 1 being the most. Artworks, picnic sites and the like are left out.
 const GREEN = new Set(["park", "garden", "dog_park", "playground"]);
-const HERITAGE = new Set(["monument", "castle", "museum", "zoo", "aquarium", "viewpoint", "attraction"]);
-const PUBLIC = new Set(["theatre", "stadium", "library", "cinema", "place_of_worship", "art_gallery", "university", "hospital", "railway"]);
 const SKIP = new Set(["artwork", "picnic_site", "information", "gallery", "bench"]);
 const ranked = (rank: number | undefined, zoom: number, limits: [number, number, number]) => zoom >= 17 || (rank ?? 99) <= (zoom >= 16 ? limits[2] : zoom >= 15 ? limits[1] : limits[0]);
 
@@ -48,8 +47,6 @@ function sightStyle(category: string, zoom: number, rank?: number, subclass?: st
   if (subclass && SKIP.has(subclass)) return null;
   const font = `600 10.5px ${sans}`;
   if (GREEN.has(category)) return zoom >= 14 && ranked(rank, zoom, [10, 40, 99]) ? { kind: "park", rank: 10, font, color: PARK, halo: LAND_HALO, haloWidth: 3, dot: true } : null;
-  if (HERITAGE.has(category)) return zoom >= 14 && ranked(rank, zoom, [4, 8, 20]) ? { kind: "place", rank: 11, font, color: PLACE, halo: LAND_HALO, haloWidth: 3, dot: true } : null;
-  if (PUBLIC.has(category)) return zoom >= 15 && ranked(rank, zoom, [0, 4, 10]) ? { kind: "place", rank: 12, font, color: PLACE, halo: LAND_HALO, haloWidth: 3, dot: true } : null;
   return null;
 }
 

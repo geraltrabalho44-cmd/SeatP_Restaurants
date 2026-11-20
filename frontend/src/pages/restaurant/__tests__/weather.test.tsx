@@ -31,7 +31,8 @@ describe("The weather panel", () => {
     render(<WeatherPanel venueId="casa" needs={NEEDS} onTable={(id) => picked.push(id)} onTime={(time) => times.push(time)} />);
     const panel = await screen.findByRole("region", { name: "Weather and sunset" });
     expect(panel.textContent).toContain("13:00 · Sunny · 18°C");
-    expect(panel.textContent).toContain("Simulated weather (demo)");
+    expect(panel.textContent).toContain("Simulated forecast");
+    expect(panel.textContent).not.toContain("demo");
     expect(panel.textContent).toContain("Sunset at 20:12");
     expect(panel.textContent).not.toContain("Indoor tables recommended");
     fireEvent.click(screen.getByRole("button", { name: "Choose 19:30" }));

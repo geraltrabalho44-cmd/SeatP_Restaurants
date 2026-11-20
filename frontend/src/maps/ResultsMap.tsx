@@ -9,6 +9,7 @@ import "leaflet/dist/leaflet.css";
 import { DiscoveryBasemap } from "./discoveryBasemap";
 import { DiscoveryLabels } from "./discoveryLabels";
 import { SchematicMap } from "./SchematicMap";
+import { spreadPoints } from "./spreadPins";
 import "./maps.css";
 export interface ResultPin {
   number?: number;
@@ -37,6 +38,18 @@ const INITIAL_ZOOM = 11;
 const RESTAURANT_ZOOM = 14;
 const MIN_ZOOM = 0;
 const MAX_ZOOM = 19;
+// Numbered pins are 26 px discs in a 32 px target. Where restaurants stand closer than that on screen (a dozen in one
+// neighbourhood), the pins are nudged apart so every number can be read and tapped. The true place is kept: the nudge is
+// recomputed from it at every zoom and fades away as the map is zoomed in (see spreadPins.ts).
+const PIN_SIZE = 32;
+interface Spot { lat: number; lng: number }
+function placePins(view: L.Map, pins: Map<string, { spot: Spot; marker: L.Marker }>): void {
+  const entries = [...pins.values()];
+  const home = entries.map((e) => view.latLngToContainerPoint([e.spot.lat, e.spot.lng]));
+  const spread = spreadPoints(home);
+  entries.forEach((e, k) => e.marker.setLatLng(view.containerPointToLatLng(L.point(spread[k].x, spread[k].y))));
+}
+
 function locationIcon(name: string) {
   const label = document.createElement("span");
   label.className = "restaurant-location-label";
@@ -102,6 +115,8 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
     if (!view) return;
     markers.current.forEach((marker) => marker.remove());
     markers.current.clear();
+    const spots = new Map<string, { spot: Spot; marker: L.Marker }>();
+    const spread = () => placePins(view, spots);
     for (const [index,pin] of pins.entries()) {
       const marker = L.marker([pin.lat, pin.lng], {
         title: showNames ? undefined : pin.name,
@@ -110,15 +125,21 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
         keyboard: !showNames,
         icon: showNames
           ? locationIcon(pin.name)
-          : L.divIcon({ className: "discover-pin", html: `<span aria-hidden="true">${pin.number ?? index+1}</span>`, iconSize: [44, 44], iconAnchor: [22, 22] }),
+          : L.divIcon({ className: "discover-pin", html: `<span aria-hidden="true">${pin.number ?? index+1}</span>`, iconSize: [PIN_SIZE, PIN_SIZE], iconAnchor: [PIN_SIZE / 2, PIN_SIZE / 2] }),
       }).addTo(view);
       if (!showNames) marker.on("click", () => select.current?.(pin.id));
       markers.current.set(pin.id, marker);
+      spots.set(pin.id, { spot: { lat: pin.lat, lng: pin.lng }, marker });
     }
     const points: L.LatLngExpression[] = pins.map((pin) => [pin.lat, pin.lng]);
     if (center) points.push([center.lat, center.lng]);
     if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15, animate: false });
     else if (points.length === 1) view.setView(points[0], RESTAURANT_ZOOM, { animate: false });
+    if (!showNames) {
+      placePins(view, spots);
+      view.on("zoomend", spread);
+    }
+    return () => { view.off("zoomend", spread); };
   }, [pins, center?.lat, center?.lng, showNames]);
   useEffect(() => {
     const view = map.current;

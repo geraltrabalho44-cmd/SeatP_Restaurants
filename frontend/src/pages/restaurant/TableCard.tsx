@@ -70,7 +70,7 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
           {zone ? t("{zone} table", { zone }) : tableName(table.label)} · {guests(quick.party)}
         </h3>
         <p className="rb-muted rb-table-meta">
-          {[roomName, table.label, meta].filter(Boolean).join(" · ")}
+          {[roomName, zone ? table.label : null, meta].filter(Boolean).join(" · ")}
         </p>
         {reason && <p className="rb-muted rb-table-card-reason">{reason}</p>}
         {text.length > 0 && (

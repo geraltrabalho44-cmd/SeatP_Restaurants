@@ -211,3 +211,8 @@
 }
 
 .discover-demo-banner { display:inline-block;margin:0 0 var(--space-3);padding:.25rem .75rem;border-radius:999px;background:var(--c-accent-soft);color:var(--c-accent);font-size:.8125rem;font-weight:600;letter-spacing:.01em; }
+
+/* "See available times →" and the restaurant name on a card are tall enough to tap on a phone. */
+@media (max-width: 47.99rem) {
+  .discover-card-more { display: inline-flex; align-items: center; min-height: 2.75rem; }
+}

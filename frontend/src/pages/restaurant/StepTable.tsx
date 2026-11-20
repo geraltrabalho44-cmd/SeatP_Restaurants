@@ -163,7 +163,7 @@ export function StepTable(props: StepTableProps) {
   return (
     <section className="rb-step">
       {(phoneHeader || !map) && <ChooseHeader needs={needs} time={time} onBack={props.onBack} />}
-      {map && !hold && !busy && <WeatherPanel venueId={venueId} needs={needs} time={time} onTable={id=>void take(id)} />}
+      {map && !hold && !busy && <WeatherPanel venueId={venueId} needs={needs} time={time} onTable={id=>void take(id)} compact={phoneHeader} />}
       {phoneHeader && props.onAccessibilityChange && (
         <Checkbox
           label={t("I need a wheelchair-accessible table")}

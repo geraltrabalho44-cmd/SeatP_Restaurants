@@ -15,16 +15,16 @@
 }
 .discover-map-zoom button {
   display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;
-  background:transparent;color:#27465d;font:600 1.5rem/1 var(--font-body);
-  box-shadow:none;text-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  background:rgb(255 255 255 / .88);color:#27465d;font:600 1.5rem/1 var(--font-body);
+  box-shadow:0 1px 4px rgb(23 71 121 / .25);text-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .discover-map-zoom button:hover,
 .discover-map-zoom button:active { color:#145b9f; }
 .discover-map-panel .discover-map-zoom button:focus-visible { outline:2px solid #27465d;outline-offset:-3px; }
 .discover-map-zoom button:disabled { opacity:.55;cursor:default; }
-/* Only the visible disc scales. The Leaflet marker keeps its 44px target. */
+/* Only the visible disc scales. The Leaflet marker keeps its 32px target (pins that would overlap are nudged apart, see ResultsMap). */
 .discover-pin span {
-  display:grid;place-items:center;box-sizing:border-box;width:26px;height:26px;margin:9px;
+  display:grid;place-items:center;box-sizing:border-box;width:26px;height:26px;margin:3px;
   border:2px solid #fff;border-radius:50%;background:#246bc1;
   color:#fff;box-shadow:0 1px 6px #17477955;
   font:700 .875rem/1 var(--font-body);font-variant-numeric:tabular-nums;

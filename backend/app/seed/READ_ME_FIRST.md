@@ -86,3 +86,6 @@ only while `DEMO_MODE=1`.
 SQLite database with `DEMO_MODE=1`. On Postgres, which means any deployment,
 the seed stops with an error unless `DEMO_ORGANISER_PASSWORD` and
 `DEMO_STAFF_PASSWORD` are set.
+
+The Lisbon catalogue sizes each main room to its tables (lisbon_catalogue._plan). Running it again also refits the main room of a venue it made
+earlier, but only while that room still has the first version's fixed rectangle, so a room an owner has changed is never touched.

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import db
 from app.config import get_settings
-from app.models import Organiser, Venue, VenuePhoto, utc_now
+from app.models import Organiser, Room, Venue, VenuePhoto, utc_now
 from app.restaurant_service import features
 from app.restaurant_service.clock import now_local
 from app.restaurant_service.photos import MAX_BYTES, image_info
@@ -61,9 +61,13 @@ def _plan(slug: str) -> tuple[ShowRoom, ...]:
                 high_chair=index == 2,
             )
         )
+    # The main room is as big as its tables need, with air around them and enough wall for the window and the door. A fixed
+    # 870 x 540 room left most of the plan empty when there were six tables. (With a second room the width stays as it was.)
+    right = 935 if two_rooms else max(650, round(max(table.x for table in tables)) + 170)
+    bottom = round(max(table.y for table in tables)) + 130
     main = ShowRoom(
         "Main room",
-        _rect(65, 60, 935, 490 if two_rooms else 600),
+        _rect(65, 60, right, bottom),
         tuple(tables),
         north=rng.choice((0, 45, 90, 180, 270)),
         openings=(Opening(0, 150, 290, "window"), Opening(2, 180, 105, "door", main=True)),
@@ -112,6 +116,28 @@ def _new_venue(session: Session, owner: Organiser, listing: lisbon_data.Listing)
     return venue
 
 
+# The main rooms of the first version of this catalogue: a fixed rectangle, whatever the tables.
+_OLD_MAIN_BOTTOMS = (600, 490)
+
+
+def _refit_main_room(session: Session, venue: Venue, slug: str) -> bool:
+    """Fit an existing venue's main room to its tables, only if nobody has changed the room since the catalogue made it."""
+    room = session.scalar(select(Room).where(Room.venue_id == venue.id, Room.position == 0))
+    if room is None:
+        return False
+    points = [(round(p["x"]), round(p["y"])) for p in (room.outline or {}).get("points", [])]
+    first_version = [
+        [(65, 60), (935, 60), (935, bottom), (65, bottom)] for bottom in _OLD_MAIN_BOTTOMS
+    ]
+    if points not in first_version:
+        return False
+    fitted = _plan(slug)[0].outline
+    if [(round(x), round(y)) for x, y, _curve in fitted] == points:
+        return False
+    room.outline = {"points": [{"x": x, "y": y, "curve": curve} for x, y, curve in fitted]}
+    return True
+
+
 def seed(session: Session, owner: Organiser) -> tuple[int, int]:
     """Only add missing demo venues and covers. Leave existing edits and bookings in place."""
     created = 0
@@ -123,6 +149,8 @@ def seed(session: Session, owner: Organiser) -> tuple[int, int]:
         if venue is None:
             venue = _new_venue(session, owner, listing)
             created += 1
+        else:
+            _refit_main_room(session, venue, listing["slug"])
         gallery = session.scalar(
             select(VenuePhoto.id)
             .where(VenuePhoto.venue_id == venue.id, VenuePhoto.kind == "gallery")
