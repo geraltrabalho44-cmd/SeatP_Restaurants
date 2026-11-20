@@ -100,3 +100,8 @@
   .rp .rp-back { min-height: 2.75rem; }
   .rp-photo-credits a, .rp-contact a { min-height: 2.75rem; }
 }
+
+/* On a phone the details and confirmation steps are one card, not a card inside a card: the form gets the full width. */
+@media (max-width: 40rem) {
+  .rp-hero-layout:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"], .rb-done, .rb5-confirm) .rp-book { padding: 0; border: 0; background: transparent; border-radius: 0; }
+}

@@ -38,6 +38,13 @@ Status: **not done yet**
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 
+## Where the code runs
+
+`vercel.json` pins the API to `lhr1` (London), the same place as the Neon database (AWS `eu-west-2`). Without it Vercel runs
+the function in Washington (`iad1`), so every database query crosses the Atlantic: the restaurant list took about 1.9 s on the
+live site against 0.02 s on a laptop. If the database ever moves to another region, change `regions` to match. The Hobby plan
+allows one region.
+
 ## Step 1. Create the Vercel project from the GitHub repository
 
 Status: **not done yet**

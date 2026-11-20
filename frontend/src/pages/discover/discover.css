@@ -205,7 +205,7 @@
  .discover-filter-selects summary {list-style:none}
  .discover-filter-selects summary::-webkit-details-marker {display:none}
  .discover-filter-selects summary strong {position:relative;padding:.5rem .75rem;min-height:2.75rem;box-sizing:border-box}
- .discover-filter-selects summary strong::after {content:'⌄';position:absolute;right:.75rem}
+ .discover-filter-selects summary strong::after {content:'▾';position:absolute;right:.75rem}
  .discover-card h3 a {position:relative}
  .discover-card h3 a::after {content:'';position:absolute;inset:-.75rem 0;min-height:2.75rem}
 }
@@ -216,3 +216,14 @@
 @media (max-width: 47.99rem) {
   .discover-card-more { display: inline-flex; align-items: center; min-height: 2.75rem; }
 }
+
+/* One clear button in the search box: the browser's own blue cross is hidden, ours stays. */
+.discover-search-field input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+/* In the map view on a phone the map takes the whole screen below the controls, so the demo banner steps aside. */
+@media (max-width: 720px) { .discover-route.is-map-view .discover-demo-banner { display: none; } }
+
+/* The Cuisine and Price pickers in the filters look like the selects above them on every screen size, not like a bare disclosure triangle. */
+.discover-filter-selects summary { list-style: none; }
+.discover-filter-selects summary::-webkit-details-marker { display: none; }
+.discover-filter-selects summary strong { position: relative; padding-right: 2rem; }
+.discover-filter-selects summary strong::after { content: '▾'; position: absolute; right: .75rem; }

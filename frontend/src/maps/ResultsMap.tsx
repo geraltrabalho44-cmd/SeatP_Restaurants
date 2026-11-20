@@ -63,6 +63,10 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
   const markers = useRef(new Map<string, L.Marker>());
   const select = useRef(onSelect);
   select.current = onSelect;
+  // The map shows all the pins again when its size changes (it may be hidden, or still empty, when the results arrive),
+  // until the person pans or zooms it themselves.
+  const userMoved = useRef(false);
+  const refit = useRef<(() => void) | null>(null);
   const [failed, setFailed] = useState(false);
   const [fallback, setFallback] = useState(typeof navigator !== "undefined" && navigator.onLine === false);
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
@@ -81,6 +85,15 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
       maxZoom: MAX_ZOOM,
     }).setView(LISBON, INITIAL_ZOOM);
     view.on("zoomend", () => setZoom(view.getZoom()));
+    view.on("dragstart", () => { userMoved.current = true; });
+    const element = host.current;
+    const wheel = () => { userMoved.current = true; };
+    element.addEventListener("wheel", wheel, { passive: true });
+    const watch = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => {
+      view.invalidateSize({ pan: false });
+      if (!userMoved.current) refit.current?.();
+    });
+    watch?.observe(element);
     map.current = view;
     const tiles = new DiscoveryBasemap();
     let loaded = 0;
@@ -102,6 +115,8 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
     return () => {
       window.clearTimeout(patience);
       window.removeEventListener("online", retryTiles);
+      watch?.disconnect();
+      element.removeEventListener("wheel", wheel);
       // A pan or zoom still animating when the map is removed throws inside Leaflet.
       view.stop();
       view.remove();
@@ -133,13 +148,24 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
     }
     const points: L.LatLngExpression[] = pins.map((pin) => [pin.lat, pin.lng]);
     if (center) points.push([center.lat, center.lng]);
-    if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15, animate: false });
-    else if (points.length === 1) view.setView(points[0], RESTAURANT_ZOOM, { animate: false });
+    const fit = () => {
+      const size = view.getSize();
+      if (!size.x || !size.y) return; // hidden for now: fitted as soon as it has a size
+      if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15, animate: false });
+      else if (points.length === 1) view.setView(points[0], RESTAURANT_ZOOM, { animate: false });
+      if (!showNames) placePins(view, spots);
+    };
+    userMoved.current = false;
+    fit();
+    refit.current = fit;
     if (!showNames) {
       placePins(view, spots);
       view.on("zoomend", spread);
     }
-    return () => { view.off("zoomend", spread); };
+    return () => {
+      view.off("zoomend", spread);
+      if (refit.current === fit) refit.current = null;
+    };
   }, [pins, center?.lat, center?.lng, showNames]);
   useEffect(() => {
     const view = map.current;
@@ -163,6 +189,7 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
   }, [highlightedId, selectedId, pins, showNames]);
   const changeZoom = (step: number) => {
     const view = map.current;
+    userMoved.current = true;
     view?.setZoom(view.getZoom() + step, { animate: false });
   };
   return (

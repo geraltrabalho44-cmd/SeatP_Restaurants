@@ -1151,3 +1151,15 @@
   text-underline-offset: 3px;
 }
 .rb-consent-read .btn:hover:not(:disabled) { background: transparent; text-decoration-thickness: 2px; }
+
+/* "Cancel booking" on the manage page: a straight separator line above plain red text, not the curved top edge of a button. */
+:root[data-surface="restaurants"] .rb5-change .rb-manage-actions .rb-danger-link {
+  border-radius: 0;
+  border-inline: 0;
+  border-bottom: 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+:root[data-surface="restaurants"] .rb5-change .rb-manage-actions .rb-danger-link:hover:not(:disabled) { background: var(--c-danger-soft); }

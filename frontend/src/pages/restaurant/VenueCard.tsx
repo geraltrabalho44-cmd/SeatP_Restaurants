@@ -1,13 +1,12 @@
-// The restaurant beside a confirmation or a managed booking: cover photo, name, address and the
-// booking's date, guests and time. The photo, address and directions come from the public page of
-// the restaurant; when that cannot be loaded the card still shows the name and the booking's facts.
+// The restaurant beside a confirmation or a managed booking: cover photo, name and address. The date, time and
+// guests are not repeated here: the booking's own rows next to this card already say them. The photo and address come
+// from the public page of the restaurant; when that cannot be loaded the card still shows the name.
 import { useEffect, useState } from "react";
 import { getPublicRestaurant } from "../../api/discovery";
 import type { PublicRestaurant } from "../../api/discovery";
 import { getRestaurant } from "../../api/restaurant";
 import type { BookingView } from "../../api/restaurant";
 import { useT } from "../../i18n/I18nProvider";
-import { formatDate, guests } from "./format";
 
 /** The public page of the restaurant a booking is at, or null while loading and when it has none. */
 export function usePublicVenue(venuePublicId: string): PublicRestaurant | null {
@@ -48,20 +47,6 @@ export function VenueCard({ booking, venue }: { booking: BookingView; venue: Pub
         <p className="rb5-eyebrow">{t("Restaurant")}</p>
         <h2 className="rb5-venue-name">{booking.venue_name}</h2>
         {venue?.address && <p className="rb-muted">{venue.address}</p>}
-        <dl className="rb5-rows">
-          <div>
-            <dt>{t("Date")}</dt>
-            <dd>{formatDate(booking.date)}</dd>
-          </div>
-          <div>
-            <dt>{t("Guests")}</dt>
-            <dd>{guests(booking.party_size)}</dd>
-          </div>
-          <div>
-            <dt>{t("Time")}</dt>
-            <dd className="tabular">{booking.time}</dd>
-          </div>
-        </dl>
       </div>
     </aside>
   );
