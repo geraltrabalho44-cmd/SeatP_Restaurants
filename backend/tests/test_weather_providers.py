@@ -159,6 +159,16 @@ def test_a_forecast_is_a_read_that_is_rate_limited_and_validated(client, session
     )
 
 
+def test_the_forecast_shares_the_read_limit_of_the_restaurant_pages(client, session, organiser):
+    # The forecast counts in the same r-read counter as the other reads of a restaurant, so it must not run out sooner:
+    # a diner who has read 130 times in a minute (a class on one wifi) still gets the weather on the booking page.
+    place = _located(session, organiser)
+    url = f"/api/r/{place.public_id}/weather"
+    params = {"day": future_day(1).isoformat()}
+    statuses = {client.get(url, params=params).status_code for _ in range(130)}
+    assert statuses == {200}
+
+
 def test_only_the_owner_turns_the_rain_plan_on(client, session, organiser):
     place = make_restaurant(session, organiser)
     url = f"/api/owner/restaurants/{place.public_id}/rain-plan"

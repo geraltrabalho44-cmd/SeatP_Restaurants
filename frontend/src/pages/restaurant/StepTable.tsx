@@ -454,7 +454,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
               onTake(cardTable.id);
             }}
           >
-            {t("Continue with this table")}
+            {t("Hold {label} & continue", { label: cardTable.label })}
           </Button>
         </div>
         </div>

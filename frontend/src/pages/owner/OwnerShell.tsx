@@ -1,6 +1,7 @@
 // The owner's workspace: a short side menu (My restaurants, then the steps of one restaurant)
 // beside the page. Every owner page sits in it, so the owner always knows where they are and
 // can reach the next step without going back to the list.
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { logout } from "../../api/client";
 import { PageShell } from "../../design/components";
@@ -42,10 +43,17 @@ const STEPS: { key: Exclude<OwnerSection, "restaurants">; label: Message; path: 
 export function OwnerShell({ title, venueId, venueName, current, publicHref, children, width = "wide" }: OwnerShellProps) {
   const { t } = useT();
   const base = venueId ? `/owner/${encodeURIComponent(venueId)}` : null;
+  const nav = useRef<HTMLElement>(null);
+  // On a phone the steps slide sideways: bring the current one to the middle of its list.
+  useEffect(() => {
+    const here = nav.current?.querySelector<HTMLElement>('a[aria-current="page"]');
+    const list = here?.closest("ul");
+    if (here && list && list.scrollWidth > list.clientWidth) list.scrollLeft = here.offsetLeft - (list.clientWidth - here.offsetWidth) / 2;
+  }, [current, venueId]);
   return (
     <PageShell title={title} width={width}>
       <div className="ow-shell">
-        <nav className="ow-nav" aria-label={t("Restaurant owner")}>
+        <nav className="ow-nav" ref={nav} aria-label={t("Restaurant owner")}>
           <p className="rb5-eyebrow">{t("Restaurant owner")}</p>
           <ul>
             <li>

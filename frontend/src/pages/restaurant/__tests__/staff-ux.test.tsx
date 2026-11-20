@@ -98,6 +98,11 @@ it("identifies an unpublished restaurant through the existing owner profile when
  expect(screen.getByRole("link",{name:"My restaurants"}).getAttribute("href")).toBe("/owner");
  expect(callsTo(calls,"GET",`/api/r/${VENUE}`)).toHaveLength(0);
 });
+it("names the restaurant on the staff floor from the staff route, which also answers while it is unpublished",async()=>{
+ const calls=mockApi({[`GET ${API}`]:()=>({name:"Casa Linho",timezone:"Europe/Lisbon"}),[`GET ${API}/floor`]:()=>FLOOR});show();
+ expect(await screen.findByText("Casa Linho")).toBeTruthy();
+ expect(callsTo(calls,"GET",`/api/r/${VENUE}`)).toHaveLength(0);
+});
 it("offers no seating confirmation when a walk-in search finds no table",async()=>{
  const calls=mockApi({[`GET ${API}/floor`]:()=>FLOOR,[`POST ${API}/whatif`]:()=>({possible:false,table_ids:null,tables:[],reasons:["Every suitable table is occupied"],displaced:[]})});
  show();fireEvent.click(await screen.findByRole("button",{name:"New walk-in"}));

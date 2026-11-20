@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from test_restaurant_helpers import Place, future_day, make_restaurant, place_booking
 
-from app.models import Organiser, TableSlot
+from app.models import Organiser, TableSlot, Venue
 
 
 def _url(place: Place, path: str) -> str:
@@ -274,3 +274,30 @@ def test_walkin_name_with_a_control_character_is_refused(
     body = {"party_size": 2, "name": "Walk\x00in", "date": day, "time": "19:00"}
     response = client.post(_url(place, "walkins"), json=body, headers=auth_header(staff))
     assert response.status_code == 422
+
+
+def test_staff_can_read_the_name_of_a_restaurant_that_is_not_published_yet(
+    client: TestClient, session: Session, organiser: Organiser, staff: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    venue = session.scalars(select(Venue).where(Venue.public_id == place.public_id)).one()
+    venue.status = "draft"
+    session.commit()
+    assert (
+        client.get(f"/api/r/{place.public_id}").status_code == 404
+    )  # the diner's page is closed...
+    answer = client.get(f"/api/staff/{place.public_id}", headers=auth_header(staff))
+    assert answer.status_code == 200  # ...the staff screen is not
+    assert answer.json() == {"name": venue.name, "timezone": venue.timezone}
+    stranger = make_user(session, "someone.else@example.com")
+    assert (
+        client.get(f"/api/staff/{place.public_id}", headers=auth_header(stranger)).status_code
+        == 404
+    )
+
+
+def test_the_restaurant_heading_route_needs_a_session(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    assert client.get(f"/api/staff/{place.public_id}").status_code == 401

@@ -4,9 +4,8 @@ Four languages: English, Portuguese (tu, like the site), Spanish (tú) and Frenc
 back to English for an unknown language or key, so an email is never empty. Dates are written with the short day and month
 names of the language ("sex 20 nov"), not with the server's locale, so the same code gives the same email anywhere.
 
-What stays in English on purpose: the ambience sentences ("Direct sun until 14:30") and the sentence about the chair, which come
-from the server in English and are translated only on the site. In a Portuguese, Spanish or French email they are left out
-instead of mixing languages (see email_facts.py).
+The ambience sentences ("Direct sun until 14:30") and the sentence about the chair come from the server in English; phrase_text.py
+puts them in the language of the booking. One it cannot translate is left out, so an email never mixes two languages.
 """
 
 from datetime import datetime
@@ -152,6 +151,19 @@ _TEXT: dict[str, dict[str, str]] = {
         "pt": ", e a tua cadeira, o lugar {seat}, está marcada com um ponto preto grande dentro de um anel",
         "es": ", y tu silla, el asiento {seat}, está marcada con un punto negro grande dentro de un anillo",
         "fr": ", et votre chaise, la place {seat}, est marquée d'un grand point noir dans un anneau",
+    },
+    # The calendar file the diner downloads (see restaurant_service/booking_calendar.py).
+    "calendar_summary": {
+        "en": "Table at {restaurant}",
+        "pt": "Mesa em {restaurant}",
+        "es": "Mesa en {restaurant}",
+        "fr": "Table chez {restaurant}",
+    },
+    "calendar_manage": {
+        "en": "Change or cancel: {link}",
+        "pt": "Alterar ou cancelar: {link}",
+        "es": "Cambiar o cancelar: {link}",
+        "fr": "Modifier ou annuler : {link}",
     },
     "deposit_line": {
         "en": "{amount}, taken off your bill. Free cancellation until {when}.",

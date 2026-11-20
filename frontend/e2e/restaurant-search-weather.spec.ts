@@ -21,6 +21,6 @@ test("the booking page shows the day's simulated weather and the sunset", async 
   await page.getByRole("button", { name: "See free times" }).click();
   const panel = page.getByRole("region", { name: "Weather and sunset" });
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText("Simulated weather (demo)");
+  await expect(panel).toContainText("Simulated forecast");
   await expect(panel).toContainText(/Sunset at \d\d:\d\d/);
 });

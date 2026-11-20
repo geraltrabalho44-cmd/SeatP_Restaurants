@@ -11,6 +11,7 @@ from app.restaurant_service.availability import PartyNeeds
 from app.restaurant_service.venue_access import load_published
 from app.restaurant_service.weather_view import view
 from app.routers.emails import _check_cron_secret
+from app.routers.restaurants import READ_LIMIT
 from app.security import CurrentOrganiser, client_ip, rate_limit
 
 router = APIRouter(tags=["restaurant weather"])
@@ -90,6 +91,8 @@ def forecast(
     accessible: bool = False,
     high_chairs: Annotated[int, Query(ge=0, le=6)] = 0,
 ):
-    rate_limit(session, f"r-read:{client_ip(request)}", limit=120, window_s=60)
+    # The same counter as the other reads of the restaurant (r-read), so it must have the same limit: a smaller one here would
+    # refuse the forecast to a diner whose other reads are still allowed.
+    rate_limit(session, f"r-read:{client_ip(request)}", limit=READ_LIMIT, window_s=60)
     venue = load_published(session, venue_id)
     return view(session, venue, day, at, PartyNeeds(party, accessible, high_chairs))

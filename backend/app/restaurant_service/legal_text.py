@@ -12,7 +12,7 @@ processor. The restaurant may add its own text (contact for data requests, house
 
 from typing import Any
 
-TERMS_VERSION = "2026-11-18"
+TERMS_VERSION = "2026-11-20"
 OFFERS_VERSION = "2026-11-18"
 EXTRA_MAX = 2000
 
@@ -75,7 +75,9 @@ def document(restaurant_name: str, extra_text: str, demo: bool) -> dict[str, Any
                 (
                     "Only the services needed to run the booking: hosting, sending emails, text "
                     "messages and, if the restaurant asks for a deposit, the payment provider. We "
-                    "do not sell your data."
+                    "do not sell your data. The maps on this site are loaded by your browser from "
+                    "OpenFreeMap and OpenStreetMap, which see your internet address but nothing "
+                    "about your booking."
                 ),
             ],
         },
@@ -105,8 +107,8 @@ def document(restaurant_name: str, extra_text: str, demo: bool) -> dict[str, Any
             "paragraphs": [
                 (
                     "Your table is held for you for the booked time. If you cannot come, please "
-                    "cancel with the link in your confirmation email so someone else can have the "
-                    "table. If the restaurant asks for a deposit, its own rule is shown before you "
+                    "cancel with your booking link (shown when you book and in your confirmation "
+                    "email) so someone else can have the table. If the restaurant asks for a deposit, its own rule is shown before you "
                     "confirm and that rule applies."
                 ),
             ],

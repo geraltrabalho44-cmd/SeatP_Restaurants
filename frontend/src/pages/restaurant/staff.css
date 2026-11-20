@@ -170,7 +170,8 @@
  .st-page .st-quick-actions>.btn:first-child {position:static}
  .st-page .st-side {display:flex;flex-direction:column}
  .st-page .st-view-controls>.btn,.st-page .st-time-reference>.btn,.st-page .st-quick-actions>.btn {min-height:2.75rem}
- .st-page .st-arrivals {max-height:none}
+ /* A busy night (twenty arrivals) must not push the details and the floor plan five screens down: about five cards, then the list scrolls. */
+ .st-page .st-arrivals {max-height:28rem;overscroll-behavior:auto}
  .st-page .seatmap-viewport {--map-height:24rem}
 }
 @media(prefers-reduced-motion:reduce){.st-page *{transition:none!important}}

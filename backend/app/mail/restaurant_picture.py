@@ -27,6 +27,7 @@ from app.ambience.models import (
 )
 from app.mail import pixel_font
 from app.mail.png import encode_indexed
+from app.mail.restaurant_text import text as phrase
 from app.mail.seat_picture import (
     HEADER,
     PADDING,
@@ -78,7 +79,6 @@ PALETTE: tuple[tuple[int, int, int], ...] = (
 WALL_RADIUS = 2.0  # a 5-pixel wall
 ARC_SEGMENTS = 24  # per curved side; smoother than the 16 used for the maths
 HEADER_SCALE = 2
-FALLBACK = "YOUR TABLE"
 
 
 # ---------------------------------------------------------------- layout
@@ -216,29 +216,33 @@ def _writable(text: str) -> bool:
 
 
 def header_text(
-    room_name: str, table_label: str, seat_label: str | None, width: int
+    room_name: str, table_label: str, seat_label: str | None, width: int, locale: str = "en"
 ) -> tuple[str, int]:
     """The header line and its scale.
 
     "MAIN ROOM - TABLE 4 - SEAT 2". What the font cannot write (accents, long
     names) is dropped, never shown wrong: first the room name, then the chair,
     then the table's own label, finally the plain "YOUR TABLE".
+
+    The words are those of `locale` ("MESA T4 - LUGAR 2"): they are plain capitals the pixel font can write, so a Portuguese,
+    Spanish or French email has its header in its own language too.
     """
+    fallback = phrase("label_table", locale).upper()
     room_ok, table_ok = _writable(room_name), _writable(table_label)
     seat_ok = table_ok and seat_label is not None and _writable(seat_label)
-    table_part = f"TABLE {table_label}" if table_ok else FALLBACK
-    seat_part = f"SEAT {seat_label}" if seat_ok else ""
+    table_part = phrase("table", locale, label=table_label) if table_ok else fallback
+    seat_part = phrase("seat", locale, label=seat_label) if seat_ok else ""
     wanted = [
         [room_name if room_ok else "", table_part, seat_part],
         ["", table_part, seat_part],
         ["", table_part, ""],
-        ["", FALLBACK, ""],
+        ["", fallback, ""],
     ]
     for parts in wanted:
         text = " - ".join(part.upper() for part in parts if part)
         if _fits(text, HEADER_SCALE, width):
             return text, HEADER_SCALE
-    return FALLBACK, 1
+    return fallback, 1
 
 
 # ---------------------------------------------------------------- the picture
@@ -254,6 +258,7 @@ def render_restaurant_picture(
     table_label: str | None = None,
     seat_label: str | None = None,
     also_tables: Sequence[int | str] = (),
+    locale: str = "en",
 ) -> bytes:
     """The PNG of `room` with the booked table highlighted and chair `seat_key` marked.
 
@@ -289,6 +294,7 @@ def render_restaurant_picture(
         chosen.label if table_label is None else table_label,
         (mine.label if mine is not None else None) if seat_label is None else seat_label,
         layout.width,
+        locale,
     )
     canvas.text(PADDING, (HEADER - pixel_font.GLYPH_HEIGHT * scale) // 2, words, scale, INK)
     return encode_indexed(layout.width, layout.height, canvas.pixels, PALETTE)

@@ -2,6 +2,7 @@
 // because email can fail; this page alone must be enough to manage the booking.
 // The first thing on it is the result, and the next action is "Manage booking".
 import type { BookingConfirmation } from "../../api/restaurant";
+import { AddToCalendar } from "./AddToCalendar";
 import { BookingRows } from "./BookingSummary";
 import { CopyLink, absoluteUrl } from "./CopyLink";
 import { useT } from "../../i18n/I18nProvider";
@@ -15,7 +16,8 @@ export function Confirmation({ confirmation }: { confirmation: BookingConfirmati
   const { t } = useT();
   const { booking, manage_url: manageUrl } = confirmation;
   const venue = usePublicVenue(booking.venue_public_id);
-  const emails = useBookingEmails(manageUrl.split("/").filter(Boolean).pop() ?? "");
+  const token = manageUrl.split("/").filter(Boolean).pop() ?? "";
+  const emails = useBookingEmails(token);
   return (
     <div className="rb5-two">
       <section className="rb-card rb5-confirm">
@@ -47,6 +49,7 @@ export function Confirmation({ confirmation }: { confirmation: BookingConfirmati
           <a className="btn btn-primary" href={absoluteUrl(manageUrl)}>
             {t("Manage booking")} <span aria-hidden="true">{"\u2192"}</span>
           </a>
+          <AddToCalendar token={token} />
           <DirectionsLink venue={venue} />
         </div>
         <div className="rb5-after">

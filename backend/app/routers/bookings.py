@@ -11,7 +11,7 @@ import datetime as dt
 from typing import Any
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import or_, select
 
@@ -21,6 +21,7 @@ from app.core.errors import ApiError, SeatTaken
 from app.core.text import PlainText
 from app.models import Booking, EmailOutbox, Venue, utc_now
 from app.restaurant_service import (
+    booking_calendar,
     booking_payments,
     booking_rows,
     consents,
@@ -141,6 +142,23 @@ def booking_emails(manage_token: str, request: Request, session: db.SessionDep) 
             for row in rows
         ],
     }
+
+
+@router.get("/b/{manage_token}/calendar.ics")
+def booking_calendar_file(manage_token: str, request: Request, session: db.SessionDep) -> Response:
+    """The booking as a calendar file, for the diner to add to their own calendar. Only for a confirmed booking."""
+    _limit(session, request, "manage", MANAGE_LIMIT)
+    booking = booking_rows.load_by_token(session, manage_token)
+    if booking.status not in ("confirmed", "pending"):
+        raise ApiError(404, "not_found", "Booking not found.")
+    venue = _venue_of(session, booking.venue_id)
+    link = f"{get_settings().public_base_url}/b/{manage_token}"
+    body = booking_calendar.booking_calendar(session, venue, booking, link)
+    return Response(
+        body,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="booking.ics"'},
+    )
 
 
 @router.patch("/b/{manage_token}", response_model=None)

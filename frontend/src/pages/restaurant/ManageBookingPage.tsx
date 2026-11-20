@@ -17,6 +17,7 @@ import { ArrivalNotice } from "./ArrivalNotice";
 import { useT } from "../../i18n/I18nProvider";
 import { OffersChoice } from "./OffersChoice";
 import { RainCard } from "./WeatherRainOffer";
+import { AddToCalendar } from "./AddToCalendar";
 import { cancelNote, depositStatus } from "./money";
 import "./restaurant.css";
 
@@ -105,6 +106,7 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
           )}
           <div className="rb5-reference">
             <span className="rb-muted">{t("Reference {id}", { id: booking.public_id.slice(0, 8).toUpperCase() })}</span>
+            {(booking.status === "confirmed" || booking.status === "pending") && <AddToCalendar token={token} />}
             <DirectionsLink venue={venue} />
           </div>
         </section>

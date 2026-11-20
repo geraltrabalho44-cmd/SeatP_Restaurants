@@ -12,7 +12,7 @@ test("on a phone: one action per moment, a suggestion in another room, and a cha
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
 
   // The suggestion comes first with one main action; the plan and the list wait behind "Choose another table".
-  await expect(page.getByRole("button", { name: "Continue with this table" })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /^Hold .+ & continue$/ })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Pick a table to continue" })).toHaveCount(0);
   await expect(page.getByRole("tablist", { name: "Rooms" })).toHaveCount(0);
   await page.getByRole("button", { name: "Choose another table" }).click();

@@ -7,8 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { getRestaurant } from "../../api/restaurant";
-import type { RestaurantInfo } from "../../api/restaurant";
+import { getStaffRestaurant } from "../../api/restaurant";
 import { getOwnerProfile } from "../../api/owner";
 import { Wordmark } from "../../design/components/PageShell";
 import { PageShell } from "../../design/components";
@@ -39,11 +38,11 @@ export default function StaffPage() {
   const changeTab = (next: Tab): void => { if (next === "schedule") setScheduleVisited(true); setTab(next); };
   const [date, setDate] = useState(todayIso());
   const ownerEntry = useLocation().pathname.startsWith("/owner/");
-  const [restaurant, setRestaurant] = useState<Pick<RestaurantInfo, "name" | "timezone"> | null>(null);
+  const [restaurant, setRestaurant] = useState<{ name: string; timezone: string } | null>(null);
   useEffect(() => {
     let current = true;
     setRestaurant(null);
-    const metadata = ownerEntry ? getOwnerProfile(venueId) : getRestaurant(venueId);
+    const metadata = ownerEntry ? getOwnerProfile(venueId) : getStaffRestaurant(venueId);
     void metadata.then(info => { if (current) setRestaurant(info); }, () => undefined);
     return () => { current = false; };
   }, [venueId, ownerEntry]);

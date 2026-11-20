@@ -249,6 +249,16 @@ def test_the_header_degrades_for_what_the_font_cannot_write() -> None:
     assert pic.pixel_font.text_width(long_text, scale) <= 300 - 2 * pic.PADDING
 
 
+def test_the_header_is_written_in_the_language_of_the_booking() -> None:
+    assert pic.header_text("Main room", "4", "2", 640, "pt")[0] == "MAIN ROOM - MESA 4 - LUGAR 2"
+    assert pic.header_text("Main room", "4", "2", 640, "es")[0] == "MAIN ROOM - MESA 4 - ASIENTO 2"
+    assert pic.header_text("Main room", "4", "2", 640, "fr")[0] == "MAIN ROOM - TABLE 4 - PLACE 2"
+    assert pic.header_text("Main room", "Mesa 4 ç", None, 640, "pt")[0] == "MAIN ROOM - A TUA MESA"
+    assert (
+        pic.header_text("Main room", "4", "2", 640, "xx")[0] == "MAIN ROOM - TABLE 4 - SEAT 2"
+    )  # unknown: English
+
+
 def test_the_inputs_have_no_place_for_a_person() -> None:
     fields = {
         name

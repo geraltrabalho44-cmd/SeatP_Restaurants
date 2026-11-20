@@ -61,6 +61,8 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef(new Map<string, L.Marker>());
+  // Where each restaurant really is. A pin may be nudged away from it to be readable (placePins); centring uses the real place.
+  const places = useRef(new Map<string, Spot>());
   const select = useRef(onSelect);
   select.current = onSelect;
   // The map shows all the pins again when its size changes (it may be hidden, or still empty, when the results arrive),
@@ -130,6 +132,7 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
     if (!view) return;
     markers.current.forEach((marker) => marker.remove());
     markers.current.clear();
+    places.current.clear();
     const spots = new Map<string, { spot: Spot; marker: L.Marker }>();
     const spread = () => placePins(view, spots);
     for (const [index,pin] of pins.entries()) {
@@ -144,6 +147,7 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
       }).addTo(view);
       if (!showNames) marker.on("click", () => select.current?.(pin.id));
       markers.current.set(pin.id, marker);
+      places.current.set(pin.id, { lat: pin.lat, lng: pin.lng });
       spots.set(pin.id, { spot: { lat: pin.lat, lng: pin.lng }, marker });
     }
     const points: L.LatLngExpression[] = pins.map((pin) => [pin.lat, pin.lng]);
@@ -171,7 +175,11 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
     const view = map.current;
     const marker = centerRequest && markers.current.get(centerRequest.id);
     if (view && marker) {
-      view.setView(marker.getLatLng(), Math.max(view.getZoom(), RESTAURANT_ZOOM), { animate: false });
+      const zoom = Math.max(view.getZoom(), RESTAURANT_ZOOM);
+      // Zooming in changes the nudge of every pin, so centre on the real place then; at the same zoom the pin stays where it is
+      // drawn, and that is what to centre on.
+      const place = places.current.get(centerRequest.id);
+      view.setView(zoom !== view.getZoom() && place ? [place.lat, place.lng] : marker.getLatLng(), zoom, { animate: false });
     }
   }, [centerRequest]);
   // The pin of the hovered card gets a bigger, darker look.

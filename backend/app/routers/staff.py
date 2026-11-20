@@ -126,6 +126,19 @@ def _now_slot_time(venue_now: dt.datetime) -> dt.time:
     return time_of_slot(slot_of(venue_now.time()))
 
 
+@router.get("/staff/{venue_public_id}")
+def staff_restaurant(
+    venue_public_id: str, user: CurrentUser, session: db.SessionDep
+) -> dict[str, str]:
+    """The name and time zone of the restaurant, for the staff screen's heading.
+
+    The diner's restaurant page answers 404 until the restaurant is published, so staff could not read the name of a
+    restaurant that is still being set up; this one only needs the right to work there.
+    """
+    venue = load_for_staff(session, venue_public_id, user)
+    return {"name": venue.name, "timezone": venue.timezone}
+
+
 @router.get("/staff/{venue_public_id}/floor")
 def floor(
     venue_public_id: str,

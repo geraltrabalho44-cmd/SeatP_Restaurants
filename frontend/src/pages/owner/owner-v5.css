@@ -282,10 +282,13 @@
 .ow-booking-rules summary { display: list-item; cursor: pointer; min-height: var(--touch-target); padding-block: var(--space-2); }
 @media (max-width: 55.99rem) {
   .ow-nav { min-width: 0; gap: 0; padding: var(--space-2); }
-  .ow-nav .rb5-eyebrow { margin: var(--space-1) var(--space-2); }
-  .ow-nav ul { flex-wrap: wrap; }
+  /* Twelve steps wrapped onto five or six rows and took a third of a phone screen. Each list is now one line that slides sideways,
+     and OwnerShell scrolls the current step into view. */
+  .ow-nav ul { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-block: 2px; }
+  .ow-nav ul::-webkit-scrollbar { display: none; }
   .ow-nav li { flex: 0 0 auto; }
-  .ow-nav a { padding-inline: var(--space-2); font-size: var(--fs-sm); }
+  .ow-nav a { padding-inline: var(--space-2); font-size: var(--fs-sm); white-space: nowrap; }
+  .ow-nav .rb5-eyebrow { display: none; }
 }
 
 /* The checks are a side list: small type, tight rows. */

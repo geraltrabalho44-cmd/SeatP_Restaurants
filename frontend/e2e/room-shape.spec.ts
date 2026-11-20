@@ -17,8 +17,12 @@ for (const width of [1440, 390]) {
     await expect(page.getByLabel("Room", { exact: true })).toHaveValue(/r-/);
     await expect(page.locator(".room-status")).toContainText("64 m²");
     await page.getByRole("button", { name: "Undo", exact: true }).click();
-    await expect(page.getByLabel("Room", { exact: true })).toHaveValue("implicit-main");
+    // Undo takes the new room away. The demo restaurant already has rooms of its own, so the editor goes back to one of those
+    // (it was "implicit-main" only while a restaurant had no room at all).
+    await expect(page.getByLabel("Room", { exact: true })).not.toHaveValue(/^r-/);
+    await expect(page.getByLabel("Room", { exact: true }).locator("option", { hasText: "L-shaped terrace" })).toHaveCount(0);
     await page.getByRole("button", { name: "Redo", exact: true }).click();
+    await expect(page.getByLabel("Room", { exact: true })).toHaveValue(/^r-/);
     await expect(page.locator(".room-status")).toContainText("64 m²");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: join(tmpdir(), `seatplan-room-shape-${width}.png`), fullPage: true });

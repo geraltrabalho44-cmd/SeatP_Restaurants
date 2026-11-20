@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, defer
 
 from app.ambience.models import AmbienceSeat
 from app.config import get_settings
+from app.mail.phrase_text import translate
 from app.mail.png import png_width
 from app.mail.restaurant_picture import render_restaurant_picture
 from app.mail.restaurant_templates import RestaurantBooking, picture_alt
@@ -51,8 +52,11 @@ def _phrases(
     booking: Booking,
     table_ids: tuple[int, ...],
     rooms: list[ambience_view.LoadedRoom],
+    locale: str = "en",
 ) -> tuple[str, ...]:
-    """The sentences of the booked tables for this stay, without repeats."""
+    """The sentences of the booked tables for this stay, in the booking's language, without repeats.
+
+    A sentence that cannot be translated is left out: an email never mixes two languages."""
     start = booking.start_at.astimezone(venue_zone(venue))
     answer = ambience_view.ambience_payload(
         session, venue, booking.date, start.time(), party=booking.party_size, rooms=rooms
@@ -60,7 +64,10 @@ def _phrases(
     found: list[str] = []
     for row in answer["tables"]:
         if row["id"] in table_ids:
-            found += [p for p in row["phrases"] if p not in found]
+            for sentence in row["phrases"]:
+                words = translate(sentence, locale)
+                if words and words not in found:
+                    found.append(words)
     return tuple(found[:MAX_PHRASES])
 
 
@@ -69,6 +76,7 @@ def _picture(
     rooms: list[ambience_view.LoadedRoom],
     table_ids: tuple[int, ...],
     seat: tuple[int, int] | None,
+    locale: str = "en",
 ) -> bytes | None:
     """The room of the booking from above, with its tables and the chosen chair marked.
 
@@ -97,6 +105,7 @@ def _picture(
             chosen,
             room_name=loaded.name,
             also_tables=[t for t in mine if t != main],
+            locale=locale,
         )
     return None
 
@@ -120,15 +129,12 @@ def booking_email_data(
 ) -> BookingEmailData:
     local = booking.start_at.astimezone(venue_zone(venue))
     locale = known(booking.locale)
-    # The ambience sentences and the chair sentence come from the server in English and are translated only on the site,
-    # so an email in another language leaves them out rather than mix languages.
-    english = locale == "en"
     table_ids = occupancy.tables_of(session, booking)
     labels = table_labels(session, table_ids)
     seat = chosen_seat.seat_payload(session, venue, booking, with_phrase=True)
     rooms = ambience_view.load_rooms(session, venue)
     placed = (seat["id"], seat["table_id"]) if seat else None
-    png = _picture(session, rooms, table_ids, placed) if table_ids else None
+    png = _picture(session, rooms, table_ids, placed, locale) if table_ids else None
     cover = _cover(session, venue)
     base = get_settings().public_base_url
     table_text = " + ".join(labels) if labels else "to be confirmed"
@@ -141,10 +147,8 @@ def booking_email_data(
         table_label=table_text,
         link=link,
         seat_label=seat["label"] if seat else None,
-        seat_phrase=seat.get("phrase") if seat and english else None,
-        phrases=_phrases(session, venue, booking, table_ids, rooms)
-        if table_ids and english
-        else (),
+        seat_phrase=translate(seat["phrase"], locale) if seat and seat.get("phrase") else None,
+        phrases=_phrases(session, venue, booking, table_ids, rooms, locale) if table_ids else (),
         address=venue.address,
         phone=venue.phone,
         maps_url=maps_url(venue) if venue.address or venue.lat is not None else None,

@@ -761,6 +761,11 @@ export async function getRestaurant(vid: string): Promise<RestaurantInfo> {
   return toRestaurantInfo(await api.get<ServerRestaurant>(diner(vid)));
 }
 
+/** The name and time zone of a restaurant for the staff screen. Unlike getRestaurant it also works before the restaurant is published. */
+export function getStaffRestaurant(vid: string): Promise<{ name: string; timezone: string }> {
+  return api.get(`/staff/${encodeURIComponent(vid)}`);
+}
+
 export async function getSlots(vid: string, date: IsoDate, party: number): Promise<SlotsResponse> {
   return toSlots(await api.get<ServerSlots>(`${diner(vid)}/slots?${query({ date, party })}`));
 }

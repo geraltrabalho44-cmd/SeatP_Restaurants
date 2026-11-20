@@ -161,3 +161,29 @@ def test_a_booking_without_a_language_is_in_english_and_a_bad_language_is_refuse
     assert plain.status_code == 201, plain.text
     row = session.scalar(select(EmailOutbox).where(EmailOutbox.kind == "booking_confirmed"))
     assert row is not None and row.subject.startswith("Booked: ")
+
+
+def test_the_table_sentences_and_the_chair_are_in_the_language_of_the_booking(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    from test_restaurant_emails import seated_booking
+
+    from app.restaurant_service import booking_rows, email_facts
+    from app.restaurant_service.venue_access import load_restaurant
+
+    place, token = seated_booking(client, session, organiser, future_day(7))
+    booking = booking_rows.load_by_token(session, token)
+    booking.locale = "pt"
+    session.commit()
+    venue = load_restaurant(session, place.public_id)
+    data = email_facts.booking_email_data(session, venue, booking, "https://example.test/b/x")
+    facts = data.facts
+    assert facts.seat_phrase in (
+        "De frente para a janela",
+        "De costas para a janela",
+        "De lado para a janela",
+    )
+    assert facts.phrases, "the window table has light sentences"
+    assert all(
+        re.search(r"Direct|Sunset|Facing|window|View of", p) is None for p in facts.phrases
+    ), facts.phrases
