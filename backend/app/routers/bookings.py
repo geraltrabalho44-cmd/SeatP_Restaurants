@@ -13,11 +13,13 @@ from typing import Any
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from sqlalchemy import or_, select
 
 from app import db
+from app.config import get_settings
 from app.core.errors import ApiError, SeatTaken
 from app.core.text import PlainText
-from app.models import Booking, Venue, utc_now
+from app.models import Booking, EmailOutbox, Venue, utc_now
 from app.restaurant_service import (
     booking_payments,
     booking_rows,
@@ -101,6 +103,44 @@ def view_booking(manage_token: str, request: Request, session: db.SessionDep) ->
     # The change form offers party sizes up to this, so every choice can fit.
     detail["max_party"] = max_party(session, venue)
     return detail
+
+
+@router.get("/b/{manage_token}/emails")
+def booking_emails(manage_token: str, request: Request, session: db.SessionDep) -> dict[str, Any]:
+    """The emails of this booking as text, only while this site sends no email (EMAIL_PROVIDER=console).
+
+    In that mode nothing leaves the server, so the confirmation page shows what would have been sent: the diner sees
+    that the site sends a confirmation, and what it says. It answers only to the manage token of the booking, so it
+    shows a diner nothing but their own email. With a real provider it answers "not available": the email is in the inbox.
+    """
+    _limit(session, request, "manage", MANAGE_LIMIT)
+    booking = booking_rows.load_by_token(session, manage_token)
+    if get_settings().email_provider != "console":
+        return {"available": False, "emails": []}
+    keys = [
+        EmailOutbox.idempotency_key == f"booking-confirmed-{booking.public_id}",
+        EmailOutbox.idempotency_key == f"booking-cancelled-{booking.public_id}",
+        EmailOutbox.idempotency_key.startswith(
+            f"booking-changed-{booking.public_id}-", autoescape=True
+        ),
+        EmailOutbox.idempotency_key.startswith(
+            f"booking-reminder-{booking.public_id}-", autoescape=True
+        ),
+    ]
+    rows = session.scalars(select(EmailOutbox).where(or_(*keys)).order_by(EmailOutbox.id)).all()
+    return {
+        "available": True,
+        "emails": [
+            {
+                "kind": row.kind,
+                "subject": row.subject,
+                "to": row.to_email,
+                "text": row.body_text,
+                "status": row.status,
+            }
+            for row in rows
+        ],
+    }
 
 
 @router.patch("/b/{manage_token}", response_model=None)

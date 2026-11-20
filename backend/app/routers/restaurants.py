@@ -115,6 +115,8 @@ class BookingIn(Strict):
     # The last step: the terms and privacy notice (required) and, separately, offers (optional).
     accept_terms: bool = False
     accept_offers: bool = False
+    # The language the page was in; the emails about this booking are written in it.
+    lang: Literal["en", "pt", "es", "fr"] = "en"
     # An offer code the diner typed or arrived with (?offer=CODE). Checked before anything is held.
     offer_code: str | None = Field(default=None, max_length=40)
 
@@ -320,6 +322,7 @@ def book(
         body.occasion,
         body.dietary_requirements,
         body.allergies,
+        body.lang,
     )
     try:
         booking, token = diner_flow.confirm_booking(

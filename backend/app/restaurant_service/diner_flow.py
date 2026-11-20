@@ -58,6 +58,7 @@ class Contact:
     occasion: str | None = None
     dietary_requirements: str = ""
     allergies: str = ""
+    lang: str = "en"
 
 
 def _auto_choices(
@@ -180,6 +181,7 @@ def confirm_booking(
         high_chairs=needs.high_chairs,
         status="pending" if deposit else "confirmed",
         source="diner",
+        locale=contact.lang,
         table_choice=held.table_choice,
         manage_token_hash=hash_token(token),
         prefs=sorted(needs.prefs, key=PREF_KEYS.index),

@@ -10,6 +10,7 @@ and walk-ins all stay possible.
 
 from datetime import UTC, datetime, time, timedelta
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx import Response
@@ -26,11 +27,29 @@ from test_restaurant_helpers import (
 )
 
 from app.models import Booking, Hold, Organiser
+from app.restaurant_service import booking_caps
 
 # The documented limits, repeated here on purpose: if someone changes the
 # constants, these tests make them think about whether real diners are still safe.
 EMAIL_CAP = 4
+# The mechanism is tested with a small address cap (see the fixture below), so the loops stay inside the 20 holds a
+# minute that one address may make. The real value is checked in test_the_real_address_cap_leaves_room_for_a_class.
 ADDRESS_CAP = 10
+REAL_ADDRESS_CAP = 60
+
+
+@pytest.fixture(autouse=True)
+def _small_address_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(booking_caps, "MAX_BOOKINGS_PER_ADDRESS_PER_DAY", ADDRESS_CAP)
+
+
+def test_the_real_address_cap_leaves_room_for_a_class_on_one_wifi(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A class or an office behind one Wi-Fi shares one address. 10 bookings a day at one restaurant locked a demo out
+    # as soon as a few people booked together; 60 still stops a script. Changing it is a decision, not a tweak.
+    monkeypatch.undo()  # drop the small cap the fixture put in for the other tests
+    assert booking_caps.MAX_BOOKINGS_PER_ADDRESS_PER_DAY == REAL_ADDRESS_CAP
 
 
 def _hold_then_book(client: TestClient, place: Place, days: int, email: str) -> Response:

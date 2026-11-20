@@ -35,10 +35,10 @@ from app.restaurant_service.occupancy import ACTIVE_STATUSES
 from app.security import mailbox, network_of, rate_limit
 
 MAX_UPCOMING_PER_EMAIL = 4
-# A busy household books a few nights; 10 a day only matters to a script.
-# A whole classroom behind one Wi-Fi address shares this, so a demo with more
-# than 10 diners on one network will see the 429 (see docs/security.md, S8).
-MAX_BOOKINGS_PER_ADDRESS_PER_DAY = 10
+# A busy household books a few nights; 60 a day only matters to a script.
+# A whole classroom behind one Wi-Fi address shares this (it was 10, and a demo
+# with more than 10 diners on one network saw the 429; see docs/security.md, S8).
+MAX_BOOKINGS_PER_ADDRESS_PER_DAY = 60
 DAY_SECONDS = 24 * 60 * 60
 
 

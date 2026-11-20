@@ -8,12 +8,14 @@ import { useT } from "../../i18n/I18nProvider";
 import { cancelNote, depositStatus } from "./money";
 import { CHANNEL_NAME } from "./PhoneOptIn";
 import { StepHeading } from "./StepHeading";
+import { EmailPreview, useBookingEmails } from "./EmailPreview";
 import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 
 export function Confirmation({ confirmation }: { confirmation: BookingConfirmation }) {
   const { t } = useT();
   const { booking, manage_url: manageUrl } = confirmation;
   const venue = usePublicVenue(booking.venue_public_id);
+  const emails = useBookingEmails(manageUrl.split("/").filter(Boolean).pop() ?? "");
   return (
     <div className="rb5-two">
       <section className="rb-card rb5-confirm">
@@ -48,9 +50,13 @@ export function Confirmation({ confirmation }: { confirmation: BookingConfirmati
           <DirectionsLink venue={venue} />
         </div>
         <div className="rb5-after">
-          <p className="rb-muted">
-            {t("Confirmation email")} · <strong>{confirmation.email}</strong>. {t("It can take a few minutes; check your spam folder if you do not see it.")}
-          </p>
+          {emails ? (
+            <EmailPreview emails={emails} address={confirmation.email} />
+          ) : (
+            <p className="rb-muted">
+              {t("Confirmation email")} · <strong>{confirmation.email}</strong>. {t("It can take a few minutes; check your spam folder if you do not see it.")}
+            </p>
+          )}
           <CopyLink url={absoluteUrl(manageUrl)} label={t("Your manage link")} />
         </div>
       </section>

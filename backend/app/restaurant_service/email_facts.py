@@ -17,11 +17,12 @@ from app.config import get_settings
 from app.mail.png import png_width
 from app.mail.restaurant_picture import render_restaurant_picture
 from app.mail.restaurant_templates import RestaurantBooking, picture_alt
+from app.mail.restaurant_text import day_and_time, known, short_day, text
 from app.models import Booking, BookingPayment, Seat, Venue, VenuePhoto
 from app.payments import money
 from app.restaurant_service import ambience_view, chosen_seat, occupancy
 from app.restaurant_service.booking_rows import table_labels
-from app.restaurant_service.clock import venue_zone, when_text
+from app.restaurant_service.clock import venue_zone
 from app.restaurant_service.discovery import maps_url
 
 MAX_PHRASES = 4
@@ -100,15 +101,17 @@ def _picture(
     return None
 
 
-def _payment_line(session: Session, venue: Venue, booking: Booking) -> str | None:
-    """One sentence about the deposit, or None for bookings that never had one."""
+def _payment_line(session: Session, venue: Venue, booking: Booking, locale: str) -> str | None:
+    """One sentence about the deposit, in the booking's language, or None for bookings that never had one."""
     payment = session.scalar(select(BookingPayment).where(BookingPayment.booking_id == booking.id))
     if payment is None:
         return None
     deadline = money.cancel_deadline(booking.start_at, payment.cancel_hours)
-    return (
-        f"{money.format_eur(payment.amount_cents)}, taken off your bill. "
-        f"Free cancellation until {when_text(venue, deadline)}."
+    return text(
+        "deposit_line",
+        locale,
+        amount=money.format_eur(payment.amount_cents),
+        when=day_and_time(deadline.astimezone(venue_zone(venue)), locale),
     )
 
 
@@ -116,6 +119,10 @@ def booking_email_data(
     session: Session, venue: Venue, booking: Booking, link: str
 ) -> BookingEmailData:
     local = booking.start_at.astimezone(venue_zone(venue))
+    locale = known(booking.locale)
+    # The ambience sentences and the chair sentence come from the server in English and are translated only on the site,
+    # so an email in another language leaves them out rather than mix languages.
+    english = locale == "en"
     table_ids = occupancy.tables_of(session, booking)
     labels = table_labels(session, table_ids)
     seat = chosen_seat.seat_payload(session, venue, booking, with_phrase=True)
@@ -128,22 +135,25 @@ def booking_email_data(
     facts = RestaurantBooking(
         diner_name=booking.name,
         restaurant=venue.name,
-        day_text=local.strftime("%a %d %b"),
+        day_text=short_day(local, locale),
         time_text=local.strftime("%H:%M"),
         party_size=booking.party_size,
         table_label=table_text,
         link=link,
         seat_label=seat["label"] if seat else None,
-        seat_phrase=seat.get("phrase") if seat else None,
-        phrases=_phrases(session, venue, booking, table_ids, rooms) if table_ids else (),
+        seat_phrase=seat.get("phrase") if seat and english else None,
+        phrases=_phrases(session, venue, booking, table_ids, rooms)
+        if table_ids and english
+        else (),
         address=venue.address,
         phone=venue.phone,
         maps_url=maps_url(venue) if venue.address or venue.lat is not None else None,
         cover_url=f"{base}/api/photos/{cover.public_id}" if cover else None,
         cover_alt=cover.alt_text if cover else "",
         picture_width=png_width(png) if png else None,
-        picture_alt=picture_alt(venue.name, table_text, seat["label"] if seat else None),
-        payment_line=_payment_line(session, venue, booking),
+        picture_alt=picture_alt(venue.name, table_text, seat["label"] if seat else None, locale),
+        payment_line=_payment_line(session, venue, booking, locale),
+        locale=locale,
     )
     encoded = base64.b64encode(png).decode("ascii") if png else None
     return BookingEmailData(facts, encoded)

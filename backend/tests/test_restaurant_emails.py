@@ -143,6 +143,26 @@ def test_a_change_and_the_reminder_carry_the_same_details(
     assert "Rua Augusta 1" in latest.body_html
 
 
+def test_a_booking_email_does_not_promise_that_nothing_but_the_booking_is_ever_sent() -> None:
+    # A diner may tick the box for the restaurant's offers; those come as separate emails with their own stop link, so the
+    # booking emails must not claim "We never send marketing" (that sentence belongs to the Events emails).
+    facts = RestaurantBooking(
+        diner_name="Lia",
+        restaurant="Test Bistro",
+        day_text="Fri 21 Nov",
+        time_text="20:00",
+        party_size=2,
+        table_label="T1",
+        link="https://example.com/b/token",
+    )
+    for kind in ("confirmed", "changed", "reminder"):
+        parts = booking_email(kind, facts)
+        for body in (parts.body_text, parts.body_html):
+            assert "never send marketing" not in body.lower(), kind
+            assert "only about your booking" in body, kind
+            assert "offers from this restaurant" in body, kind
+
+
 def test_the_queue_stays_idempotent(
     client: TestClient, session: Session, organiser: Organiser
 ) -> None:

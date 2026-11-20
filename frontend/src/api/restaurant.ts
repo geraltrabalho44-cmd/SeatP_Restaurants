@@ -9,6 +9,7 @@
 //   small "to..." function below turns one into the other, so every
 //   difference between server and screen is visible in this one file.
 // Field names are snake_case, exactly as the Python backend sends them.
+import { activeLocale } from "../i18n/locale";
 import { api } from "./client";
 import type { Consent } from "./legal";
 import type { MessageOptions } from "./messages";
@@ -793,6 +794,12 @@ export async function getTableSeats(vid: string, tableIds: number[]): Promise<Ta
   return api.get<TableSeats>(`${diner(vid)}/seats?${query({ table_ids: tableIds.join(",") })}`);
 }
 
+/** The language the page is in, so the emails about the booking are written in it (English is the server's default). */
+function languageOfTheEmails(): { lang?: "pt" | "es" | "fr" } {
+  const locale = activeLocale();
+  return locale === "en" ? {} : { lang: locale };
+}
+
 export async function createBooking(
   vid: string,
   holdId: string,
@@ -806,7 +813,7 @@ export async function createBooking(
 ): Promise<BookingConfirmation> {
   // The backend checks the party size against the hold, so it is sent again here.
   const wishes = needs.prefs?.length ? { prefs: needs.prefs } : {};
-  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}), ...(phoneVerificationId ? { phone_verification_id: phoneVerificationId } : {}), accept_terms: consent.terms, accept_offers: consent.offers, ...(offerCode ? { offer_code: offerCode } : {}) };
+  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }), ...(acceptPolicy ? { accept_policy: true } : {}), ...(phoneVerificationId ? { phone_verification_id: phoneVerificationId } : {}), accept_terms: consent.terms, accept_offers: consent.offers, ...(offerCode ? { offer_code: offerCode } : {}), ...languageOfTheEmails() };
   const server = await api.post<ServerConfirmation>(`${diner(vid)}/bookings`, body);
   return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email, payment: server.payment ?? null, messages: server.messages ?? null, offer: server.offer ?? null };
 }
@@ -825,6 +832,23 @@ export function joinWaitlist(vid: string, entry: WaitlistRequest): Promise<Waitl
 
 export async function getBooking(token: string): Promise<BookingView> {
   return toBookingView(await api.get<ServerBooking>(manage(token)));
+}
+
+/** One email of a booking, as the site would send it. */
+export interface BookingEmail {
+  kind: string;
+  subject: string;
+  to: string;
+  text: string;
+  status: string;
+}
+
+/**
+ * The emails of a booking, while this site sends no email (the server then keeps them in its outbox and shows them
+ * here). `available` is false once a real email service is on: the email is then in the diner's inbox.
+ */
+export function getBookingEmails(token: string): Promise<{ available: boolean; emails: BookingEmail[] }> {
+  return api.get<{ available: boolean; emails: BookingEmail[] }>(`${manage(token)}/emails`);
 }
 
 export async function changeBooking(token: string, change: BookingChange): Promise<BookingView> {

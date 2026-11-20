@@ -509,6 +509,8 @@ class Booking(Base):
     )
     allergies: Mapped[str] = mapped_column(String(500), default="", server_default=text("''"))
     arrival_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    # The language the diner was using when they booked ("en", "pt", "es", "fr"): the language of the emails about it.
+    locale: Mapped[str] = mapped_column(String(5), default="en", server_default=text("'en'"))
 
 
 class DinerFavorite(Base):

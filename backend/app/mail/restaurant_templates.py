@@ -17,20 +17,19 @@ import html
 from dataclasses import dataclass
 from typing import Literal
 
+from app.mail.restaurant_text import known, party, text
 from app.mail.templates import (
     _PAGE,
-    _STOP_TEXT,
     SENDER_NAME,
     EmailParts,
-    _booking_reason,
     _check_link,
     _one_line,
     _paragraph,
-    _party,
     _subject,
 )
 
 Kind = Literal["confirmed", "changed", "reminder"]
+
 MAX_ALT_LENGTH = 300
 PHOTO_WIDTH = 520
 MAX_PHRASES = 4
@@ -60,81 +59,94 @@ class RestaurantBooking:
     # "€20, taken off your bill. Free cancellation until Fri 20 Nov, 19:30." Only on
     # bookings that needed a deposit; every other email is exactly as before.
     payment_line: str | None = None
+    # The language of the email (restaurant_text.LOCALES). Unknown values read as English.
+    locale: str = "en"
 
 
 def seat_line(facts: RestaurantBooking) -> str:
     """ "Table 4 · Seat 2 (facing the window)", or just "Table 4"."""
-    line = f"Table {facts.table_label}"
+    line = text("table", facts.locale, label=facts.table_label)
     if facts.seat_label:
-        line += f" · Seat {facts.seat_label}"
-        if facts.seat_phrase:
+        line += f" · {text('seat', facts.locale, label=facts.seat_label)}"
+        if (
+            facts.seat_phrase and known(facts.locale) == "en"
+        ):  # the sentence is only written in English
             phrase = facts.seat_phrase
             line += f" ({phrase[:1].lower()}{phrase[1:]})"
     return line
 
 
-def picture_alt(restaurant: str, table_label: str, seat_label: str | None) -> str:
+def picture_alt(
+    restaurant: str, table_label: str, seat_label: str | None, locale: str = "en"
+) -> str:
     """The mini-map's alt text: the message in words, for screen readers."""
-    text = (
-        f"Floor plan of {_one_line(restaurant)} seen from above. Your table, table "
-        f"{_one_line(table_label)}, is highlighted in yellow"
+    alt = text(
+        "picture_alt", locale, restaurant=_one_line(restaurant), table=_one_line(table_label)
     )
     if seat_label:
-        text += f", and your chair, seat {_one_line(seat_label)}, is marked with a large black dot inside a ring"
-    return f"{text}."[:MAX_ALT_LENGTH]
+        alt += text("picture_alt_seat", locale, seat=_one_line(seat_label))
+    return f"{alt}."[:MAX_ALT_LENGTH]
 
 
 def _opening(kind: Kind, facts: RestaurantBooking) -> str:
-    return {
-        "confirmed": f"You're booked at {facts.restaurant}.",
-        "changed": f"Your booking at {facts.restaurant} has been updated.",
-        "reminder": f"A reminder of your booking at {facts.restaurant}.",
-    }[kind]
+    return text(f"opening_{kind}", facts.locale, restaurant=facts.restaurant)
 
 
-def _closing(kind: Kind) -> str:
-    if kind == "reminder":
-        return "If you cannot come, please cancel with the link below so someone else can have the table."
-    return "You can change or cancel the booking, or pick another chair, with the link below."
+def _closing(kind: Kind, locale: str) -> str:
+    return text("closing_reminder" if kind == "reminder" else "closing", locale)
 
 
 def _subject_line(kind: Kind, facts: RestaurantBooking) -> str:
-    head = {"confirmed": "Booked", "changed": "Updated", "reminder": "Reminder"}[kind]
-    return f"{head}: {facts.restaurant}, {facts.day_text} at {facts.time_text}"
+    head = text(f"subject_{kind}", facts.locale)
+    return text(
+        "subject",
+        facts.locale,
+        head=head,
+        restaurant=facts.restaurant,
+        day=facts.day_text,
+        time=facts.time_text,
+    )
 
 
 def _details(facts: RestaurantBooking) -> list[tuple[str, str]]:
+    loc = facts.locale
     return [
-        ("Date", facts.day_text),
-        ("Time", facts.time_text),
-        ("People", _party(facts.party_size)),
-        ("Your table", seat_line(facts)),
-        *([("Deposit", facts.payment_line)] if facts.payment_line else []),
+        (text("label_date", loc), facts.day_text),
+        (text("label_time", loc), facts.time_text),
+        (text("label_people", loc), party(facts.party_size, loc)),
+        (text("label_table", loc), seat_line(facts)),
+        *([(text("label_deposit", loc), facts.payment_line)] if facts.payment_line else []),
     ]
 
 
 def _text(kind: Kind, facts: RestaurantBooking) -> str:
     name = _one_line(facts.diner_name)
-    lines = [f"Hello {name}," if name else "Hello,", "", _opening(kind, facts), ""]
+    loc = facts.locale
+    lines = [
+        text("hello_name", loc, name=name) if name else text("hello", loc),
+        "",
+        _opening(kind, facts),
+        "",
+    ]
     lines += [f"{label}: {value}" for label, value in _details(facts)]
     if facts.phrases:
         lines += ["", *[f"- {phrase}" for phrase in facts.phrases[:MAX_PHRASES]]]
     if facts.picture_width is not None:
-        lines += ["", "The HTML version of this email shows the room from above."]
+        lines += ["", text("html_note", loc)]
     where = [part for part in (facts.address, facts.phone) if part]
     if where:
-        lines += ["", f"Where: {', '.join(where)}"]
+        lines += ["", f"{text('where', loc)}: {', '.join(where)}"]
     if facts.maps_url:
-        lines += [f"Map: {facts.maps_url}"]
+        lines += [f"{text('map', loc)}: {facts.maps_url}"]
     lines += [
         "",
-        _closing(kind),
+        _closing(kind, loc),
         "",
-        f"Manage my booking: {facts.link}",
+        f"{text('manage', loc)}: {facts.link}",
         "",
-        f"The {SENDER_NAME} team",
+        text("team", loc, sender=SENDER_NAME),
     ]
-    lines += ["", "--", _booking_reason(facts.restaurant), _STOP_TEXT]
+    lines += ["", "--", text("reason", loc, restaurant=facts.restaurant), text("stop", loc)]
     return "\n".join(lines) + "\n"
 
 
@@ -183,36 +195,41 @@ def _where_html(facts: RestaurantBooking) -> str:
         address = html.escape(facts.address)
         if facts.maps_url:
             href = html.escape(facts.maps_url, quote=True)
-            address = f'<a href="{href}" style="color:#1d4ed8;">{address}</a>'
+            address = f'<a href="{href}" style="color:#4f3f8f;">{address}</a>'
         parts.append(address)
     if facts.phone:
         parts.append(html.escape(facts.phone))
     return f'<p style="margin:0 0 16px;">{"<br>".join(parts)}</p>' if parts else ""
 
 
-def _button(link: str) -> str:
+def _button(link: str, locale: str) -> str:
     href = html.escape(link, quote=True)
     return (
         f'<p style="margin:24px 0;"><a href="{href}" style="display:inline-block;'
-        "background:#1d4ed8;color:#ffffff;text-decoration:none;padding:12px 20px;"
-        'border-radius:6px;font-weight:bold;">Manage my booking</a></p>'
+        "background:#a12f6f;color:#ffffff;text-decoration:none;padding:12px 20px;"
+        f'border-radius:6px;font-weight:bold;">{html.escape(text("manage", locale))}</a></p>'
         '<p style="margin:0 0 16px;font-size:13px;color:#52525b;word-break:break-all;">'
-        f"If the button does not work, copy this link: {href}</p>"
+        f"{html.escape(text('button_help', locale))} {href}</p>"
     )
 
 
 def _html(kind: Kind, facts: RestaurantBooking) -> str:
+    loc = facts.locale
     name = _one_line(facts.diner_name)
     content = _photo_html(facts)
-    content += _paragraph(f"Hello {name}," if name else "Hello,")
+    content += _paragraph(text("hello_name", loc, name=name) if name else text("hello", loc))
     content += _paragraph(_opening(kind, facts))
     content += (
         _details_html(facts) + _phrases_html(facts) + _picture_html(facts) + _where_html(facts)
     )
-    content += _paragraph(_closing(kind)) + _button(facts.link)
-    content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
-    footer = f"{html.escape(_booking_reason(facts.restaurant))}<br>{html.escape(_STOP_TEXT)}"
-    return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
+    content += _paragraph(_closing(kind, loc)) + _button(facts.link, loc)
+    content += f'<p style="margin:0;">{html.escape(text("team", loc, sender=SENDER_NAME))}</p>'
+    footer = f"{html.escape(text('reason', loc, restaurant=facts.restaurant))}<br>{html.escape(text('stop', loc))}"
+    page = _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
+    # The restaurant look (the site's purple and pink) and the language of the email, on the shared page frame.
+    return page.replace('<html lang="en">', f'<html lang="{known(loc)}">', 1).replace(
+        "background:#f4f4f5", "background:#f8f7fc", 1
+    )
 
 
 def booking_email(kind: Kind, facts: RestaurantBooking) -> EmailParts:
