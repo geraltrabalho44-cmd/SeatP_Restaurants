@@ -413,6 +413,8 @@ def test_two_verifies_at_once_make_one_account(
         thread.start()
     for thread in threads:
         thread.join()
-    assert 201 in statuses and set(statuses) <= {201, 404, 409}
+    # Exactly one request wins. The other meets the unique key (409), or arrives after the winner already used the
+    # code (404 or 422, "code not right"). Which one depends on timing, so all are fine; two accounts never are.
+    assert statuses.count(201) == 1 and set(statuses) <= {201, 404, 409, 422}
     with session.get_bind().connect() as connection:
         assert connection.execute(text("SELECT count(*) FROM guest_accounts")).scalar() == 1
