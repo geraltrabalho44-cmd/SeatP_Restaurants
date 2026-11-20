@@ -8,6 +8,7 @@ import type { LoginResponse } from "../../api/types";
 import { Button, Field } from "../../design/components";
 import { ApiError } from "../../api/client";
 import { useT } from "../../i18n/I18nProvider";
+import { codeDigits } from "../../design/codeDigits";
 
 interface Props {
   step: SecondStep;
@@ -44,7 +45,7 @@ export function SecondStepForm({ step, onDone, onCancel }: Props) {
   return (
     <form onSubmit={(event) => void submit(event)} noValidate aria-label={t("Second step")}>
       <p className="login-lede">{t("Open your authenticator app and type the six-digit code for SeatPlan.")}</p>
-      <Field label={t("Code from your authenticator app")} inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6} value={code} error={problem} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} />
+      <Field label={t("Code from your authenticator app")} inputMode="numeric" autoComplete="one-time-code" autoFocus value={code} error={problem} onChange={(event) => setCode(codeDigits(event.target.value))} />
       <Button type="submit" busy={busy} className="login-submit">
         {t("Check code")}
       </Button>

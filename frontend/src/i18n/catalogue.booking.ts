@@ -211,7 +211,7 @@ export const booking = {
   "Hold tables {labels}": ["Guardar mesas {labels}", "Reservar mesas {labels}", "Garder les tables {labels}"],
   "Hold table {label}": ["Guardar mesa {label}", "Reservar mesa {label}", "Garder la table {label}"],
   "Tap a free table on the map, or let us pick the best one for you.": ["Toca numa mesa livre no mapa, ou deixa-nos escolher a melhor para ti.", "Toca una mesa libre en el mapa, o deja que elijamos la mejor para ti.", "Touchez une table libre sur le plan, ou laissez-nous choisir la meilleure pour vous."],
-  "Choose for me": ["Escolham por mim", "Elegid por mí", "Choisissez pour moi"],
+  "Choose for me": ["Escolhe por mim", "Elige por mí", "Choisissez pour moi"],
   "These are still free and fit your party:": ["Estas continuam livres e servem para o teu grupo:", "Estas siguen libres y sirven para tu grupo:", "Celles-ci sont encore libres et conviennent à votre groupe :"],
   "No other table fits your party at this time. Please go back and pick another time.": ["Nenhuma outra mesa serve para o teu grupo a esta hora. Volta atrás e escolhe outra hora.", "Ninguna otra mesa sirve para tu grupo a esta hora. Vuelve atrás y elige otra hora.", "Aucune autre table ne convient à votre groupe à cette heure. Revenez en arrière et choisissez un autre horaire."],
   "Tables that suit your party": ["Mesas que servem para o teu grupo", "Mesas que sirven para tu grupo", "Tables adaptées à votre groupe"],

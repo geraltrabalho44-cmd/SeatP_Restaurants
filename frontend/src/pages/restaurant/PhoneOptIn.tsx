@@ -10,6 +10,7 @@ import { Button, Checkbox, Field } from "../../design/components";
 import { useT } from "../../i18n/I18nProvider";
 import { tr } from "../../i18n/locale";
 import { errorMessage } from "./format";
+import { codeDigits } from "../../design/codeDigits";
 
 export const CHANNEL_NAME: Record<MessageChannel, string> = { whatsapp: "WhatsApp", sms: "SMS" };
 
@@ -168,7 +169,7 @@ function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptI
                       {t("Demo: no message is sent. Your code is")} <strong>{sent.demoCode}</strong>.
                     </p>
                   )}
-                  <Field id="rb-phone-code" label={t("Code")} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="123456" value={code} disabled={disabled} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} />
+                  <Field id="rb-phone-code" label={t("Code")} inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} disabled={disabled} onChange={(event) => setCode(codeDigits(event.target.value))} />
                   <div className="rb-actions">
                     <Button variant="secondary" busy={busy} disabled={disabled || code.length !== 6} onClick={() => void verify()}>
                       {t("Verify")}

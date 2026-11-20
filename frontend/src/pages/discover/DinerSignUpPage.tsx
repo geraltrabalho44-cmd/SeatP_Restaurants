@@ -15,6 +15,7 @@ import { useT } from "../../i18n/I18nProvider";
 import { ProblemBox, asApiError, listErrors, looksLikeEmail } from "../account/FormProblem";
 import type { FieldErrors } from "../account/FormProblem";
 import "../account/account.css";
+import { codeDigits } from "../../design/codeDigits";
 
 const MIN_PASSWORD = 10;
 
@@ -97,7 +98,7 @@ export default function DinerSignUpPage() {
               </p>
             )}
             <ProblemBox messages={general ? [general] : []} attempt={attempt} />
-            <Field label={t("Code from the email")} inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} />
+            <Field label={t("Code from the email")} inputMode="numeric" autoComplete="one-time-code" autoFocus value={code} onChange={(event) => setCode(codeDigits(event.target.value))} />
             <Button type="submit" busy={busy} className="acc-submit">
               {t("Create my account")}
             </Button>

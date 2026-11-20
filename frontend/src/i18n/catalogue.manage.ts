@@ -50,7 +50,7 @@ export const manage = {
   "We could not save your choice. Please try again.": ["Não foi possível guardar a tua escolha. Tenta outra vez.", "No se pudo guardar tu elección. Inténtalo de nuevo.", "Impossible d'enregistrer votre choix. Veuillez réessayer."],
   "Offers": ["Ofertas", "Ofertas", "Offres"],
   "Offers from {name}": ["Ofertas de {name}", "Ofertas de {name}", "Offres de {name}"],
-  "Send me offers and news": ["Enviem-me ofertas e novidades", "Envíenme ofertas y novedades", "Envoyez-moi des offres et des actualités"],
+  "Send me offers and news": ["Envia-me ofertas e novidades", "Envíame ofertas y novedades", "Envoyez-moi des offres et des actualités"],
   "Only from this restaurant. You can change this at any time.": ["Só deste restaurante. Podes mudar isto a qualquer momento.", "Solo de este restaurante. Puedes cambiarlo en cualquier momento.", "Uniquement de ce restaurant. Vous pouvez changer cela à tout moment."],
   "Type your email above first: some codes are for one guest only.": ["Escreve primeiro o teu email acima: alguns códigos são só para um cliente.", "Escribe primero tu correo arriba: algunos códigos son solo para un cliente.", "Saisissez d'abord votre e-mail ci-dessus : certains codes sont réservés à un seul client."],
   "We could not check the code. Please try again.": ["Não foi possível verificar o código. Tenta outra vez.", "No se pudo comprobar el código. Inténtalo de nuevo.", "Impossible de vérifier le code. Veuillez réessayer."],

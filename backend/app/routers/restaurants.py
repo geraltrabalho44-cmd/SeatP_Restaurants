@@ -57,7 +57,9 @@ router = APIRouter(tags=["restaurants"])
 # Holds are also capped by how many a client has live (see holding.py), so
 # HOLD_LIMIT only has to leave room for a diner clicking through tables.
 # Bookings are also capped per email and per address per day (booking_caps.py).
-READ_LIMIT = 120
+# READ_LIMIT is generous on purpose: one booking makes about 25 counted reads, and a class or an office behind one
+# Wi-Fi shares one address, so 120 a minute locked everyone out as soon as a few people booked together.
+READ_LIMIT = 600
 HOLD_LIMIT = 20
 BOOK_LIMIT = 30
 # The schema bound only; the real per-restaurant limit is checked by

@@ -7,7 +7,9 @@ import { tr } from "../../i18n/locale";
 import { shortDate } from "./format";
 
 // The server names the weather in English; this puts it in the language in use.
-const words = (condition: string): string => ({ "Rain expected": tr("Rain expected"), "Showers possible": tr("Showers possible"), Cloudy: tr("Cloudy"), "Sun and clouds": tr("Sun and clouds"), Sunny: tr("Sunny") })[condition] ?? condition;
+const words = (condition: string): string => ({ "Rain expected": tr("Rain expected"), "Showers possible": tr("Showers possible"), Cloudy: tr("Cloudy"), "Sun and clouds": tr("Sun and clouds"), Sunny: tr("Sunny"), "Clear sky": tr("Clear sky"), "Partly cloudy": tr("Partly cloudy") })[condition] ?? condition;
+/** After sunset the sun is not up, so the server's "Sunny" reads "Clear sky" (and "Sun and clouds" "Partly cloudy"). */
+const atNight = (condition: string, time: string, sunset: string | null): string => sunset && time >= sunset ? ({ Sunny: "Clear sky", "Sun and clouds": "Partly cloudy" } as Record<string, string>)[condition] ?? condition : condition;
 
 interface Table {id:number; label:string; room:string}
 interface Hour {time:string; condition:string; temperature:number; probability:number; wind:number}
@@ -33,7 +35,7 @@ export function WeatherPanel({venueId,needs,time,onTime,onTable,compact=false}:{
   const best=time ? data.sunset_choices.find(c=>c.time===time) : data.sunset_choices[0];
   const heading=t("Weather for {date}", { date: shortDate(needs.date) });
   const body=<>
-    {hours.length>0 ? <><p>{hours.map(h=>h.time+" · "+words(h.condition)+" · "+h.temperature+"°C"+(h.probability>=30?" ("+h.probability+"%)":"")+(h.wind>=35?" · "+t("Windy"):"")).join(" / ")}</p>
+    {hours.length>0 ? <><p>{hours.map(h=>h.time+" · "+words(atNight(h.condition,h.time,data.sunset))+" · "+h.temperature+"°C"+(h.probability>=30?" ("+h.probability+"%)":"")+(h.wind>=35?" · "+t("Windy"):"")).join(" / ")}</p>
       <small>{data.source==="demo"?t("Simulated forecast"):<a href="https://open-meteo.com/" rel="noopener noreferrer" target="_blank">{t("Weather data by Open-Meteo.com")}</a>}{data.status==="stale"?" · "+t("Last available forecast"):""}</small></> :
       <p>{data.status==="later"?t("The forecast for this date comes later."):t("Weather forecast unavailable right now.")}</p>}
     {rain && <p>{t("Indoor tables recommended.")}{data.indoor.map(table=><Button key={table.id} variant="ghost" onClick={()=>onTable?.(table.id)}>{table.room} · {table.label}</Button>)}</p>}
@@ -43,7 +45,7 @@ export function WeatherPanel({venueId,needs,time,onTime,onTable,compact=false}:{
   if(compact){
     const first=hours[0];
     return <details className="rb-card rb-weather-compact" aria-label={t("Weather and sunset")}>
-      <summary>{first ? <><strong>{t("Weather")}</strong><span>{first.time+" · "+words(first.condition)+" · "+first.temperature+"°C"}</span></> : <strong>{heading}</strong>}</summary>
+      <summary>{first ? <><strong>{t("Weather")}</strong><span>{first.time+" · "+words(atNight(first.condition,first.time,data.sunset))+" · "+first.temperature+"°C"}</span></> : <strong>{heading}</strong>}</summary>
       <strong>{heading}</strong>
       {body}
     </details>;

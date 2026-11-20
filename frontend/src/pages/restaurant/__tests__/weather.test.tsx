@@ -60,6 +60,23 @@ describe("The weather panel", () => {
     expect(screen.getByText(/Last available forecast/)).toBeTruthy();
   });
 
+  it("does not call the weather sunny once the sun has set", async () => {
+    mockApi({
+      [`GET ${API}`]: () => ({ ...FORECAST, hours: [hour("13:00", "Sunny"), hour("19:00", "Sun and clouds"), hour("21:00", "Sunny")] }),
+    });
+    const { unmount } = render(<WeatherPanel venueId="casa" needs={NEEDS} />);
+    const panel = await screen.findByRole("region", { name: "Weather and sunset" });
+    // The sun sets at 20:12: 13:00 and 19:00 are day, 21:00 is night.
+    expect(panel.textContent).toContain("13:00 · Sunny · 18°C");
+    expect(panel.textContent).toContain("19:00 · Sun and clouds · 18°C");
+    expect(panel.textContent).toContain("21:00 · Clear sky · 18°C");
+    expect(panel.textContent).not.toContain("21:00 · Sunny");
+    unmount();
+    mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, hours: [hour("22:00", "Sun and clouds"), hour("23:00", "Cloudy")] }) });
+    render(<WeatherPanel venueId="casa" needs={NEEDS} time="22:00" />);
+    expect(await screen.findByText(/22:00 · Partly cloudy · 18°C/)).toBeTruthy();
+  });
+
   it("says plainly when the forecast comes later or is not available, and still shows the sunset", async () => {
     mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, hours: [], status: "later", sunset_choices: [] }) });
     const { unmount } = render(<WeatherPanel venueId="casa" needs={NEEDS} />);

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useT } from "../../i18n/I18nProvider";
 import seatPlanLogo from "../seatplan-logo.png";
 
 // /pay is where a diner pays a restaurant deposit and returns from the payment page.
@@ -41,6 +42,7 @@ export function Wordmark({ restaurantBrand = false }: { restaurantBrand?: boolea
 }
 
 export function PageShell({ title, children, width = "normal", headerActions, footerContent, restaurantBrand }: PageShellProps) {
+  const { t } = useT();
   useEffect(() => {
     document.title = `${title} · SeatPlan`;
   }, [title]);
@@ -60,7 +62,7 @@ export function PageShell({ title, children, width = "normal", headerActions, fo
   return (
     <div className="shell">
       <a className="skip-link" href="#main">
-        Skip to main content
+        {t("Skip to main content")}
       </a>
       <header className="shell-header">
         <div className={`shell-inner shell-${width}`}>

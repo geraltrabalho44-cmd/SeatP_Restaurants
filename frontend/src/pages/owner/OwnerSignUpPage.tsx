@@ -7,6 +7,7 @@ import type { OwnerCode } from "../../api/owner";
 import { Button, Checkbox, Field, PageShell } from "../../design/components";
 import { useT } from "../../i18n/I18nProvider";
 import "./owner.css";
+import { codeDigits } from "../../design/codeDigits";
 
 export default function OwnerSignUpPage() {
   const { t } = useT();
@@ -81,7 +82,7 @@ export default function OwnerSignUpPage() {
       </>}
       {pending && <>
         {pending.code_shown && <p className="owner-demo" role="status">{t("Demo code")} <strong>{pending.code_shown}</strong></p>}
-        <Field label={t("Verification code")} autoFocus inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={code} onChange={e => setCode(e.target.value)} />
+        <Field label={t("Verification code")} autoFocus inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" value={code} onChange={e => setCode(codeDigits(e.target.value))} />
       </>}
       {error && <p role="alert" className="owner-error">{error}</p>}
       <Button type="submit" busy={busy}>{pending ? t("Verify and continue") : t("Send verification code")}</Button>

@@ -12,6 +12,7 @@ import { errorMessage } from "../restaurant/format";
 import { useLoad } from "../restaurant/useLoad";
 import { OwnerShell } from "./OwnerShell";
 import "./owner.css";
+import { codeDigits } from "../../design/codeDigits";
 
 /** The secret in groups of four, easier to type by hand: "JBSW Y3DP EHPK 3PXP". */
 export function groupSecret(secret: string): string {
@@ -131,7 +132,7 @@ function TurnOn({ onOn }: { onOn: () => void }) {
               <li>{t("Type the six-digit code the app shows now.")}</li>
             </ol>
             <QrImage text={started.uri} label={t("QR code to add SeatPlan to your authenticator app")} size={180} />
-            <Field label={t("Code from the app")} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} />
+            <Field label={t("Code from the app")} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(codeDigits(event.target.value))} />
             <p className="rb-notice rb-notice-warning" role="note">
               {t("Keep your phone safe: there are no recovery codes. If you lose the app, you will not be able to sign in with this account until the person who runs SeatPlan resets it.")}
             </p>
@@ -188,7 +189,7 @@ function TurnOff({ onOff }: { onOff: () => void }) {
         </h2>
         <p>{t("Signing in asks for a code from your authenticator app. To turn it off, enter your password and a current code.")}</p>
         <Field label={t("Your password")} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
-        <Field label={t("Code from the app")} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} />
+        <Field label={t("Code from the app")} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(codeDigits(event.target.value))} />
         {problem && (
           <p className="rb-notice rb-notice-error" role="alert">
             {problem}
