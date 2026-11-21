@@ -1,6 +1,7 @@
 // Zoom in, zoom out and fit. Buttons as well as gestures, because not
 // everyone can pinch or has a mouse wheel (WCAG 2.5.7, dragging movements).
 import type { RefObject } from "react";
+import { useT } from "../i18n/I18nProvider";
 
 interface MapControlsProps {
   /** The first button; Escape inside the map moves focus here. */
@@ -13,19 +14,20 @@ interface MapControlsProps {
 }
 
 export function MapControls({ leaveRef, onZoomIn, onZoomOut, onFit, focus }: MapControlsProps) {
+  const { t } = useT();
   return (
-    <div className="seatmap-controls" role="group" aria-label="Map view">
-      <button ref={leaveRef} type="button" className="map-control" onClick={onZoomIn} aria-label="Zoom in">
+    <div className="seatmap-controls" role="group" aria-label={t("Map view")}>
+      <button ref={leaveRef} type="button" className="map-control" onClick={onZoomIn} aria-label={t("Zoom in")}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 5v14M5 12h14" />
         </svg>
       </button>
-      <button type="button" className="map-control" onClick={onZoomOut} aria-label="Zoom out">
+      <button type="button" className="map-control" onClick={onZoomOut} aria-label={t("Zoom out")}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 12h14" />
         </svg>
       </button>
-      <button type="button" className="map-control" onClick={onFit} aria-label="Fit map to screen">
+      <button type="button" className="map-control" onClick={onFit} aria-label={t("Fit map to screen")}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
         </svg>

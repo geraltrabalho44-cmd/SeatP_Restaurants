@@ -50,11 +50,25 @@ def zone_kinds(session: Session, venue: Venue) -> dict[int, str]:
     return {zone.id: zone.kind for zone in rows}
 
 
-def table_specs(tables: list[VenueTable], kinds: dict[int, str]) -> list[TableSpec]:
+def right_size_min(table: VenueTable, allow_larger: bool) -> int:
+    """The smallest party a table is offered to.
+
+    By default a table is only for parties that fill it, or are one short of it (a table for 4 takes 3 or 4 people, a
+    table for 2 takes 1 or 2): a couple is not given a table for four. A restaurant can allow bigger tables for smaller
+    parties; a minimum the owner set on the table itself is always kept.
+    """
+    if allow_larger:
+        return table.min_party
+    return max(table.min_party, table.max_party - 1)
+
+
+def table_specs(
+    tables: list[VenueTable], kinds: dict[int, str], allow_larger: bool = False
+) -> list[TableSpec]:
     return [
         TableSpec(
             id=table.id,
-            min_party=table.min_party,
+            min_party=right_size_min(table, allow_larger),
             max_party=table.max_party,
             zone=kinds.get(table.zone_id, "general") if table.zone_id else "general",
             accessible=table.is_accessible,

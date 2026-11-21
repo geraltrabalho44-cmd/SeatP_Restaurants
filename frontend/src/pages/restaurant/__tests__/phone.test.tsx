@@ -1,6 +1,6 @@
 // Phone reminders on the booking form: the block only exists when the restaurant sends messages,
-// nothing is pre-ticked, the number must be proven with a code, and a booking without a verified
-// number cannot be sent while the box is ticked.
+// there is no box to tick (a typed number is the yes), the number must be proven with a code, and a booking
+// with a number that is not verified cannot be sent.
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -36,16 +36,17 @@ describe("The phone reminders block", () => {
     expect(screen.queryByRole("region", { name: "Reminders on your phone" })).toBeNull();
   });
 
-  it("is not pre-ticked, and ticking it explains what will be sent", async () => {
+  it("has no box to tick, asks for the number and explains what will be sent", async () => {
+    const seen: PhoneChoice[] = [];
     mockApi({ [`GET ${API}`]: () => ({ ...INFO, messages: OPTIONS }) });
-    render(<Harness />);
-    const box = await screen.findByRole("checkbox", { name: /Send me booking messages/ });
-    expect((box as HTMLInputElement).checked).toBe(false);
-    expect(screen.queryByLabelText("Mobile number")).toBeNull();
-    fireEvent.click(box);
+    render(<Harness onValue={(value) => seen.push(value)} />);
+    expect(await screen.findByLabelText("Mobile number")).toBeTruthy();
+    expect(screen.queryByRole("checkbox", { name: /Send me booking messages/ })).toBeNull();
+    expect(seen).toEqual([]); // an empty number means no phone messages
     expect(screen.getByText(/reminders 24 hours and 3 hours before/)).toBeTruthy();
     expect(screen.getByText(/delete your number 30 days after your visit/)).toBeTruthy();
-    expect(screen.getByLabelText("Mobile number")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Mobile number"), { target: { value: "912" } });
+    expect(seen.at(-1)?.wanted).toBe(true);
   });
 
   it("sends a code, shows the demo code, and verifies the number", async () => {
@@ -56,7 +57,7 @@ describe("The phone reminders block", () => {
       [`POST ${API}/phone/verify`]: () => ({ verified: true, phone: "+351 9•• ••• 678", channel: "sms" }),
     });
     render(<Harness onValue={(value) => seen.push(value)} />);
-    fireEvent.click(await screen.findByRole("checkbox", { name: /Send me booking messages/ }));
+    await screen.findByLabelText("Mobile number");
     fireEvent.change(screen.getByLabelText("Mobile number"), { target: { value: "912 345 678" } });
     fireEvent.click(screen.getByRole("button", { name: "Send code" }));
     expect(await screen.findByText(/We sent a 6-digit code to \+351 9•• ••• 678 by SMS/)).toBeTruthy();
@@ -77,7 +78,7 @@ describe("The phone reminders block", () => {
       [`POST ${API}/phone/verify`]: () => apiError(422, "wrong_code", "That code is not right. You have 3 tries left."),
     });
     render(<Harness />);
-    fireEvent.click(await screen.findByRole("checkbox", { name: /Send me booking messages/ }));
+    await screen.findByLabelText("Mobile number");
     fireEvent.change(screen.getByLabelText("Mobile number"), { target: { value: "912345678" } });
     fireEvent.click(screen.getByRole("button", { name: "Send code" }));
     fireEvent.change(await screen.findByLabelText("Code"), { target: { value: "000000" } });
@@ -89,19 +90,19 @@ describe("The phone reminders block", () => {
   it("offers a choice only when the restaurant has both channels", async () => {
     mockApi({ [`GET ${API}`]: () => ({ ...INFO, messages: { ...OPTIONS, channels: ["whatsapp", "sms"] } }) });
     render(<Harness />);
-    fireEvent.click(await screen.findByRole("checkbox", { name: /Send me booking messages/ }));
-    expect(screen.getByRole("radio", { name: "WhatsApp" })).toBeTruthy();
+    expect(await screen.findByRole("radio", { name: "WhatsApp" })).toBeTruthy();
     expect(screen.getByRole("radio", { name: "SMS" })).toBeTruthy();
   });
 
-  it("unticking forgets the proof", async () => {
+  it("clearing the number takes the choice back", async () => {
     const seen: PhoneChoice[] = [];
     mockApi({ [`GET ${API}`]: () => ({ ...INFO, messages: OPTIONS }) });
     render(<Harness onValue={(value) => seen.push(value)} />);
-    const box = await screen.findByRole("checkbox", { name: /Send me booking messages/ });
-    fireEvent.click(box);
-    fireEvent.click(box);
-    expect(seen.at(-1)).toEqual(NO_PHONE);
+    const field = await screen.findByLabelText("Mobile number");
+    fireEvent.change(field, { target: { value: "912" } });
+    expect(seen.at(-1)?.wanted).toBe(true);
+    fireEvent.change(field, { target: { value: "" } });
+    expect(seen.at(-1)).toEqual({ wanted: false, verificationId: null, channel: "sms" });
   });
 });
 

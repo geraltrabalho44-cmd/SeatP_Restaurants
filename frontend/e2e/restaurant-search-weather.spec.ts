@@ -15,12 +15,14 @@ test("typing a sentence is understood, shown as chips, and a chip can be taken b
   await expect(search).toHaveValue(/sushi/);
 });
 
-test("the booking page shows the day's simulated weather and the sunset", async ({ page, request }) => {
+test("the booking page shows the weather once, with the sunset on the same line, headed by the day and the town", async ({ page, request }) => {
   const links = await demoLinks(request);
   await page.goto(`${links.showcase_tagus_terrace}?date=${isoDaysFromToday(3)}&party=2`);
   await page.getByRole("button", { name: "See free times" }).click();
   const panel = page.getByRole("region", { name: "Weather and sunset" });
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText("Simulated forecast");
-  await expect(panel).toContainText(/Sunset at \d\d:\d\d/);
+  await expect(panel).toContainText(/Weather for .* in Lisbon/);
+  await expect(panel).toContainText(/\d\d:\d\d · .* · -?\d+°C \/ Sunset at \d\d:\d\d/);
+  await expect(panel).not.toContainText("Simulated forecast");
+  await expect(panel).not.toContainText("Indoor tables recommended");
 });

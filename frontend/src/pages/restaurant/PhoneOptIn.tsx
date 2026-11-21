@@ -1,12 +1,13 @@
-// "Reminders on your phone": an optional block of the details form. Nobody is messaged without
-// saying yes, and the number must be proven with a 6-digit code first, so nobody can sign up
-// somebody else's phone. It shows nothing at all when the restaurant sends no phone messages.
+// "Reminders on your phone": an optional block of the details form, always open (there is no box to tick). A diner who
+// types a number is saying yes, and the number must be proven with a 6-digit code first, so nobody can sign up somebody
+// else's phone. A diner who leaves the number empty is not messaged. It shows nothing at all when the restaurant sends
+// no phone messages.
 import { useEffect, useState } from "react";
 import { ApiError } from "../../api/client";
 import { startPhoneCode, verifyPhoneCode } from "../../api/messages";
 import type { MessageChannel, MessageOptions } from "../../api/messages";
 import { getRestaurant } from "../../api/restaurant";
-import { Button, Checkbox, Field } from "../../design/components";
+import { Button, Field } from "../../design/components";
 import { useT } from "../../i18n/I18nProvider";
 import { tr } from "../../i18n/locale";
 import { errorMessage } from "./format";
@@ -16,7 +17,7 @@ export const CHANNEL_NAME: Record<MessageChannel, string> = { whatsapp: "WhatsAp
 
 /** What the form needs from this block: a verified number's id, or null while it is not ready. */
 export interface PhoneChoice {
-  /** The diner ticked the box. */
+  /** The diner started to give a number (it must then be verified before the booking is sent). */
   wanted: boolean;
   /** Set once the code was typed correctly. */
   verificationId: string | null;
@@ -75,13 +76,17 @@ function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptI
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(value.verificationId ? (value.masked ?? null) : null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  // The number typed is not kept when the form is left and opened again, so a half-done choice starts clean.
+  useEffect(() => {
+    if (value.wanted && !value.verificationId) onChange(NO_PHONE);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- only when the block opens
 
   const reset = (): void => {
     setSent(null);
     setCode("");
     setVerifiedPhone(null);
     setProblem(null);
-    onChange({ wanted: true, verificationId: null });
+    onChange({ wanted: number.trim() !== "", verificationId: null, channel });
   };
   const send = async (): Promise<void> => {
     setBusy(true);
@@ -114,24 +119,7 @@ function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptI
   return (
     <section className="rb-phone" aria-label={t("Reminders on your phone")}>
       <h4 className="rb-phone-title">{t("Reminders on your phone (optional)")}</h4>
-      <Checkbox
-        id="rb-phone-want"
-        label={t("Send me booking messages by WhatsApp or SMS")}
-        checked={value.wanted}
-        disabled={disabled}
-        onChange={(event) => {
-          if (event.target.checked) onChange({ wanted: true, verificationId: null });
-          else {
-            setSent(null);
-            setVerifiedPhone(null);
-            setCode("");
-            setProblem(null);
-            onChange(NO_PHONE);
-          }
-        }}
-      />
-      {value.wanted && (
-        <div className="rb-phone-body">
+      <div className="rb-phone-body">
           <p className="rb-muted">{consentText(options)}</p>
           {verifiedPhone ? (
             <p className="rb-phone-verified" role="status">
@@ -154,7 +142,7 @@ function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptI
               )}
               {!sent ? (
                 <>
-                  <Field id="rb-phone-number" label={t("Mobile number")} hint={t("Portuguese mobile numbers only for now, for example 912 345 678.")} type="tel" inputMode="tel" autoComplete="tel-national" placeholder="912 345 678" value={number} disabled={disabled} onChange={(event) => setNumber(event.target.value)} />
+                  <Field id="rb-phone-number" label={t("Mobile number")} hint={t("Portuguese mobile numbers only for now, for example 912 345 678.")} type="tel" inputMode="tel" autoComplete="tel-national" placeholder="912 345 678" value={number} disabled={disabled} onChange={(event) => { setNumber(event.target.value); onChange({ wanted: event.target.value.trim() !== "", verificationId: null, channel }); }} />
                   <Button variant="secondary" busy={busy} disabled={disabled || number.trim() === ""} onClick={() => void send()}>
                     {t("Send code")}
                   </Button>
@@ -187,8 +175,7 @@ function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptI
               {problem ?? error}
             </p>
           )}
-        </div>
-      )}
+      </div>
     </section>
   );
 }

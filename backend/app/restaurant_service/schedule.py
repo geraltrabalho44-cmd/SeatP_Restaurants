@@ -16,7 +16,7 @@ from app.models import BlackoutDate, ServicePeriod, TurnTime, Venue
 from app.restaurant_service.clock import SLOT_MINUTES, SLOTS_PER_DAY, is_past, slot_of
 
 # Used only when a restaurant has not set any turn times yet.
-DEFAULT_TURN_MINUTES = 120
+DEFAULT_TURN_MINUTES = 90
 
 
 def periods_for_day(session: Session, venue: Venue, day: date) -> list[ServicePeriod]:

@@ -1,65 +1,56 @@
-/* The diner's floor plan (FloorPlan.tsx): flat and quiet, colour only for what a table is.
-   By day it is light; after dark the whole plan turns to night (.is-night), with warm light at
-   every free table. The plan is a picture of the room, so it keeps these colours in dark mode. */
+/* The diner's floor plan (FloorPlan.tsx): the owner's room drawn like a printed plan: soft grey floor, a fine board pattern,
+   glass and doors where the owner put them, tables as white tops with a soft shadow. Colour only for what a table is.
+   By day it is light; in the evening (.is-night) it is a deeper grey with a soft glow at every free table, never dark.
+   The plan is a picture of the room, so it keeps these colours in dark mode. */
 .fp-viewport {
-  --fp-bg: #ffffff;
-  --fp-floor: #faf9fd;
-  --fp-floor-out: #f6f8f5;
-  --fp-wall: #e6e3ef;
-  --fp-glass: #c9c2e6;
-  --fp-fixture: #f0eef6;
-  --fp-fixture-text: #8c86a3;
-  --fp-sun: #ffe1a6;
-  --fp-table: #d7d2e8;
-  --fp-table-edge: #d7d2e8;
-  --fp-chair: #5b4b9b;
-  --fp-chair-back: #3e3175;
-  --fp-code: #3a3456;
+  --fp-bg: #f5f5f7;
+  --fp-floor: #fbfbfd;
+  --fp-floor-out: #f0f0f3;
+  --fp-board: rgb(0 0 0 / 0.035);
+  --fp-wall: #c5baea;
+  --fp-glass: #a9c8dc;
+  --fp-fixture: #e8e8ed;
+  --fp-fixture-text: #86868b;
+  --fp-sun: #fff0cc;
+  --fp-table: #ffffff;
+  --fp-table-edge: #d2d2d7;
+  --fp-chair: #8e8aa8;
+  --fp-chair-back: #6e6a8c;
+  --fp-code: #1d1d1f;
   --fp-mine: #c2508f;
-  --fp-mine-table: #d7d2e8;
-  --fp-halo: rgb(194 80 143 / 0.10);
-  --fp-glow-chair: rgb(194 80 143 / 0.55);
-  --fp-off: #f0eef5;
-  --fp-off-chair: #e4e1ec;
-  --fp-off-code: #aaa6bb;
-  --fp-band-water: #e7f0f6;
-  --fp-band-green: #e6f0e4;
-  --fp-band-text: #5a7d90;
+  --fp-mine-table: #ffffff;
+  --fp-halo: rgb(194 80 143 / 0.12);
+  --fp-glow-chair: rgb(194 80 143 / 0.5);
+  --fp-off: #ececf0;
+  --fp-off-chair: #dcdce1;
+  --fp-off-code: #a1a1a6;
+  --fp-band-water: #e6eef4;
+  --fp-band-green: #e7eee7;
+  --fp-band-text: #6e7f8c;
+  --fp-zone: rgb(0 0 0 / 0.028);
+  --fp-zone-edge: #d6cff0;
+  --fp-shadow: rgb(0 0 0 / 0.16);
   --fp-pick: #a12f6f;
   --fp-pick-bg: #f9e8f1;
-  --fp-glow: #f6c0dc;
+  --fp-glow: #f3b4d4;
   border-radius: var(--radius-lg, 18px);
   background: var(--fp-bg);
   border: 1px solid var(--c-border);
   outline: none;
   overflow: hidden;
 }
+/* After dark the plan stays light: a slightly deeper grey and a soft glow at every free table, never dark. */
 .fp-viewport.is-night {
-  --fp-bg: #1b1729;
-  --fp-floor: #221d33;
-  --fp-floor-out: #1f1b2e;
-  --fp-wall: #342e4a;
-  --fp-glass: #8f84c4;
-  --fp-fixture: #2b2540;
-  --fp-fixture-text: #9b94b5;
-  --fp-table: #3a3354;
-  --fp-table-edge: #3a3354;
-  --fp-chair: #b9adf0;
-  --fp-chair-back: #8f82cf;
-  --fp-code: #e9e5f7;
-  --fp-mine: #f29cc8;
-  --fp-mine-table: #3a3354;
-  --fp-halo: rgb(242 156 200 / 0.12);
-  --fp-glow-chair: rgb(242 156 200 / 0.6);
-  --fp-off: #262137;
-  --fp-off-chair: #2d273f;
-  --fp-off-code: #6c6585;
-  --fp-band-water: #1d2b3c;
-  --fp-band-green: #1f2e25;
-  --fp-band-text: #9db8cc;
-  --fp-pick: #f29cc8;
-  --fp-pick-bg: #3b2236;
-  --fp-glow: #f29cc8;
+  --fp-bg: #ececf0;
+  --fp-floor: #f4f4f7;
+  --fp-floor-out: #e8e8ed;
+  --fp-board: rgb(0 0 0 / 0.04);
+  --fp-glass: #94b7cf;
+  --fp-fixture: #dedee4;
+  --fp-off: #e3e3e8;
+  --fp-off-chair: #d4d4da;
+  --fp-band-water: #dde8ef;
+  --fp-band-green: #dfe8df;
 }
 .fp-viewport:focus-visible {
   outline: 3px solid var(--c-focus);
@@ -77,7 +68,10 @@
 /* The room: a pale floor, a hairline wall, glass as a light line, fixed things as soft blocks. */
 .fp-floor { fill: var(--fp-floor); }
 .fp-room.is-outdoor .fp-floor { fill: var(--fp-floor-out); }
-.fp-wall { fill: none; stroke: var(--fp-wall); stroke-width: 3; stroke-linejoin: round; }
+.fp-wall { fill: none; stroke: var(--fp-wall); stroke-width: 5; stroke-linejoin: round; }
+.fp-boards { stroke: var(--fp-board); stroke-width: 1.2; }
+.fp-zone { fill: var(--fp-zone); stroke: var(--fp-zone-edge); stroke-width: 2; stroke-dasharray: 6 7; stroke-linecap: round; }
+.fp-zone-text { font-family: var(--font-body); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; fill: var(--fp-fixture-text); text-anchor: start; dominant-baseline: hanging; }
 .fp-room.is-outdoor .fp-wall { stroke-dasharray: 2 8; stroke-linecap: round; }
 .fp-glass { fill: none; stroke: var(--fp-glass); stroke-width: 6; stroke-linecap: round; }
 .fp-door { fill: none; stroke: var(--fp-floor); stroke-width: 8; }
@@ -94,22 +88,22 @@
 .fp-table { cursor: default; }
 .fp-table.is-pickable { cursor: pointer; }
 .fp-hit { fill: transparent; }
-.fp-top { fill: var(--fp-table); stroke: none; }
+.fp-top { fill: var(--fp-table); stroke: var(--fp-table-edge); stroke-width: 2; filter: drop-shadow(0 4px 5px var(--fp-shadow)); }
 .fp-chair-glow { fill: transparent; }
 .fp-table.is-selected .fp-chair-glow { fill: var(--fp-glow-chair); filter: blur(6px); }
 .fp-seat { fill: var(--fp-chair); }
 .fp-back { fill: var(--fp-chair-back); }
 .fp-table.is-free.is-pickable:hover .fp-seat { fill: var(--fp-mine); }
-.fp-table.is-selected .fp-top { fill: var(--fp-mine-table); }
+.fp-table.is-selected .fp-top { fill: var(--fp-mine-table); stroke: var(--fp-mine); stroke-width: 3; }
 .fp-table.is-selected .fp-seat { fill: var(--fp-mine); }
 .fp-table.is-selected .fp-back { fill: var(--fp-mine); opacity: 0.8; }
 .fp-halo { fill: var(--fp-halo); stroke: none; }
-.fp-table.is-off .fp-top { fill: var(--fp-off); stroke: none; }
+.fp-table.is-off .fp-top { fill: var(--fp-off); stroke: none; filter: none; }
 .fp-table.is-off .fp-seat, .fp-table.is-off .fp-back { fill: var(--fp-off-chair); }
 .fp-cursor { fill: none; stroke: var(--c-focus); stroke-width: 3; stroke-dasharray: 6 5; }
 .fp-tick circle { fill: var(--fp-mine); stroke: var(--fp-bg); stroke-width: 2.5; }
 .fp-tick path { fill: none; stroke: var(--fp-bg); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.fp-glow-in { stop-color: var(--fp-glow); stop-opacity: 0.32; }
+.fp-glow-in { stop-color: var(--fp-glow); stop-opacity: 0.38; }
 .fp-glow-out { stop-color: var(--fp-glow); stop-opacity: 0; }
 
 /* Words: upright on a turned plan, sized in screen pixels by the component. */
@@ -126,10 +120,14 @@
 .fp-pick path { fill: var(--fp-pick); }
 
 /* The key under the plan shows the same three looks (MapKey look="plan"). */
-.legend-swatch.fp .fp-table.is-free .fp-top { fill: #d7d2e8; stroke: #5b4b9b; stroke-width: 2.5; }
-.legend-swatch.fp .fp-table.is-selected .fp-top { fill: #d7d2e8; stroke: #c2508f; stroke-width: 3; }
-.legend-swatch.fp .fp-table.is-off .fp-top { fill: #eceaf2; stroke: none; }
+.legend-swatch.fp .fp-table.is-free .fp-top { fill: #ffffff; stroke: #7d6fae; stroke-width: 2.5; filter: none; }
+.legend-swatch.fp .fp-table.is-selected .fp-top { fill: #ffffff; stroke: #c2508f; stroke-width: 3; filter: none; }
+.legend-swatch.fp .fp-table.is-off .fp-top { fill: #ececf0; stroke: none; filter: none; }
 
 @media (prefers-reduced-motion: no-preference) {
   .fp-top, .fp-seat { transition: fill 0.15s ease, stroke 0.15s ease; }
 }
+
+/* The star in the key under the plan (the key is outside the plan, so it carries its own colours). */
+.legend-swatch.fp .fp-pick circle { fill: #f9e8f1; stroke: #a12f6f; stroke-width: 1.5; }
+.legend-swatch.fp .fp-pick path { fill: #a12f6f; }

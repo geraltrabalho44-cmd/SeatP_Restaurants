@@ -44,6 +44,8 @@ export class DiscoveryLabels extends Layer {
   private canvas: HTMLCanvasElement | null = null;
   private run = 0;
   private readonly redraw = () => { void this.draw(); };
+  // While the zoom runs the names would sit at the old scale: they step aside and come back, drawn for the new zoom, when it settles.
+  private readonly hide = () => { if (this.canvas) this.canvas.style.opacity = "0"; };
 
   override onAdd(map: LeafletMap): this {
     const canvas = DomUtil.create("canvas", "leaflet-zoom-hide discovery-labels") as HTMLCanvasElement;
@@ -52,6 +54,7 @@ export class DiscoveryLabels extends Layer {
     map.getPane("overlayPane")?.appendChild(canvas);
     this.canvas = canvas;
     map.on("moveend resize", this.redraw);
+    map.on("zoomstart", this.hide);
     this.redraw();
     return this;
   }
@@ -59,6 +62,7 @@ export class DiscoveryLabels extends Layer {
   override onRemove(map: LeafletMap): this {
     this.run++;
     map.off("moveend resize", this.redraw);
+    map.off("zoomstart", this.hide);
     this.canvas?.remove();
     this.canvas = null;
     return this;
@@ -90,6 +94,8 @@ export class DiscoveryLabels extends Layer {
     canvas.width = width * density; canvas.height = height * density;
     canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
     DomUtil.setPosition(canvas, min);
+    canvas.style.transition = "opacity .18s ease";
+    canvas.style.opacity = "1";
     context.setTransform(density, 0, 0, density, 0, 0);
     // To canvas pixels.
     const here: Candidate[] = loaded.flat().map(c => ({ ...c, lines: c.lines.map(line => line.map(p => ({ x: p.x * scale - left, y: p.y * scale - top }))) }));

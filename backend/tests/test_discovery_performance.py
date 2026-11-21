@@ -87,6 +87,7 @@ def test_free_times_for_the_twenty_on_the_page_stay_under_the_limit(
     from app.models import Venue
 
     for row in session.scalars(select(Venue)):
+        row.allow_larger_tables = True  # this test is about speed, not about table sizes
         for number in range(6):
             session.add(
                 VenueTable(

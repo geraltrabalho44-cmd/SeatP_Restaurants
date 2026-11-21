@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 from test_identity import KEY, URL, FakeSupabase, _login, _signup
 
 from app.auth_providers.supabase import SupabaseAuth
-from app.models import AuthIdentity, Organiser
+from app.models import AuthIdentity, GuestAccount, Organiser, utc_now
 from app.routers import identity as router
-from app.security import create_session_token
+from app.security import create_session_token, hash_password
 
 
 class FakeSocial(FakeSupabase):
@@ -464,4 +464,105 @@ def test_the_built_in_sign_in_has_no_security_settings(
             "/api/identity/owner/security/start", json={"password": "x"}, headers=headers
         ).status_code
         == 404
+    )
+
+
+# ================================================================== a diner with Google or Apple
+
+
+def test_a_diner_button_comes_back_to_the_diner_page(client: TestClient, fake: FakeSocial) -> None:
+    answer = client.post(
+        "/api/identity/diner/oauth/start", json={"provider": "google", "nonce": NONCE}
+    )
+    assert answer.status_code == 200
+    assert f"%2Frestaurants%2Faccount%2Fcallback%3Fn%3D{NONCE}" in answer.json()["url"]
+    assert KEY not in answer.json()["url"]
+    assert (
+        client.post(
+            "/api/identity/diner/oauth/start", json={"provider": "apple", "nonce": NONCE}
+        ).status_code
+        == 422
+    )  # a sign-in the project has not switched on
+
+
+def test_a_first_google_sign_in_makes_a_diner_account_and_no_owner_account(
+    client: TestClient, session: Session, fake: FakeSocial
+) -> None:
+    token = _oauth_user(fake, "diner@example.com", "Dana Diner")
+    answer = client.post("/api/identity/diner/oauth", json={"access_token": token})
+    assert answer.status_code == 200, answer.text
+    assert answer.json()["account"]["email"] == "diner@example.com"
+    assert answer.json()["account"]["name"] == "Dana Diner"
+    me = client.get("/api/guest/me", headers={"Authorization": f"Bearer {answer.json()['token']}"})
+    assert me.status_code == 200, me.text
+    session.expire_all()
+    account = session.scalars(select(GuestAccount)).one()
+    assert account.email == "diner@example.com" and account.email_proven is True
+    assert account.consent_at is not None and account.consent_version
+    # Nothing in the owner's world was made or opened.
+    assert session.scalars(select(Organiser)).all() == []
+    assert session.scalars(select(AuthIdentity)).all() == []
+
+
+def test_a_second_sign_in_and_an_older_account_use_the_same_diner_account(
+    client: TestClient, session: Session, fake: FakeSocial
+) -> None:
+    older = GuestAccount(
+        email="diner@example.com",
+        name="Dana",
+        password_hash=hash_password("a long old password"),
+        consent_at=utc_now(),
+        consent_version="2026-11-10",
+    )
+    session.add(older)
+    session.commit()
+    token = _oauth_user(fake, "diner@example.com", "Someone Else")
+    first = client.post("/api/identity/diner/oauth", json={"access_token": token}).json()
+    second = client.post("/api/identity/diner/oauth", json={"access_token": token}).json()
+    assert (
+        first["account"]["name"] == second["account"]["name"] == "Dana"
+    )  # the account keeps its own name
+    session.expire_all()
+    assert len(session.scalars(select(GuestAccount)).all()) == 1
+    # Its own password still works.
+    assert (
+        client.post(
+            "/api/guest/login",
+            json={"email": "diner@example.com", "password": "a long old password"},
+        ).status_code
+        == 200
+    )
+
+
+def test_an_unconfirmed_address_and_a_made_up_token_open_no_diner_account(
+    client: TestClient, session: Session, fake: FakeSocial
+) -> None:
+    token = _oauth_user(fake, "diner@example.com", confirmed=False)
+    assert client.post("/api/identity/diner/oauth", json={"access_token": token}).status_code == 401
+    assert (
+        client.post(
+            "/api/identity/diner/oauth", json={"access_token": "made-up-token-123"}
+        ).status_code
+        == 401
+    )
+    session.expire_all()
+    assert session.scalars(select(GuestAccount)).all() == []
+
+
+def test_the_diner_button_does_not_open_an_account_that_has_two_step_verification(
+    client: TestClient, session: Session, fake: FakeSocial
+) -> None:
+    token = _oauth_user(fake, "diner@example.com")
+    fake.enrol("diner@example.com")
+    answer = client.post("/api/identity/diner/oauth", json={"access_token": token})
+    assert answer.status_code == 422
+    session.expire_all()
+    assert session.scalars(select(GuestAccount)).all() == []
+
+
+def test_the_diner_routes_do_not_exist_while_the_built_in_sign_in_is_used(
+    client: TestClient,
+) -> None:
+    assert (
+        client.post("/api/identity/diner/oauth", json={"access_token": "x" * 12}).status_code == 404
     )

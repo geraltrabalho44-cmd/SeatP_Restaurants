@@ -4,7 +4,8 @@
 // "Continue with Google / Apple" sends the browser to the sign-in service by an ordinary link, and the
 // one-time token that comes back is checked by SeatPlan, not trusted by the page.
 import { useEffect, useState } from "react";
-import { ApiError, api, login, setSessionToken } from "./client";
+import { ApiError, api, login, setGuestToken, setSessionToken } from "./client";
+import type { GuestSession } from "./guest";
 import { tr } from "../i18n/locale";
 import type { LoginResponse } from "./types";
 
@@ -98,15 +99,15 @@ function newNonce(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Sends the browser to Google or Apple. A nonce kept in this tab must come back in the address. */
-export async function startSocialSignIn(provider: SocialProvider): Promise<void> {
+/** Sends the browser to Google or Apple. A nonce kept in this tab must come back in the address. A diner comes back to the diner page. */
+export async function startSocialSignIn(provider: SocialProvider, who: "owner" | "diner" = "owner"): Promise<void> {
   const nonce = newNonce();
   try {
     window.sessionStorage.setItem(NONCE_KEY, nonce);
   } catch {
     throw new ApiError(0, "unknown", tr("Your browser blocks what this sign-in needs. Use your email and password instead."));
   }
-  const { url } = await api.post<{ url: string }>("/identity/owner/oauth/start", { provider, nonce }, "none");
+  const { url } = await api.post<{ url: string }>(`/identity/${who}/oauth/start`, { provider, nonce }, "none");
   window.location.assign(url);
 }
 
@@ -125,6 +126,13 @@ export function readSocialReturn(hash: string, search: string): { token: string 
   const token = params.get("access_token");
   if (!token) return { problem: params.get("error_description") ?? tr("The sign-in was cancelled. Please try again.") };
   return { token };
+}
+
+/** A diner back from Google or Apple: SeatPlan checks the token, finds or makes their account and gives a diner session. */
+export async function finishDinerSocialSignIn(token: string): Promise<GuestSession> {
+  const result = await api.post<GuestSession>("/identity/diner/oauth", { access_token: token }, "none");
+  setGuestToken(result.token);
+  return result;
 }
 
 export async function finishSocialSignIn(token: string): Promise<SignInResult> {

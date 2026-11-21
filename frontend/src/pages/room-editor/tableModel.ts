@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import { seatPositions, CHAIR_GAP } from "../../seatmap/seatPositions";
 import { rotateOffset, tableCentre } from "../../seatmap/geometry";
 import type { Point } from "./geometry";
@@ -58,21 +59,21 @@ function generatedChairs(table: RoomTable, count: number): RoomTable["seats"] {
   });
 }
 export function addTable(room: Room, kind: TableKind, at: Point): Room {
-  if (room.tables.length >= 200 || !TABLE_KINDS.includes(kind) || ![at.x, at.y].every(Number.isFinite)) throw new Error("Choose a table and a finite position. Rooms allow up to 200 tables.");
+  if (room.tables.length >= 200 || !TABLE_KINDS.includes(kind) || ![at.x, at.y].every(Number.isFinite)) throw new Error(tr("Choose a table and a finite position. Rooms allow up to 200 tables."));
   let number = 1; while (room.tables.some(t => t.label === `Table ${number}`)) number++;
   const count = defaultChairs(kind), { w, h } = tableSize(kind, count);
-  if (room.tables.reduce((sum, table) => sum + table.seats.length, count) > 1000) throw new Error("A room can have at most 1000 chairs.");
+  if (room.tables.reduce((sum, table) => sum + table.seats.length, count) > 1000) throw new Error(tr("A room can have at most 1000 chairs."));
   const table: RoomTable = { id: null, key: newRoomKey("t"), label: `Table ${number}`, shape: kind === "round" ? "round" : kind === "counter" ? "row" : "rect", x: at.x, y: at.y, w, h, rotation: 0, min_party: 1, max_party: count, is_accessible: false, high_chair_ok: false, combine_group: null, is_active: true, zone_key: null, seats: [] };
   table.seats = generatedChairs(table, count);
   return { ...room, tables: [...room.tables, table] };
 }
 
 function checkTable(room: Room, table: RoomTable): void {
-  if (!table.label.trim() || table.label.length > 40 || room.tables.some(t => t.key !== table.key && t.label.trim() === table.label.trim())) throw new Error("Use a table label of 1–40 characters, unique in this room.");
-  if (![table.x, table.y, table.w, table.h, table.rotation].every(Number.isFinite) || table.w < 1 || table.h < 1 || table.w > 10000 || table.h > 10000) throw new Error("Use finite positions and sizes from 1 to 10000 cm.");
-  if (!Number.isInteger(table.min_party) || !Number.isInteger(table.max_party) || table.min_party < 1 || table.max_party < table.min_party || table.max_party > table.seats.length) throw new Error("Keep party sizes between one and the number of chairs.");
-  if (table.combine_group && table.combine_group.length > 40) throw new Error("Use a join group of up to 40 characters.");
-  if (table.zone_key !== null && !room.zones.some(z => z.key === table.zone_key)) throw new Error("Choose a zone in this room.");
+  if (!table.label.trim() || table.label.length > 40 || room.tables.some(t => t.key !== table.key && t.label.trim() === table.label.trim())) throw new Error(tr("Use a table label of 1–40 characters, unique in this room."));
+  if (![table.x, table.y, table.w, table.h, table.rotation].every(Number.isFinite) || table.w < 1 || table.h < 1 || table.w > 10000 || table.h > 10000) throw new Error(tr("Use finite positions and sizes from 1 to 10000 cm."));
+  if (!Number.isInteger(table.min_party) || !Number.isInteger(table.max_party) || table.min_party < 1 || table.max_party < table.min_party || table.max_party > table.seats.length) throw new Error(tr("Keep party sizes between one and the number of chairs."));
+  if (table.combine_group && table.combine_group.length > 40) throw new Error(tr("Use a join group of up to 40 characters."));
+  if (table.zone_key !== null && !room.zones.some(z => z.key === table.zone_key)) throw new Error(tr("Choose a zone in this room."));
 }
 
 export function editTable(room: Room, key: string, patch: Partial<Omit<RoomTable, "id" | "key" | "seats">>): Room {
@@ -93,7 +94,7 @@ export function editTable(room: Room, key: string, patch: Partial<Omit<RoomTable
 }
 
 export function setChairCount(room: Room, key: string, count: number): Room {
-  if (!Number.isInteger(count) || count < 1 || count > 20) throw new Error("Use between one and twenty chairs.");
+  if (!Number.isInteger(count) || count < 1 || count > 20) throw new Error(tr("Use between one and twenty chairs."));
   const next = { ...room, tables: room.tables.map(table => {
     if (table.key !== key) return table;
     const max = table.max_party === table.seats.length ? count : Math.min(table.max_party, count);
@@ -104,7 +105,7 @@ export function setChairCount(room: Room, key: string, count: number): Room {
     checkTable(room, changed);
     return changed;
   }) };
-  if (next.tables.reduce((sum, table) => sum + table.seats.length, 0) > 1000) throw new Error("A room can have at most 1000 chairs.");
+  if (next.tables.reduce((sum, table) => sum + table.seats.length, 0) > 1000) throw new Error(tr("A room can have at most 1000 chairs."));
   return next;
 }
 
@@ -112,7 +113,7 @@ export function editChair(room: Room, tableKey: string, chairKey: string, patch:
   return { ...room, tables: room.tables.map(t => t.key !== tableKey ? t : { ...t, seats: t.seats.map(seat => {
     if (seat.key !== chairKey) return seat;
     const next = { ...seat, ...patch };
-    if (!next.label.trim() || next.label.length > 40 || ![next.x, next.y].every(Number.isFinite)) throw new Error("Use a chair label of 1–40 characters and finite coordinates.");
+    if (!next.label.trim() || next.label.length > 40 || ![next.x, next.y].every(Number.isFinite)) throw new Error(tr("Use a chair label of 1–40 characters and finite coordinates."));
     return next;
   }) }) };
 }

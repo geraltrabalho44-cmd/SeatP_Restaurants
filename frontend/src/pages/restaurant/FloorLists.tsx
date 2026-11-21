@@ -79,7 +79,7 @@ interface ArrivalsProps {
 }
 
 export function ArrivalsList({ arrivals, selectedId, onSelect, services = [], label = "Upcoming arrivals", empty = "No more arrivals expected for this day." }: ArrivalsProps) {
-  const { t } = useT();
+  const { t, label: say } = useT();
   if (arrivals.length === 0) return <p className="rb-muted">{t(empty as Message)}</p>;
   const startDrag = (event: DragEvent, booking: StaffBooking): void => {
     event.dataTransfer.setData(BOOKING_DRAG_TYPE, booking.id);
@@ -89,7 +89,7 @@ export function ArrivalsList({ arrivals, selectedId, onSelect, services = [], la
     <ol className="st-arrivals" aria-label={t(label as Message)}>
       {arrivals.map((booking, index) => (
         <li key={booking.id} draggable onDragStart={(e) => startDrag(e, booking)} className="st-arrival">
-          {(index === 0 || arrivals[index - 1].time !== booking.time) && <p className="st-arrival-group">{services.find(service => service.start_time <= booking.time && booking.time < service.end_time)?.name ?? t("Arrivals")} · {booking.time}</p>}
+          {(index === 0 || arrivals[index - 1].time !== booking.time) && <p className="st-arrival-group">{say(services.find(service => service.start_time <= booking.time && booking.time < service.end_time)?.name ?? t("Arrivals"))} · {booking.time}</p>}
           <button type="button" className="st-arrival-button" aria-pressed={booking.id === selectedId} onClick={() => onSelect(booking.id)}>
             <span className="st-arrival-time tabular">{booking.time}</span>
             <span>

@@ -1,5 +1,6 @@
 """Restaurant-local forecasts and table suggestions for a real seating window."""
 
+import re
 from datetime import UTC, datetime, time, timedelta
 
 from sqlalchemy import update
@@ -118,6 +119,15 @@ def sunset_rank(room, table, azimuth):
     return best
 
 
+def city_of(address):
+    """The town of an address written "street, town" or "street, 1150-227 town"; None when it has no town part."""
+    parts = [part.strip() for part in (address or "").split(",")]
+    if len(parts) < 2:
+        return None
+    town = re.sub(r"^\d{4}(-\d{3})?\s*", "", parts[-1]).strip()
+    return town[:60] or None
+
+
 def view(session, venue, day, at, needs):
     if venue.lat is None or venue.lng is None:
         return {"located": False}
@@ -135,7 +145,7 @@ def view(session, venue, day, at, needs):
     sunset_tables = []
     for loaded in ambience_view.load_rooms(session, venue):
         for row, table in loaded.tables:
-            if fit_problem(row, needs):
+            if fit_problem(row, needs, venue.allow_larger_tables):
                 continue
             item = {"id": row.id, "label": row.label, "room": loaded.name}
             if not loaded.room.is_outdoor and zones.get(row.zone_id) != "terrace":
@@ -174,6 +184,7 @@ def view(session, venue, day, at, needs):
     choices.sort(key=lambda c: abs(c["minutes_to_sunset"] - 45))
     return {
         "located": True,
+        "city": city_of(venue.address),
         "source": get_settings().weather_provider,
         "status": status,
         "hours": hours,

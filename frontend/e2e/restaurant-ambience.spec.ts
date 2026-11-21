@@ -26,18 +26,14 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   await page.getByRole("button", { name: "21:00 Available", exact: true }).click();
   await page.getByRole("button", { name: /^Choose a table at/ }).click();
   await openChooser(page);
-  // On a phone the light is one quiet line until "Explore" opens it.
-  const explore = page.getByRole("button", { name: "Explore", exact: true });
-  const cursor = page.getByRole("slider", { name: "Preview light (does not change your booking)" });
-  await expect(explore.or(cursor)).toBeVisible();
-  if (await explore.isVisible()) await explore.click();
-  const last = await cursor.getAttribute("max");
-  await cursor.fill(last!);
-  await expect(page.locator(".room-night")).toHaveCount(1);
-  await expect(page.locator(".room-sun")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Pick a table to continue" })).toHaveCount(0); // one main action: the card's
+  // The light preview is no longer part of the table step: no slider, no "Explore" line, and still one main action (the card's).
+  await expect(page.getByRole("slider", { name: "Preview light (does not change your booking)" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Explore", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Light during your visit")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Pick a table to continue" })).toHaveCount(0);
   await page.screenshot({ path: join(tmpdir(), `seatplan-37-night-${width}.png`), fullPage: true });
   await holdTable(page, "Garden 1");
+  await page.getByText("Occasion, dietary preferences, allergies and a chair").click(); // the chair waits in the closed sub menu
   await page.getByRole("button", { name: "Choose a chair" }).click();
   const chair = page.getByRole("radio", { name: /^Seat 2/ });
   await chair.check();

@@ -55,3 +55,5 @@ false) and more tiles are kept around the view (keepBuffer 3). Names are worked 
 Wheel zoom: ResultsMap uses Leaflet's own wheel zoom with zoomSnap 0 (the zoom follows how far the wheel or trackpad moves, like other
 maps; with whole-level snapping a trackpad swipe jumped several levels). The map can therefore sit at a part-way zoom: the basemap
 scales its tiles, and DiscoveryLabels picks names for the nearest whole zoom and places them at the real scale.
+
+- `smoothWheelZoom.ts`: the wheel and trackpad zoom of the results map. Leaflet's own wheel zoom waits 40 ms, animates for 250 ms and ignores the wheel meanwhile, so a trackpad swipe moved in jerks. Here the wheel moves a goal and the map follows it a part of the way on every frame, around the pointer, so it glides and eases to a stop (about 0.7 of a level per 100 px of wheel; a pinch counts four times). It uses the private `_move`, `_moveStart` and `_moveEnd` of Leaflet 1.9.4, as every smooth-zoom plugin does; recheck them if Leaflet is upgraded. `discoveryLabels.ts` hides the street names while the zoom runs and draws them again, for the new zoom, when it settles.

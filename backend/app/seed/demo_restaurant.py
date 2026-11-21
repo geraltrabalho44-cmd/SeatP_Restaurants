@@ -84,10 +84,11 @@ TABLES = (
 
 # (name, weekdays, start, end, max covers arriving per seating time)
 SERVICES = (
-    ("Lunch", range(1, 7), time(12, 0), time(15, 0), 16),
+    ("Lunch", range(7), time(12, 0), time(15, 0), 16),  # lunch every day, Monday included
     ("Dinner", range(7), time(19, 0), time(23, 0), 20),
 )
-TURN_TIMES = ((2, 90), (4, 105), (6, 120), (10, 150), (30, 180))
+# Every party keeps its table 90 minutes by default; the owner can change it per party size.
+TURN_TIMES = ((2, 90), (4, 90), (6, 90), (10, 90), (30, 90))
 # Party sizes drawn for bookings: mostly couples and small groups.
 PARTY_SIZES = (2, 2, 2, 2, 3, 4, 4, 4, 5, 6, 8)
 PARTIES_PER_SERVICE = {"Lunch": 7, "Dinner": 12}

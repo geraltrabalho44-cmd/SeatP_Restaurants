@@ -53,6 +53,7 @@ def read_schedule(session: Session, venue: Venue, upcoming_only: bool = False) -
         blackouts = blackouts.where(BlackoutDate.date >= now_local(venue).date())
     return {
         "timezone": venue.timezone,
+        "allow_larger_tables": venue.allow_larger_tables,
         "service_periods": [_period_dict(p) for p in periods],
         "turn_times": [{"max_party": t.max_party, "minutes": t.minutes} for t in turns],
         "blackout_dates": [

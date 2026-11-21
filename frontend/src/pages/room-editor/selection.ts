@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import { rectCorners } from "./geometry";
 import type { Point } from "./geometry";
 import type { Room, RoomTable } from "./roomModel";
@@ -10,7 +11,7 @@ export function tableBounds(table: RoomTable) {
   return { left: Math.min(...points.map(p => p.x)), right: Math.max(...points.map(p => p.x)), top: Math.min(...points.map(p => p.y)), bottom: Math.max(...points.map(p => p.y)) };
 }
 export function moveTables(room: Room, keys: readonly string[], dx: number, dy: number): Room {
-  if (![dx, dy].every(Number.isFinite)) throw new Error("Use a finite movement.");
+  if (![dx, dy].every(Number.isFinite)) throw new Error(tr("Use a finite movement."));
   return room.tables.filter(t => keys.includes(t.key)).reduce((next, t) => editTable(next, t.key, { x: t.x + dx, y: t.y + dy }), room);
 }
 export function alignTables(room: Room, keys: readonly string[], edge: AlignEdge): Room {
@@ -29,7 +30,7 @@ export function distributeTables(room: Room, keys: readonly string[], axis: "hor
   if (tables.length < 3) return room;
   const first = tables[0].box[start], last = tables.at(-1)!.box[end];
   const sizes = tables.map(({ box }) => box[end] - box[start]), gap = (last - first - sizes.reduce((a, b) => a + b, 0)) / (tables.length - 1);
-  if (gap < 0) throw new Error("Move the outer tables further apart before distributing them.");
+  if (gap < 0) throw new Error(tr("Move the outer tables further apart before distributing them."));
   let position = first;
   return tables.reduce((next, { table, box }, i) => {
     const delta = position - box[start]; position += sizes[i] + gap;
@@ -39,7 +40,7 @@ export function distributeTables(room: Room, keys: readonly string[], axis: "hor
 
 export function duplicateTables(room: Room, keys: readonly string[]): Room {
   const selected = room.tables.filter(t => keys.includes(t.key));
-  if (room.tables.length + selected.length > 200 || [...room.tables, ...selected].reduce((sum, t) => sum + t.seats.length, 0) > 1000) throw new Error("Keep this room within 200 tables and 1000 chairs.");
+  if (room.tables.length + selected.length > 200 || [...room.tables, ...selected].reduce((sum, t) => sum + t.seats.length, 0) > 1000) throw new Error(tr("Keep this room within 200 tables and 1000 chairs."));
   const used = new Set(room.tables.map(t => t.label));
   const copies = selected.map(table => {
     let n = 1, label = "";
@@ -50,8 +51,8 @@ export function duplicateTables(room: Room, keys: readonly string[]): Room {
   return { ...room, tables: [...room.tables, ...copies] };
 }
 export function deletionProblem(table: RoomTable): string | null {
-  if (table.has_bookings) return "This table has bookings. Make it unavailable instead.";
-  if (table.id !== null && table.has_bookings !== false) return "Booking status is not loaded. Make this table unavailable instead.";
+  if (table.has_bookings) return tr("This table has bookings. Make it unavailable instead.");
+  if (table.id !== null && table.has_bookings !== false) return tr("Booking status is not loaded. Make this table unavailable instead.");
   return null;
 }
 export function deleteTables(room: Room, keys: readonly string[]): Room {

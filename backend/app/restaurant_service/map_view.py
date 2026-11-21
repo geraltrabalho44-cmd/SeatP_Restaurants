@@ -28,12 +28,12 @@ from app.restaurant_service.clock import hhmm
 _SEAT_STATE = {"free": "free", "held": "held", "taken": "taken", "too_small": "blocked"}
 
 
-def fit_problem(table: VenueTable, needs: PartyNeeds) -> str | None:
+def fit_problem(table: VenueTable, needs: PartyNeeds, allow_larger: bool = False) -> str | None:
     """Why this table can never suit the party, whatever the time: "too_small",
     "blocked", or None when it suits them."""
     if table.max_party < needs.size:
         return "too_small"
-    if table.min_party > needs.size:
+    if occupancy.right_size_min(table, allow_larger) > needs.size:
         return "blocked"
     if needs.needs_accessible and not table.is_accessible:
         return "blocked"
@@ -48,6 +48,7 @@ def table_state(
     booked: occupancy.Busy,
     held: occupancy.Busy,
     window: tuple[int, int],
+    allow_larger: bool = False,
 ) -> str:
     """The state of one table for the stay. Time-based states win, because
     "someone has it" is the first thing a diner needs to know."""
@@ -55,7 +56,7 @@ def table_state(
         return "taken"
     if not occupancy.is_free((table.id,), held, window):
         return "held"
-    return fit_problem(table, needs) or "free"
+    return fit_problem(table, needs, allow_larger) or "free"
 
 
 def _table_dict(
@@ -64,6 +65,7 @@ def _table_dict(
     state: str,
     needs: PartyNeeds,
     ambience: dict[str, Any] | None = None,
+    allow_larger: bool = False,
 ) -> dict[str, Any]:
     return {
         "id": table.id,
@@ -84,7 +86,7 @@ def _table_dict(
         "state": state,
         # Separate from state: a taken table may still be the right size, and
         # the page uses this to say "does not suit your party".
-        "fits_party": fit_problem(table, needs) is None,
+        "fits_party": fit_problem(table, needs, allow_larger) is None,
         # New in the room editor: which room, switched on, and what it is like.
         # Old clients ignore these fields.
         "room_id": table.room_id,
@@ -132,9 +134,10 @@ def _recommendations(
     busy: occupancy.Busy,
     party: PartySpec,
     features: dict[int, frozenset[str]],
+    allow_larger: bool = False,
 ) -> list[dict[str, Any]]:
     labels = {table.id: table.label for table in tables}
-    specs = occupancy.table_specs(tables, kinds)
+    specs = occupancy.table_specs(tables, kinds, allow_larger)
     if party.prefs:  # ambience only matters when the diner asked for something
         specs = [replace(spec, features=features.get(spec.id, frozenset())) for spec in specs]
     choices = recommend_table(specs, busy, party, top=3)
@@ -165,7 +168,8 @@ def build_map(
     held = occupancy.held_slots(session, venue, day)
     tables = occupancy.venue_tables(session, venue)
     kinds = occupancy.zone_kinds(session, venue)
-    states = {t.id: table_state(t, needs, booked, held, window) for t in tables}
+    allow = venue.allow_larger_tables
+    states = {t.id: table_state(t, needs, booked, held, window, allow) for t in tables}
     rooms = ambience_view.load_rooms(session, venue)
     light = ambience_view.ambience_payload(
         session, venue, day, at, party=needs.size, detail=True, rooms=rooms
@@ -173,7 +177,7 @@ def build_map(
     per_table = {row["id"]: {k: v for k, v in row.items() if k != "id"} for row in light["tables"]}
     features = {t_id: frozenset(row["features"]) for t_id, row in per_table.items()}
     recommended = _recommendations(
-        tables, kinds, occupancy.merge(booked, held), needs.spec(window), features
+        tables, kinds, occupancy.merge(booked, held), needs.spec(window), features, allow
     )
     return {
         "date": day.isoformat(),
@@ -183,7 +187,9 @@ def build_map(
         "width": venue.width,
         "height": venue.height,
         "zones": zones_payload(session, venue),
-        "tables": [_table_dict(t, kinds, states[t.id], needs, per_table.get(t.id)) for t in tables],
+        "tables": [
+            _table_dict(t, kinds, states[t.id], needs, per_table.get(t.id), allow) for t in tables
+        ],
         "seats": seats_payload(session, venue, states),
         "recommended": recommended,
         # The stay, so the page can offer the light cursor from start to end.

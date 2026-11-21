@@ -1,3 +1,5 @@
+import { tableLabel } from "./names";
+import { tr } from "../../i18n/locale";
 import { useEffect, useRef } from "react";
 import type { PointerEvent } from "react";
 import type { Point } from "./geometry";
@@ -44,7 +46,7 @@ export function TableLayer({ room, editing, selected, keys, multiple, chair, gri
     </g>))}
     {room.tables.map(table => <g key={table.key} data-room-table={table.key} className={`${keys.includes(table.key) ? "room-selected-table" : ""} ${table.is_active ? "" : "room-inactive-table"} ${invalidKeys.includes(table.key) ? "room-invalid-table" : ""}`} transform={`translate(${table.x + table.w / 2} ${table.y + table.h / 2}) rotate(${table.rotation})`} onPointerDown={event => down(event, table.key, null, table)}>
       {table.shape === "round" ? <circle r={table.w / 2} className="room-table" /> : <rect x={-table.w / 2} y={-table.h / 2} width={table.w} height={table.h} className="room-table" />}
-      <text textAnchor="middle" dominantBaseline="middle" className="room-table-label">{invalidKeys.includes(table.key) ? "⚠ " : ""}{table.label}{table.is_active ? "" : " (off)"}</text>
+      <text textAnchor="middle" dominantBaseline="middle" className="room-table-label">{invalidKeys.includes(table.key) ? "⚠ " : ""}{tableLabel(table.label)}{table.is_active ? "" : ` ${tr("(off)")}`}</text>
     </g>)}
     {editing && active && keys.length === 1 && !chair && <TableHandles room={room} table={active} zoom={zoom} toWorld={toWorld} onChange={onChange} onDragStart={onDragStart} onError={onError} />}
   </g>;

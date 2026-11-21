@@ -42,6 +42,8 @@ function vercelHeaders() {
 }
 
 const outDir = mkdtempSync(join(tmpdir(), "seatplan-e2e-web-"));
+// Every language is released in the test build (as on the live site), so the language control is on every page. English stays the default.
+process.env.VITE_I18N_LOCALES ??= "en,pt,es,fr";
 await build({ root: frontendDir, logLevel: "warn", build: { outDir, emptyOutDir: true } });
 const securityHeaders = vercelHeaders();
 

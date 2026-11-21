@@ -2,7 +2,7 @@
 
 - catalogue.ts (discovery and public pages), catalogue.booking.ts (the booking journey, table plan and chairs),
   catalogue.manage.ts (manage page, owner pages, staff pages, sign-in), catalogue.services.ts (payments, SMS link
-  page, weather, rain plan) and catalogue.server.ts (the English sentences the server writes) hold the English
+  page, weather, rain plan) and catalogue.server.ts (the English sentences the server writes), catalogue.rooms.ts (the owner's room editor) and catalogue.site.ts (page footer, map controls, "page not found", home phone summary) hold the English
   messages and their Portuguese (pt-PT), Spanish and French translations, in that order. catalogue.ts merges them.
   The merged catalogue is its own chunk: it is only downloaded when a language other than English is on.
 - locale.ts resolves released locales, formats interpolated messages and holds the language in use. A component
@@ -10,7 +10,7 @@
   form checks) calls `tr(...)`, which speaks the language the provider last set. `activeTag()` gives the Intl tag.
 - I18nProvider.tsx exposes useT and manages explicit language preferences on restaurant routes. Events routes are
   always English.
-- LanguagePicker.tsx renders native language names with keyboard support.
+- LanguagePicker.tsx is a small flag (Flag.tsx, drawn SVG, the United Kingdom for English) beside a real `<select>` of native language names, so the keyboard, screen readers and the phone's own list work. `PageShell` shows it in the header of every Restaurants page (diner, owner, staff), hanging under "Log in"; the choice is saved and applies to every page. It is not drawn on Events pages and it is hidden while only English is released.
 - pages/restaurant/serverText.ts puts the closed set of sentences the server writes in English (light, view, what
   is near a table, the reasons for a suggestion) in the language in use. A restaurant's own words are left as written.
 - locale.test.ts checks detection, release gating and interpolation. catalogue.test.ts checks that every sentence

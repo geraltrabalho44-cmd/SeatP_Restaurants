@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 // Screen coordinates in centimetres. These cases match ambience/geometry.py.
 export interface Point { x: number; y: number }
 export interface OutlinePoint extends Point { curve: number }
@@ -27,7 +28,7 @@ export function pointInPolygon(point: Point, polygon: readonly Point[]): boolean
 }
 
 export function bearing(dx: number, dy: number, north: number): number {
-  if (![dx, dy, north].every(Number.isFinite) || (!dx && !dy)) throw new Error("A finite nonzero direction is required.");
+  if (![dx, dy, north].every(Number.isFinite) || (!dx && !dy)) throw new Error(tr("A finite nonzero direction is required."));
   return ((Math.atan2(dx, -dy) * 180 / Math.PI - north) % 360 + 360) % 360;
 }
 
@@ -40,7 +41,7 @@ export function rectCorners(box: Box): Point[] {
 export function sidePoint(outline: Outline, side: number, fraction: number): Point {
   const a = outline.points[side], b = outline.points[(side + 1) % outline.points.length];
   const dx = b.x - a.x, dy = b.y - a.y, chord = Math.hypot(dx, dy), sagitta = a.curve;
-  if (!chord || Math.abs(sagitta) > chord / 2 || fraction < 0 || fraction > 1) throw new Error("Invalid side or arc fraction.");
+  if (!chord || Math.abs(sagitta) > chord / 2 || fraction < 0 || fraction > 1) throw new Error(tr("Invalid side or arc fraction."));
   if (!sagitta) return { x: a.x + fraction * dx, y: a.y + fraction * dy };
   const radius = (chord * chord / 4 + sagitta * sagitta) / (2 * sagitta);
   const cx = (a.x + b.x) / 2 - dy / chord * (radius - sagitta);
@@ -53,13 +54,13 @@ export function sideNormal(outline: Outline, side: number, fraction: number): Po
   const a = sidePoint(outline, side, Math.max(0, fraction - 1e-6));
   const b = sidePoint(outline, side, Math.min(1, fraction + 1e-6));
   const dx = b.x - a.x, dy = b.y - a.y, length = Math.hypot(dx, dy);
-  if (!length) throw new Error("A nonzero side is required.");
+  if (!length) throw new Error(tr("A nonzero side is required."));
   return { x: dy / length, y: -dx / length };
 }
 
 export function outlineToPolygon(outline: Outline, segmentsPerArc = 16): Point[] {
-  if (outline.points.length < 3 || outline.points.length > 60 || !Number.isInteger(segmentsPerArc) || segmentsPerArc < 1) throw new Error("Invalid outline size.");
-  if (!outline.points.every(p => [p.x, p.y, p.curve].every(Number.isFinite))) throw new Error("Coordinates must be finite.");
+  if (outline.points.length < 3 || outline.points.length > 60 || !Number.isInteger(segmentsPerArc) || segmentsPerArc < 1) throw new Error(tr("Invalid outline size."));
+  if (!outline.points.every(p => [p.x, p.y, p.curve].every(Number.isFinite))) throw new Error(tr("Coordinates must be finite."));
   return outline.points.flatMap((p, side) => {
     const count = p.curve ? segmentsPerArc : 1;
     return Array.from({ length: count }, (_, step) => sidePoint(outline, side, step / count));

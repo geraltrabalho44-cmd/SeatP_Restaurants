@@ -111,7 +111,7 @@ describe("the return page", () => {
     });
     open("/pay/return/p1");
     expect(await screen.findByRole("heading", { name: "Booking confirmed." })).toBeTruthy();
-    expect(screen.getByText("ana@example.com")).toBeTruthy();
+    expect(screen.queryByText("ana@example.com")).toBeNull(); // the confirmation page no longer repeats the email under its buttons
     expect(recallPendingBooking("p1")).toBeNull();
   });
 

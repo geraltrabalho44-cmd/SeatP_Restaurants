@@ -250,7 +250,7 @@ def take_proof(session: Session, venue: Venue, verification_id: str) -> PhoneCod
     row = _find_code(session, venue, verification_id)
     now = utc_now()
     if row.verified_at is None:
-        raise ApiError(422, "phone_not_verified", "Verify your number, or untick the box to book.")
+        raise ApiError(422, "phone_not_verified", "Verify your number, or clear it to book.")
     if row.consumed_at is not None or row.verified_at + PROOF_TTL <= now:
         raise ApiError(410, "code_expired", "This code has expired. Send a new code.")
     return row

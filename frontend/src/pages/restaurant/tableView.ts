@@ -4,6 +4,7 @@ import type { DinerMap, DinerTable } from "../../api/restaurant";
 import type { MapTable, MapZone, SeatState } from "../../api/types";
 import type { DescribeItem } from "../../seatmap/describe";
 import { tr } from "../../i18n/locale";
+import type { Message } from "../../i18n/catalogue";
 
 /** "2 to 4 people", or "4 people" when the table takes one size only. */
 export function partyRange(table: { min_party: number; max_party: number }): string {
@@ -91,7 +92,9 @@ export function alternatives(map: DinerMap, excludeId: number | null, party: num
 }
 
 export function zoneName(table: MapTable, zones: MapZone[]): string | null {
-  return zones.find((zone) => zone.id === table.zone_id)?.name ?? null;
+  // The zones every restaurant starts with ("Window", "Terrace") are shown in the language in use; an owner's own zone names are left as written.
+  const name = zones.find((zone) => zone.id === table.zone_id)?.name;
+  return name ? tr(name as Message) : null;
 }
 
 /** Plain words that describe a table, e.g. ["Window", "2 to 4 people", "Accessible"]. */

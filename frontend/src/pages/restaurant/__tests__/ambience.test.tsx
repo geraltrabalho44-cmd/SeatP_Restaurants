@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ServerDinerMap } from "../../../api/restaurant";
@@ -54,16 +54,6 @@ async function reachTableStep(): Promise<void> {
   fireEvent.click(await screen.findByRole("button", { name: /19:30/ }));
   fireEvent.click(screen.getByRole("button", {name:"Choose a table at 19:30"}));
   await screen.findByRole("heading", { name: "Choose your table" });
-}
-
-function answer(patch: object = {}) {
-  return {
-    date: "2026-11-12", time: "14:15", stay_start: "13:00", stay_end: "14:30", located: true,
-    sun: { sunrise: "06:12", sunset: "21:05", azimuth: 170, altitude: 66 },
-    rooms: [{ id: 1, sun_patches: [], night: true }, { id: 2, sun_patches: [], night: true }],
-    tables: [{ id: 7, light: "shade", phrases: ["In the shade"] }],
-    ...patch,
-  };
 }
 
 afterEach(() => {
@@ -130,8 +120,10 @@ describe("Ambience card", () => {
     });
     await reachTableStep();
     const card = screen.getByRole("region", { name: /Table 7/ });
-    expect(within(card).getByText("Direct sun until 14:00")).toBeTruthy();
-    expect(within(card).getByText("View of the river")).toBeTruthy();
+    // The card no longer lists reasons ("Why this table" is gone); what it shows is where, the view and the seats.
+    expect(within(card).queryByText("Direct sun until 14:00")).toBeNull();
+    expect(screen.queryByText("Why this table")).toBeNull();
+    expect(within(card).queryByText("View of the river")).toBeNull();
     expect(within(card).getByRole("img", { name: "river" }).getAttribute("src")).toBe("/api/photos/abc");
     fireEvent.click(within(card).getByRole("button", { name: "Hold 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
@@ -156,64 +148,30 @@ describe("Ambience card", () => {
   });
 });
 
-describe("Light cursor", () => {
-  it("steps through the stay and redraws the light once things settle, without touching the booking", async () => {
-    const calls = mockApi({
-      [`GET ${API}`]: () => INFO,
-      [`GET ${API}/slots`]: () => SLOTS,
-      [`GET ${API}/map`]: () => roomsMap(),
-      [`POST ${API}/hold`]: () => heldTable(7, "7"),
-      [`GET ${API}/ambience`]: () => answer(),
-    });
+describe("Light preview", () => {
+  it("is no longer on the table step: no slider and no \"Light during your visit\" card, however long the stay", async () => {
+    mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap(), [`POST ${API}/hold`]: () => heldTable(7, "7") });
     await reachTableStep();
-    const mapCalls = callsTo(calls, "GET", `${API}/map`).length;
-
-    const slider = screen.getByRole("slider", { name: /Preview light.*does not change your booking/i }) as HTMLInputElement;
-    expect([slider.min, slider.max, slider.step]).toEqual(["0", "6", "1"]); // 13:00 ... 14:30 in 15-minute steps
-    expect(slider.getAttribute("aria-valuetext")).toContain("13:00");
-    expect(document.querySelector(".room-night")).toBeNull();
-
-    fireEvent.change(slider, { target: { value: "3" } });
-    fireEvent.change(slider, { target: { value: "5" } }); // quick second move: only the last one is asked for
-    await waitFor(() => expect(callsTo(calls, "GET", `${API}/ambience`)).toHaveLength(1));
-    const asked = callsTo(calls, "GET", `${API}/ambience`)[0].query;
-    expect([asked.get("time"), asked.get("moment"), asked.get("party")]).toEqual(["19:30", "14:15", "2"]);
-
-    await waitFor(() => expect(document.querySelector(".room-night")).not.toBeNull());
-    expect(screen.getByRole("button", { name: "Hold 7 & continue" })).toBeTruthy(); // the table in front of the diner did not change
-    expect(callsTo(calls, "GET", `${API}/map`)).toHaveLength(mapCalls); // and the map was not fetched again
-    expect(slider.getAttribute("aria-valuetext")).toContain("14:15");
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(screen.queryByText("Light during your visit")).toBeNull();
+    expect(screen.getByRole("button", { name: "Hold 7 & continue" })).toBeTruthy(); // the table itself is still held from the card
   });
 
-  it("is not offered when the restaurant has no coordinates, so no sun can be shown", async () => {
+  it("stays out of the way when the restaurant has no coordinates, so no sun can be shown", async () => {
     const unlocated = roomsMap();
     unlocated.rooms = unlocated.rooms?.map((r) => ({ ...r, sun: null, sun_patches: [] }));
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => unlocated });
     await reachTableStep();
     expect(screen.queryByRole("slider")).toBeNull();
   });
-
-  it("says so, and keeps the last picture, when the light cannot be loaded", async () => {
-    mockApi({
-      [`GET ${API}`]: () => INFO,
-      [`GET ${API}/slots`]: () => SLOTS,
-      [`GET ${API}/map`]: () => roomsMap(),
-      [`GET ${API}/ambience`]: () => new Response(JSON.stringify({ error: { code: "x", message: "down" } }), { status: 500 }),
-    });
-    await reachTableStep();
-    fireEvent.change(screen.getByRole("slider"), { target: { value: "2" } });
-    expect(await screen.findByText(/could not update the light/i)).toBeTruthy();
-    expect(document.querySelector("[data-room]")).not.toBeNull();
-    await act(async () => undefined);
-  });
 });
 
 describe("Map key", () => {
-  it("shows three looks and no more: available, selected and unavailable", async () => {
+  it("shows the three looks of a table and, when we suggest one, the star that marks it", async () => {
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap() });
     await reachTableStep();
     const key = screen.getByRole("list", { name: "Map key" });
-    expect(within(key).getAllByRole("listitem").map((li) => li.querySelector("strong")?.textContent)).toEqual(["Available", "Selected", "Unavailable"]);
+    expect(within(key).getAllByRole("listitem").map((li) => li.querySelector("strong")?.textContent)).toEqual(["Available", "Selected", "Unavailable", "Recommended"]);
   });
 
   it("explains sun, night and the view once, in a sentence by the plan, only when there are rooms", async () => {
@@ -226,7 +184,8 @@ describe("Map key", () => {
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => dinerMap() });
     await reachTableStep();
     expect(screen.queryByText(/yellow is where the sun reaches the floor/)).toBeNull();
-    expect(within(screen.getByRole("list", { name: "Map key" })).getAllByRole("listitem")).toHaveLength(3);
+    // Three looks, and the star when a table is recommended.
+    expect(within(screen.getByRole("list", { name: "Map key" })).getAllByRole("listitem").length).toBeGreaterThanOrEqual(3);
   });
 
   it("draws booked, being chosen and not-suiting tables with one look, but still names each reason to a screen reader", async () => {
@@ -317,14 +276,4 @@ describe("Step 2: suggested table already selected, and an unambiguous light pre
     expect(screen.getByRole("option", { name: /Table 7,/ }).getAttribute("aria-selected")).toBe("false");
   });
 
-  it("says the preview does not change the booking, shows the booked stay and where the sun sets", async () => {
-    mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap(), [`GET ${API}/ambience`]: () => answer() });
-    await reachTableStep();
-    const slider = screen.getByRole("slider", { name: "Preview light (does not change your booking)" }) as HTMLInputElement;
-    expect(screen.getByText("Booking stays at 19:30")).toBeTruthy();
-    expect(screen.getByText(/Light preview at 13:00\./)).toBeTruthy();
-    fireEvent.change(slider, { target: { value: "3" } });
-    expect(screen.getByText(/Light preview at 13:45\./)).toBeTruthy();
-    expect(screen.getByText(/Booking at 19:30\./)).toBeTruthy();
-  });
 });

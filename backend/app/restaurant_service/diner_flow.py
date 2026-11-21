@@ -10,11 +10,12 @@ confirm: read the hold -> check it still fits -> consume the hold -> insert
 from dataclasses import dataclass
 from datetime import date, time, timedelta
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError, SeatTaken
 from app.core.holds import commit_or_seat_taken
-from app.models import Booking, Venue
+from app.models import Booking, GuestAccount, Venue
 from app.optimiser.restaurant_assign import recommend_table
 from app.restaurant_service import (
     booking_payments,
@@ -167,7 +168,16 @@ def confirm_booking(
         seat = chosen_seat.check_chosen_seat(session, venue, seat_id, held.table_ids)
     consume_hold(session, venue, held)
     token = new_token()
+    # Nobody has to be signed in to book. But if the email belongs to an account whose address is proven, the booking goes
+    # into that account's history at once.
+    account = session.scalar(
+        select(GuestAccount).where(
+            func.lower(func.trim(GuestAccount.email)) == contact.email.strip().lower(),
+            GuestAccount.email_proven.is_(True),
+        )
+    )
     booking = Booking(
+        account_id=account.id if account else None,
         venue_id=venue.id,
         party_size=needs.size,
         name=contact.name,

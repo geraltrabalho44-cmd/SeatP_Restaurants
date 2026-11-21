@@ -52,3 +52,13 @@ def test_forecast_refresh_failure_reuses_cache_and_backs_off(session, monkeypatc
         )
         assert state == expected
     assert len(calls) == 3
+
+
+def test_the_city_of_an_address_is_its_last_part_without_a_postcode() -> None:
+    from app.restaurant_service.weather_view import city_of
+
+    assert city_of("Rua Garrett 12, Lisboa") == "Lisboa"
+    assert city_of("Largo do Mitelo 5, 1150-227 Lisbon") == "Lisbon"
+    assert city_of("Avenida da Liberdade 10, 1250-096 Lisboa") == "Lisboa"
+    assert city_of("Lisboa") is None  # no street part, so no way to tell it is a town
+    assert city_of("") is None and city_of(None) is None

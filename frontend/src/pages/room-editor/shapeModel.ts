@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import type { Point } from "./geometry";
 import { createRoom } from "./roomModel";
 import type { Room } from "./roomModel";
@@ -5,10 +6,10 @@ import type { Room } from "./roomModel";
 export type InitialShape = "rectangle" | "l-shape" | "draw";
 
 export function createInitialShape(name: string, shape: InitialShape, width: number, height: number, cutWidth: number, cutHeight: number, outdoor: boolean): Room {
-  if (!name.trim() || name.trim().length > 60) throw new Error("Use a room name of 1-60 characters.");
+  if (!name.trim() || name.trim().length > 60) throw new Error(tr("Use a room name of 1-60 characters."));
   const room = createRoom(name, width, height, outdoor);
   if (shape === "l-shape") {
-    if (![cutWidth, cutHeight].every(Number.isFinite) || cutWidth <= 0 || cutWidth >= width || cutHeight <= 0 || cutHeight >= height) throw new Error("The cutout must fit inside the room.");
+    if (![cutWidth, cutHeight].every(Number.isFinite) || cutWidth <= 0 || cutWidth >= width || cutHeight <= 0 || cutHeight >= height) throw new Error(tr("The cutout must fit inside the room."));
     room.outline = { points: [[0, 0], [width - cutWidth, 0], [width - cutWidth, cutHeight], [width, cutHeight], [width, height], [0, height]].map(([x, y]) => ({ x, y, curve: 0 })) };
   }
   if (shape === "draw") room.outline = { points: [] };

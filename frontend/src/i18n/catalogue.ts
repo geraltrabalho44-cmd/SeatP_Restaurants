@@ -4,7 +4,9 @@
 import { booking } from "./catalogue.booking";
 import { manage } from "./catalogue.manage";
 import { server } from "./catalogue.server";
+import { rooms } from "./catalogue.rooms";
 import { services } from "./catalogue.services";
+import { site } from "./catalogue.site";
 const discovery = {
   "Find a table you will love": ["Encontra uma mesa de que vais gostar","Encuentra una mesa que te encante","Trouvez une table qui vous plaira"],
   "Select a time to book": ["Escolhe uma hora para reservar","Elige una hora para reservar","Choisissez un horaire pour réserver"],
@@ -150,7 +152,6 @@ const discovery = {
   "Log in": ["Entrar","Iniciar sesión","Se connecter"],
   "Main": ["Principal","Principal","Principal"],
   "For restaurant owners": ["Para restaurantes","Para restaurantes","Pour les restaurateurs"],
-  "Plan an event": ["Planear um evento","Organizar un evento","Organiser un événement"],
   "Find a table you'll love.": ["Encontra a tua mesa ideal.","Encuentra tu mesa ideal.","Trouvez votre table idéale."],
   "Find a table you’ll love.": ["Encontra a tua mesa ideal.","Encuentra tu mesa ideal.","Trouvez votre table idéale."],
   "Find another table you’ll love.": ["Encontra outra mesa de que vais gostar.","Encuentra otra mesa que te encante.","Trouvez une autre table qui vous plaira."],
@@ -280,5 +281,5 @@ const discovery = {
   "Loading": ["A carregar","Cargando","Chargement"],
 } as const satisfies Record<string, readonly [string,string,string]>;
 
-export const catalogue = { ...discovery, ...booking, ...manage, ...services, ...server } as const;
+export const catalogue = { ...discovery, ...booking, ...manage, ...services, ...rooms, ...site, ...server } as const;
 export type Message=keyof typeof catalogue;

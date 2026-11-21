@@ -62,7 +62,11 @@ def future_day(days: int = 7) -> date:
     return datetime.now(LISBON).date() + timedelta(days=days)
 
 
-def make_restaurant(session: Session, owner: Organiser, cap: int = 40) -> Place:
+def make_restaurant(
+    session: Session, owner: Organiser, cap: int = 40, allow_larger: bool = True
+) -> Place:
+    """A test restaurant. Most tests are not about table sizes, so by default any party may take a bigger table;
+    the tests of the right-size rule pass allow_larger=False (the real default)."""
     venue = Venue(
         organiser_id=owner.id,
         kind="restaurant",
@@ -72,6 +76,7 @@ def make_restaurant(session: Session, owner: Organiser, cap: int = 40) -> Place:
         timezone="Europe/Lisbon",
         width=800,
         height=600,
+        allow_larger_tables=allow_larger,
     )
     session.add(venue)
     session.flush()

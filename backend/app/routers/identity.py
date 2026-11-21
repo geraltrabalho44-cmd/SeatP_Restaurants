@@ -5,6 +5,8 @@
     POST /identity/owner/login               password sign-in; answers with SeatPlan's own session token
     POST /identity/owner/oauth/start         where to send the browser for Google or Apple
     POST /identity/owner/oauth               finish a Google or Apple sign-in with the one-time token
+    POST /identity/diner/oauth/start         the same for a diner (comes back to /restaurants/account/callback)
+    POST /identity/diner/oauth               finish a diner's Google or Apple sign-in: the diner account and its session
     POST /identity/owner/mfa                 the second step: a code from the authenticator app
     POST /identity/owner/reset               email a password-reset link
     POST /identity/owner/set-password        choose a new password with the token from that link
@@ -41,9 +43,17 @@ from app.auth_providers.supabase import (
 from app.config import get_settings
 from app.core.errors import ApiError
 from app.core.text import PlainText
+from app.events_service import accounts as guest_accounts
 from app.models import AuthIdentity, Organiser
 from app.restaurant_service import identity
-from app.security import CurrentOrganiser, client_ip, create_session_token, keyed_hash, rate_limit
+from app.security import (
+    CurrentOrganiser,
+    client_ip,
+    create_guest_session,
+    create_session_token,
+    keyed_hash,
+    rate_limit,
+)
 
 router = APIRouter(prefix="/identity", tags=["identity"])
 MIN_PASSWORD = 10
@@ -207,8 +217,9 @@ def sign_in(body: LoginIn, request: Request, session: db.SessionDep) -> dict[str
     return _finish(session, signed)
 
 
-@router.post("/owner/oauth/start")
-def oauth_start(body: OAuthStartIn, request: Request, session: db.SessionDep) -> dict[str, str]:
+def _authorize(
+    body: OAuthStartIn, request: Request, session: db.SessionDep, callback: str
+) -> dict[str, str]:
     """Where to send the browser. The nonce comes back in the address and must match the one the page
     kept, so a link someone else made cannot sign a visitor in as them."""
     client, social = _service()
@@ -216,10 +227,45 @@ def oauth_start(body: OAuthStartIn, request: Request, session: db.SessionDep) ->
     if body.provider not in social or not NONCE.match(body.nonce):
         raise ApiError(422, "validation", "That sign-in is not available.")
     try:
-        url = client.authorize_url(body.provider, _site(f"/owner/sign-in/callback?n={body.nonce}"))
+        url = client.authorize_url(body.provider, _site(f"{callback}?n={body.nonce}"))
     except IdentityError as error:
         raise _fail(error) from error
     return {"url": url}
+
+
+@router.post("/owner/oauth/start")
+def oauth_start(body: OAuthStartIn, request: Request, session: db.SessionDep) -> dict[str, str]:
+    return _authorize(body, request, session, "/owner/sign-in/callback")
+
+
+@router.post("/diner/oauth/start")
+def diner_oauth_start(
+    body: OAuthStartIn, request: Request, session: db.SessionDep
+) -> dict[str, str]:
+    return _authorize(body, request, session, "/restaurants/account/callback")
+
+
+@router.post("/diner/oauth")
+def diner_oauth_finish(body: OAuthIn, request: Request, session: db.SessionDep) -> dict[str, Any]:
+    """A diner back from Google or Apple: their account (made on the first time) and a diner session."""
+    client, _ = _service()
+    rate_limit(session, f"identity-oauth-finish:{client_ip(request)}", limit=20, window_s=60)
+    try:
+        signed = client.user(body.access_token)
+    except IdentityError as error:
+        raise _fail(error) from error
+    if signed.factors:
+        # Two-step verification belongs to owner and staff accounts, which this button does not open.
+        raise ApiError(
+            422,
+            "validation",
+            "This email has two-step verification. Sign in with your email and password instead.",
+        )
+    account = identity.guest_account_for(session, signed.identity)
+    return {
+        "token": create_guest_session(account),
+        "account": guest_accounts.account_out(account),
+    }
 
 
 @router.post("/owner/oauth")

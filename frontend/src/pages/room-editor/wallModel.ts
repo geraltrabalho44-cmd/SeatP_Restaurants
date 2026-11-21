@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import { bearing, sideLength, sideNormal, sidePoint } from "./geometry";
 import type { Point } from "./geometry";
 import { newRoomKey } from "./roomModel";
@@ -8,12 +9,12 @@ export const VIEW_TAGS = ["river", "sea", "street", "garden", "courtyard", "monu
 export function checkOpenings(room: Room): void {
   for (const o of room.openings) {
     const length = Number.isInteger(o.side) && o.side >= 0 && o.side < room.outline.points.length ? sideLength(room.outline, o.side) : NaN;
-    if (![length, o.offset, o.width, o.top_height].every(Number.isFinite) || o.offset < 0 || o.width < 40 || o.offset + o.width > length + 1e-6) throw new Error("Openings must be at least 40 cm wide and stay within the wall.");
-    if (o.kind === "glass_wall" && (o.offset !== 0 || Math.abs(o.width - length) > 1e-6)) throw new Error("A glass wall must cover the whole side.");
-    if (o.top_height < 100 || o.top_height > 500) throw new Error("Window top height must be between 100 and 500 cm.");
-    if (o.view_text.length > 80 || o.night_view_text.length > 80 || o.view_tags.length > 3 || new Set(o.view_tags).size !== o.view_tags.length || o.view_tags.some(tag => !VIEW_TAGS.some(value => value === tag))) throw new Error("Use up to 80 characters and three view tags.");
-    if (o.sun_rule === "between" && (!o.sun_from || !o.sun_until || !/^([01]\d|2[0-3]):[0-5]\d$/.test(o.sun_from) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(o.sun_until) || o.sun_from >= o.sun_until)) throw new Error("Choose a start time before the end time.");
-    if (room.openings.some(other => other.key !== o.key && other.side === o.side && o.offset < other.offset + other.width - 1e-6 && other.offset < o.offset + o.width - 1e-6)) throw new Error("Openings on the same wall cannot overlap.");
+    if (![length, o.offset, o.width, o.top_height].every(Number.isFinite) || o.offset < 0 || o.width < 40 || o.offset + o.width > length + 1e-6) throw new Error(tr("Openings must be at least 40 cm wide and stay within the wall."));
+    if (o.kind === "glass_wall" && (o.offset !== 0 || Math.abs(o.width - length) > 1e-6)) throw new Error(tr("A glass wall must cover the whole side."));
+    if (o.top_height < 100 || o.top_height > 500) throw new Error(tr("Window top height must be between 100 and 500 cm."));
+    if (o.view_text.length > 80 || o.night_view_text.length > 80 || o.view_tags.length > 3 || new Set(o.view_tags).size !== o.view_tags.length || o.view_tags.some(tag => !VIEW_TAGS.some(value => value === tag))) throw new Error(tr("Use up to 80 characters and three view tags."));
+    if (o.sun_rule === "between" && (!o.sun_from || !o.sun_until || !/^([01]\d|2[0-3]):[0-5]\d$/.test(o.sun_from) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(o.sun_until) || o.sun_from >= o.sun_until)) throw new Error(tr("Choose a start time before the end time."));
+    if (room.openings.some(other => other.key !== o.key && other.side === o.side && o.offset < other.offset + other.width - 1e-6 && other.offset < o.offset + o.width - 1e-6)) throw new Error(tr("Openings on the same wall cannot overlap."));
   }
 }
 
@@ -49,7 +50,7 @@ export function setMainEntrance(room: Room, side: number): Room {
   if (existing) return markMainEntrance(room, existing.key);
   let added: Room;
   try { added = addOpening(room, side, "door"); }
-  catch { throw new Error("There is no room for a door on this wall. Choose another wall."); }
+  catch { throw new Error(tr("There is no room for a door on this wall. Choose another wall.")); }
   return markMainEntrance(added, added.openings.at(-1)!.key);
 }
 

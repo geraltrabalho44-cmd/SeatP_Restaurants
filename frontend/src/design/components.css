@@ -657,3 +657,83 @@
 .legend-static {
   animation: none;
 }
+
+/* ---------- Language control ---------- */
+/* A small tab hanging from the right end of the header, under "Log in": the flag and the name of the language in use. */
+.shell-lang {
+  position: absolute;
+  top: calc(100% + var(--border-width));
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: var(--z-header);
+}
+.shell-header .shell-lang { min-height: 0; justify-content: flex-end; align-items: flex-start; }
+.shell-lang > * { pointer-events: auto; }
+.lang-picker {
+  position: relative;
+  display: inline-flex;
+  background: var(--c-bg);
+  border: var(--border-width) solid var(--c-border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  color: var(--c-text-muted);
+  font-size: .75rem;
+  line-height: 1.25;
+}
+.lang-picker .flag { flex: none; display: block; }
+.lang-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  padding: .25rem .5rem;
+  min-height: 1.5rem;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lang-trigger:hover { color: var(--c-text); }
+.lang-trigger:focus-visible, .lang-menu li:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 1px; }
+.lang-chevron { flex: none; margin-inline-start: .125rem; }
+.lang-menu {
+  position: absolute;
+  top: calc(100% + .25rem);
+  inset-inline-end: 0;
+  z-index: var(--z-header);
+  min-width: 10rem;
+  margin: 0;
+  padding: .25rem;
+  list-style: none;
+  background: var(--c-bg);
+  border: var(--border-width) solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  color: var(--c-text);
+  font-size: .875rem;
+}
+.lang-menu li {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  min-height: 2.25rem;
+  padding: .375rem .625rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.lang-menu li:hover, .lang-menu li:focus { background: var(--c-primary-soft); }
+.lang-menu li[aria-selected="true"] { color: var(--c-primary); font-weight: 700; }
+
+/* On a phone the language tab needs a clear strip under the header, so it never touches the first line of the page. */
+@media (max-width: 63.99rem) {
+  .shell-header:has(.shell-lang) + .shell-main { padding-top: 1.875rem; }
+}
+
+/* Scrolled down: the language tab is gone, and comes back at the top of the page. */
+.shell-header .shell-lang.is-scrolled { opacity: 0; visibility: hidden; pointer-events: none; }
+.shell-header .shell-lang.is-scrolled > * { pointer-events: none; }

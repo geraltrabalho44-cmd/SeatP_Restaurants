@@ -32,8 +32,10 @@ export function closedReason(info: RestaurantInfo, date: string): string | null 
   if (!open && info.services.length > 0) return tr("{name} is closed on {weekday}s.", { name: info.name, weekday: weekdayName(date) });
   return null;
 }
-function partyOptions(max: number): SelectOption[] {
-  return Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: people(i + 1) }));
+/** The party sizes on offer: always 1 to 10, whatever the restaurant's tables are. A party its tables cannot seat is told so by the server. */
+export const PARTY_CHOICES = 10;
+function partyOptions(): SelectOption[] {
+  return Array.from({ length: PARTY_CHOICES }, (_, i) => ({ value: String(i + 1), label: people(i + 1) }));
 }
 const highChairOptions = (): SelectOption[] => [
   { value: "0", label: tr("No high chair") },
@@ -82,8 +84,7 @@ export function WhenFields({info, needs, onChange}: Pick<StepPartyProps,"info"|"
       )}
       <Select
         label={t("Party size")}
-        hint={t("Including children. For more than {max}, please call the restaurant.", { max: info.max_party })}
-        options={partyOptions(info.max_party)}
+        options={partyOptions()}
         value={String(needs.party)}
         onChange={(e) => onChange({ ...needs, party: Number(e.target.value) })}
       />

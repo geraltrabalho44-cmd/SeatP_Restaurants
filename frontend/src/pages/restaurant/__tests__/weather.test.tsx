@@ -24,17 +24,20 @@ const FORECAST = {
 };
 
 describe("The weather panel", () => {
-  it("shows the day's weather, says it is simulated, and offers the sunset table", async () => {
+  it("shows the evening weather once, with the sunset on the same line, and offers the sunset table", async () => {
     const calls = mockApi({ [`GET ${API}`]: () => FORECAST });
     const picked: number[] = [];
     const times: string[] = [];
     render(<WeatherPanel venueId="casa" needs={NEEDS} onTable={(id) => picked.push(id)} onTime={(time) => times.push(time)} />);
     const panel = await screen.findByRole("region", { name: "Weather and sunset" });
-    expect(panel.textContent).toContain("13:00 · Sunny · 18°C");
-    expect(panel.textContent).toContain("Simulated forecast");
-    expect(panel.textContent).not.toContain("demo");
-    expect(panel.textContent).toContain("Sunset at 20:12");
+    // One reading (the evening), then the sunset, in one paragraph; no source line and no other hours.
+    expect(panel.textContent).toContain("19:00 · Sunny · 18°C / Sunset at 20:12");
+    expect(panel.textContent).not.toContain("13:00");
+    expect(panel.textContent).not.toContain("21:00");
+    expect(panel.textContent).not.toContain("Simulated forecast");
+    expect(panel.textContent).not.toContain("Open-Meteo");
     expect(panel.textContent).not.toContain("Indoor tables recommended");
+    expect(panel.textContent).not.toContain("No available seating");
     fireEvent.click(screen.getByRole("button", { name: "Choose 19:30" }));
     fireEvent.click(screen.getByRole("button", { name: "Choose T7" }));
     expect(times).toEqual(["19:30"]);
@@ -44,20 +47,26 @@ describe("The weather panel", () => {
     expect(query?.get("party")).toBe("2");
   });
 
-  it("recommends indoor tables when rain is likely, and a tap picks one", async () => {
-    mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, hours: [hour("19:00", "Rain expected", 80)], indoor: [{ id: 3, label: "T3", room: "Main room" }] }) });
-    const picked: number[] = [];
-    render(<WeatherPanel venueId="casa" needs={NEEDS} time="19:00" onTable={(id) => picked.push(id)} />);
-    expect((await screen.findByRole("region", { name: "Weather and sunset" })).textContent).toContain("Indoor tables recommended");
-    fireEvent.click(screen.getByRole("button", { name: "Main room · T3" }));
-    expect(picked).toEqual([3]);
+  it("says the rain once and does not list indoor tables in the card", async () => {
+    mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, hours: [hour("13:00", "Rain expected", 80), hour("19:00", "Rain expected", 80), hour("21:00", "Rain expected", 80)], indoor: [{ id: 3, label: "T3", room: "Main room" }] }) });
+    render(<WeatherPanel venueId="casa" needs={NEEDS} />);
+    const text = (await screen.findByRole("region", { name: "Weather and sunset" })).textContent ?? "";
+    expect(text.match(/Rain expected/g)).toHaveLength(1);
+    expect(text).not.toContain("Indoor tables recommended");
+    expect(screen.queryByRole("button", { name: "Main room · T3" })).toBeNull();
   });
 
-  it("credits Open-Meteo when the forecast is real, and says when it is the last one known", async () => {
+  it("says when the forecast is the last one known, and never names its source in the card", async () => {
     mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, source: "open-meteo", status: "stale" }) });
     render(<WeatherPanel venueId="casa" needs={NEEDS} />);
-    expect((await screen.findByRole("link", { name: "Weather data by Open-Meteo.com" })).getAttribute("href")).toBe("https://open-meteo.com/");
-    expect(screen.getByText(/Last available forecast/)).toBeTruthy();
+    expect(await screen.findByText(/Last available forecast/)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Weather data by Open-Meteo.com" })).toBeNull();
+  });
+
+  it("puts the town in the heading", async () => {
+    mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, city: "Lisboa" }) });
+    render(<WeatherPanel venueId="casa" needs={NEEDS} />);
+    expect(await screen.findByText("Weather for Thu 2 May in Lisbon")).toBeTruthy();
   });
 
   it("does not call the weather sunny once the sun has set", async () => {
@@ -66,12 +75,14 @@ describe("The weather panel", () => {
     });
     const { unmount } = render(<WeatherPanel venueId="casa" needs={NEEDS} />);
     const panel = await screen.findByRole("region", { name: "Weather and sunset" });
-    // The sun sets at 20:12: 13:00 and 19:00 are day, 21:00 is night.
-    expect(panel.textContent).toContain("13:00 · Sunny · 18°C");
+    // The sun sets at 20:12: 19:00 is day, 21:00 is night.
     expect(panel.textContent).toContain("19:00 · Sun and clouds · 18°C");
-    expect(panel.textContent).toContain("21:00 · Clear sky · 18°C");
-    expect(panel.textContent).not.toContain("21:00 · Sunny");
     unmount();
+    mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, hours: [hour("21:00", "Sunny")] }) });
+    const night = render(<WeatherPanel venueId="casa" needs={NEEDS} time="21:00" />);
+    expect((await screen.findByRole("region", { name: "Weather and sunset" })).textContent).toContain("21:00 · Clear sky · 18°C");
+    expect(night.container.textContent).not.toContain("21:00 · Sunny");
+    night.unmount();
     mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, hours: [hour("22:00", "Sun and clouds"), hour("23:00", "Cloudy")] }) });
     render(<WeatherPanel venueId="casa" needs={NEEDS} time="22:00" />);
     expect(await screen.findByText(/22:00 · Partly cloudy · 18°C/)).toBeTruthy();
@@ -82,7 +93,7 @@ describe("The weather panel", () => {
     const { unmount } = render(<WeatherPanel venueId="casa" needs={NEEDS} />);
     expect(await screen.findByText("The forecast for this date comes later.")).toBeTruthy();
     expect(screen.getByText(/Sunset at 20:12/)).toBeTruthy();
-    expect(screen.getByText(/No available seating catches the sunset on this day/)).toBeTruthy();
+    expect(screen.queryByText(/No available seating catches the sunset/)).toBeNull();
     unmount();
     mockApi({ [`GET ${API}`]: () => ({ ...FORECAST, hours: [], status: "unavailable" }) });
     render(<WeatherPanel venueId="casa" needs={NEEDS} />);

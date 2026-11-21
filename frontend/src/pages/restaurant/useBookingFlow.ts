@@ -1,6 +1,7 @@
 // The memory of the booking flow: the answers so far and which step is on
 // screen. Kept apart from BookingPage so the page only draws, and this file
 // only decides.
+import { PARTY_CHOICES } from "./StepParty";
 import { useCallback, useEffect, useState } from "react";
 import { releaseHold } from "../../api/restaurant";
 import type { BookingConfirmation, ContactDetails, PartyNeeds, RestaurantInfo } from "../../api/restaurant";
@@ -8,6 +9,7 @@ import { NO_AGREEMENTS } from "./agreements";
 import type { Agreements } from "./agreements";
 import { todayIso } from "./format";
 import { useSecondsLeft } from "./HoldCountdown";
+import { useStepHistory } from "./useStepHistory";
 import type { Hold } from "./StepTable";
 
 /** Step numbers, in order. */
@@ -28,7 +30,7 @@ export function startNeeds(info: RestaurantInfo, link: LinkAnswers, today: strin
   // ISO dates compare correctly as text, so a past date in an old link is ignored.
   const date = link.date && /^\d{4}-\d{2}-\d{2}$/.test(link.date) && link.date >= today ? link.date : today;
   const asked = Number(link.party);
-  const party = Number.isInteger(asked) && asked >= 1 && asked <= info.max_party ? asked : Math.min(2, info.max_party);
+  const party = Number.isInteger(asked) && asked >= 1 && asked <= PARTY_CHOICES ? asked : Math.min(2, info.max_party);
   return { date, party, needs_accessible: false, high_chairs: 0 };
 }
 
@@ -112,6 +114,16 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
     const saved = hasContact ? " Your details are saved for this booking." : "";
     holdLost(`Your hold on table ${hold.tableLabel} expired.${saved}`);
   }, [hold, secondsLeft, hasContact, holdLost, submitting]);
+  // The browser's Back and Forward move between the steps (and give a held table back when going back past it).
+  useStepHistory(step, hold !== null, step === STEP.done, (target, wantHeld) => {
+    if (target < STEP.table || (!wantHeld && hold)) {
+      void releaseQuietly(info.public_id, hold);
+      setHold(null);
+    }
+    if (target !== STEP.table) setCarriedNotice(null);
+    setChoosingSeat(false);
+    setStep(target);
+  });
   const booked = (result: BookingConfirmation): void => {
     setConfirmation(result);
     setHold(null);

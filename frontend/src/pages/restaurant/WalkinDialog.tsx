@@ -45,7 +45,7 @@ function useFocusWhenSet<T extends HTMLElement>(value: unknown): RefObject<T> {
 }
 
 export function WalkinDialog({ venueId, date, time, inService = true, serviceName, open, onClose, onSeated }: WalkinDialogProps) {
-  const { t } = useT();
+  const { t, label } = useT();
   const [form, setForm] = useState<WalkinForm>({ party: 2, accessible: false, highChairs: 0 });
   const [answer, setAnswer] = useState<WhatIfAnswer | null>(null);
   const [busy, setBusy] = useState(false);
@@ -105,7 +105,7 @@ export function WalkinDialog({ venueId, date, time, inService = true, serviceNam
   return (
     <Dialog open={open} title={t("New walk-in")} onClose={close} actions={actions}>
       <button type="button" className="st-walkin-close" aria-label={t("Cancel walk-in")} disabled={busy} onClick={close}>×</button>
-      <p className="st-effective-time"><strong>{t("Effective booking time · {time}", { time })}</strong><span>{formatDate(date)}{serviceName ? ` · ${t("{name} service", { name: serviceName })}` : ""}</span></p>
+      <p className="st-effective-time"><strong>{t("Effective booking time · {time}", { time })}</strong><span>{formatDate(date)}{serviceName ? ` · ${t("{name} service", { name: label(serviceName) })}` : ""}</span></p>
       {!inService && <p className="rb-notice rb-notice-warning" role="status">{t("This reference is outside service hours. The request will use {time}, not the nearest opening time. Return to the floor to choose another time if needed.", { time })}</p>}
       <p className="rb-muted st-walkin-hint">{t("Find a table previews a suggestion. You confirm before seating.")}</p>
       <fieldset className="st-walkin-fields" disabled={busy}><legend className="visually-hidden">{t("Walk-in needs")}</legend><WalkinFields form={form} onChange={update} /></fieldset>

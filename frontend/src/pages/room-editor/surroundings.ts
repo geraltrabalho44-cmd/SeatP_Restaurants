@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import { bearing } from "./geometry";
 import type { Point } from "./geometry";
 import { onTerrace, outward, strip, TERRACE_DEPTH, terraceOn } from "./terraceGeometry";
@@ -40,11 +41,11 @@ export function setSurrounding(room: Room, side: number, kind: SurroundingKind |
       ? { ...o, view_tags: o.view_tags.filter(t => !BY_TAG.has(t)), view_text: "" } : o) };
   }
   const wanted = SURROUNDINGS.find(s => s.kind === kind);
-  if (!wanted) throw new Error("Choose what is outside the wall.");
+  if (!wanted) throw new Error(tr("Choose what is outside the wall."));
   let next = room, target = windows.find(o => o.view_tags.some(t => BY_TAG.has(t))) ?? windows[0];
   if (!target) {
     try { next = addOpening(room, side, "window"); }
-    catch { throw new Error("There is no room on this wall to say what is outside. Make space or choose another wall."); }
+    catch { throw new Error(tr("There is no room on this wall to say what is outside. Make space or choose another wall.")); }
     target = next.openings.at(-1)!;
   }
   return updateOpening(next, target.key, { view_tags: [wanted.tag, ...target.view_tags.filter(t => !BY_TAG.has(t))].slice(0, 3), view_text: wanted.text });
@@ -78,7 +79,7 @@ export function setTerrace(room: Room, side: number, on: boolean): Room {
   if (!on) return existing ? removeZone(room, existing.key) : room;
   if (existing) return room;
   const quad = strip(room, side, 0, TERRACE_DEPTH), o = outward(room, side);
-  if (!quad || !o) throw new Error("Choose a wall first.");
+  if (!quad || !o) throw new Error(tr("Choose a wall first."));
   const a = room.outline.points[side], b = room.outline.points[(side + 1) % room.outline.points.length], along = Math.hypot(b.x - a.x, b.y - a.y);
   const horizontal = Math.abs(o.normal.y) > 0.5, w = Math.max(100, Math.round(horizontal ? along : TERRACE_DEPTH)), h = Math.max(100, Math.round(horizontal ? TERRACE_DEPTH : along));
   const centre = { x: o.mid.x + o.normal.x * TERRACE_DEPTH / 2, y: o.mid.y + o.normal.y * TERRACE_DEPTH / 2 }; // against the wall, however it slopes
@@ -130,9 +131,9 @@ function terraceDepth(room: Room, side: number): number {
 /** Sets a terrace's length along its wall (kept centred) or its depth (the side against the wall stays put). */
 export function setTerraceSize(room: Room, side: number, patch: { along?: number; depth?: number }): Room {
   const zone = terraceOn(room, side), o = outward(room, side);
-  if (!zone || !o) throw new Error("There is no terrace on this wall.");
+  if (!zone || !o) throw new Error(tr("There is no terrace on this wall."));
   const horizontal = Math.abs(o.normal.y) > 0.5, now = terraceSize(room, side, zone), along = patch.along ?? now.along, depth = patch.depth ?? now.depth;
-  if (!(along >= 50) || !(depth >= 50)) throw new Error("A terrace is at least 50 cm each way.");
+  if (!(along >= 50) || !(depth >= 50)) throw new Error(tr("A terrace is at least 50 cm each way."));
   const grow = (depth - now.depth) / 2, centre = { x: zone.x + zone.w / 2 + o.normal.x * grow, y: zone.y + zone.h / 2 + o.normal.y * grow };
   const w = Math.round(horizontal ? along : depth), h = Math.round(horizontal ? depth : along);
   return editZone(room, zone.key, { w, h, x: Math.round(centre.x - w / 2), y: Math.round(centre.y - h / 2) });

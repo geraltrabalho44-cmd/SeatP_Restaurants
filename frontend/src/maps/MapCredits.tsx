@@ -1,7 +1,10 @@
+import { useT } from "../i18n/I18nProvider";
+
 export function MapCredits() {
+  const { t } = useT();
   return (
     <p>
-      Map data &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> and{" "}
+      {t("Map data")} &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> {t("and")}{" "}
       <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
     </p>
   );

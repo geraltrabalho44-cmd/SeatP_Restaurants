@@ -20,7 +20,8 @@ from sqlalchemy.orm import Session
 
 from app.auth_providers.supabase import Identity
 from app.core.errors import ApiError
-from app.models import AuthIdentity, Organiser
+from app.events_service.accounts import CONSENT_VERSION
+from app.models import AuthIdentity, GuestAccount, Organiser, utc_now
 from app.security import hash_password
 
 PROVIDER = "supabase"
@@ -107,3 +108,41 @@ def remember_second_step(session: Session, subject: str, enabled: bool) -> None:
     if link is not None and link.mfa_enabled != enabled:
         link.mfa_enabled = enabled
         session.commit()
+
+
+def guest_account_for(session: Session, identity: Identity) -> GuestAccount:
+    """The diner account for a confirmed identity: the one with that email, else a new one.
+
+    A diner account is the one the events use too (one email, one account), so it is found by its address. Supabase says
+    the address is confirmed, which is the same proof the account was made with, so nothing needs linking. A new account
+    gets a password nobody knows: it is entered through Google or Apple, or by choosing a new password with the
+    emailed code ("Forgot your password?"), which still works.
+    """
+    if not identity.email_confirmed:
+        raise _refuse()
+    email = identity.email.strip().lower()
+    account = session.scalar(select(GuestAccount).where(GuestAccount.email == email))
+    if account is None:
+        now = utc_now()
+        account = GuestAccount(
+            email=email,
+            name=(identity.name or email.split("@")[0])[:120],
+            password_hash=hash_password(secrets.token_urlsafe(32)),
+            consent_at=now,
+            consent_version=CONSENT_VERSION,
+            last_login_at=now,
+            email_proven=True,
+        )
+        session.add(account)
+        try:
+            session.commit()
+        except IntegrityError:
+            # Two first sign-ins at once: the other one won, use what it made.
+            session.rollback()
+            account = session.scalar(select(GuestAccount).where(GuestAccount.email == email))
+            if account is None:
+                raise _refuse() from None
+        return account
+    account.last_login_at = utc_now()
+    session.commit()
+    return account

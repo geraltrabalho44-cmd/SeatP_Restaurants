@@ -22,6 +22,8 @@ Commands, run from `backend/`:
   galleries. Each restaurant has researched public details, a licensed cover,
   an approximate price band and a direct Google Maps link. The public page
   is flagged `demo_booking`; the site itself says it is a demo.
+- `python -m app.seed.lisbon_menus` gives every demo restaurant (the five made-up ones, the 20 Lisbon ones and Casa Guedes) a sample menu in the same four sections (Starters, Mains, Desserts, Drinks). Dishes are typical of each house; **the prices are indicative and made up**, and the public page says so for the Lisbon ones. Only empty menus are filled, so it can be run again. `--allow-remote` is for the shared demo database (Neon), after a backup.
+- `python -m app.seed.tidy_layouts` spreads the tables of the demo restaurants evenly inside their rooms and zones so none touches another (it grows the plan a little when a zone is too tight). The Lisbon catalogue command runs it; run it by hand after `app.seed.run` too (the showcase plan of Casa Lumen is spread out a little, so it is not part of `run`, whose geometry the browser tests rely on). Only demo restaurants; a plan an owner drew is never touched. `--allow-remote` is for the shared demo database, after a backup.
 - `python -m app.seed.demo_reviews` adds labelled fictional reviews to all
   published demo restaurants in local SQLite with `DEMO_MODE=1`. Re-running
   it preserves existing reviews and adds only missing entries.

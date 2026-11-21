@@ -1,3 +1,4 @@
+import { word } from "./names";
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import type { Point } from "./geometry";
@@ -71,7 +72,7 @@ export function ObjectLayer({ room, kind, only, rotationOf, editing, selected, g
   return <g className={`room-${kind}-layer`} style={{ pointerEvents: editing ? "auto" : "none" }} onPointerMove={move} onPointerUp={event => { if (editing) event.stopPropagation(); drag.current = null; resize.current = null; turning.current = null; }} onPointerCancel={() => { drag.current = null; resize.current = null; turning.current = null; }} onClick={event => { if (editing) event.stopPropagation(); }}>
     {items.map(item => {
       const rotation = "rotation" in item ? item.rotation : rotationOf ? rotationOf(item) : 0;
-      const label = "label" in item ? item.label || FIXTURE_NAMES[item.kind] : item.name;
+      const label = "label" in item ? item.label || word(FIXTURE_NAMES[item.kind]) : word(item.name);
       const font = Math.max(13 / zoom, 15), small = Math.min(item.w, item.h);
       // Fixed elements and the two zones an owner can add wear an icon.
       const iconKind: IconKind | null = "label" in item ? item.kind : item.kind === "terrace" || item.kind === "quiet" ? item.kind : null, icon = iconKind && small >= font * 2.6 ? Math.min(32, small * 0.45) : 0;

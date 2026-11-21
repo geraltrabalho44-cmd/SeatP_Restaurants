@@ -1,4 +1,5 @@
 import { useT } from "../../i18n/I18nProvider";
+import { activeLocale, activeTag, tr } from "../../i18n/locale";
 // The home page (spec 9.1): search restaurants by name or cuisine, near me or in a city, with
 // filters and an optional date, time and party, as a list with a map beside it (a List/Map
 // switch on a phone). One sticky command bar holds the search and the quick controls; the
@@ -11,7 +12,7 @@ import { MapCredits } from "../../maps/MapCredits";
 import { errorMessage } from "../restaurant/format";
 import { ContextControls } from "./ContextControls";
 import { DiscoverBar } from "./DiscoverBar";
-import { FilterDrawer, QUICK_FEATURES } from "./FilterDrawer";
+import { FilterDrawer, QUICK_CUISINES } from "./FilterDrawer";
 import { PublicHeaderActions } from "./PublicHeaderActions";
 import { RestaurantCard } from "./RestaurantCard";
 import { completeWhen, cuisineLabel, DISCOVERY_FEATURE_LABELS, loadPlace, savePlace } from "./discoverModel";
@@ -37,11 +38,12 @@ function useWide(): boolean {
 }
 /** "Lisboa · 20 Nov, 20:00 · 2 people": the context on a phone, where the controls are in the drawer. */
 function contextSummary(place: Place | null, date: string, time: string, party: string): string {
-  const where = place?.label === "Lisboa" ? "Lisbon" : place?.label ?? "Anywhere";
-  if (!date) return `${where} · Any date · ${party === "1" ? "1 person" : `${party} people`}`;
+  const where = place?.label === "Lisboa" ? (activeLocale() === "en" ? "Lisbon" : "Lisboa") : place?.label ?? tr("Anywhere");
+  const people = party === "1" ? tr("1 person") : tr("{count} people", { count: party });
+  if (!date) return `${where} · ${tr("Any date")} · ${people}`;
   const [year, month, day] = date.split("-").map(Number);
-  const when = new Date(year, month - 1, day).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  return `${where} · ${when}, ${time} · ${party === "1" ? "1 person" : `${party} people`}`;
+  const when = new Date(year, month - 1, day).toLocaleDateString(activeTag(), { day: "numeric", month: "short" });
+  return `${where} · ${when}, ${time} · ${people}`;
 }
 export default function DiscoverPage() {
   const {t,label,locale} = useT();
@@ -127,7 +129,7 @@ export default function DiscoverPage() {
         setInterpreted(answer.understood?.chips ?? []);
         setResults({status:"ready",items:answer.items,total:answer.total,key:queryKey,when:answer.understood?.when ?? when});
       }},
-      (error: unknown) => id === request.current && setResults({ status: "error", message: errorMessage(error, "We could not load the restaurants. Please try again.") }),
+      (error: unknown) => id === request.current && setResults({ status: "error", message: errorMessage(error, tr("We could not load the restaurants. Please try again.")) }),
     );
     // The key stands for the whole query.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,7 +145,7 @@ export default function DiscoverPage() {
       const answer = await searchRestaurants({ ...query, offset: results.items.length });
       if (id === request.current) setResults({ ...results, items: [...results.items, ...answer.items], total: answer.total });
     } catch (error) {
-      if (id === request.current) setMoreError(errorMessage(error, "We could not load more. Please try again."));
+      if (id === request.current) setMoreError(errorMessage(error, tr("We could not load more. Please try again.")));
     } finally {
       setLoadingMore(false);
     }
@@ -181,9 +183,9 @@ export default function DiscoverPage() {
     setDate("");
     setTime("");
   };
-  const quickCount = features.filter((f) => QUICK_FEATURES.includes(f)).length;
-  // On a wide screen the quick filters sit in the bar, so the button counts only what is inside the drawer.
-  const filterCount = cuisines.length + prices.length + (features.includes("accessible") ? 1 : 0) + (wide ? 0 : quickCount);
+  // On a wide screen the quick kinds of food sit in the bar, so the button counts only what is inside the drawer.
+  const quickCuisines = cuisines.filter((c) => (QUICK_CUISINES as readonly string[]).includes(c)).length;
+  const filterCount = cuisines.length - (wide ? quickCuisines : 0) + prices.length + features.length;
 
   const items = results.status === "ready" ? results.items : [];
   const pins = useMemo(
@@ -231,12 +233,11 @@ export default function DiscoverPage() {
   // Hover and selection share one outline, including when the pointer is over the selected card.
   const previewId = highlighted === pinned ? null : highlighted;
   return <div className={`discover-route${!wide && view === "map" ? " is-map-view" : ""}`}><PageShell title={t("Find a table you will love")} width="wide" restaurantBrand headerActions={<PublicHeaderActions />} footerContent={showMap && <MapCredits />}>
-    <p className="discover-demo-banner" role="note">Demo · Nova SBE Programming</p>
     <section className={`discover-top${!wide && view === "map" ? " discover-top-compact" : ""}`} aria-labelledby="discover-heading">
       <h1 id="discover-heading" aria-label={wide || headline !== FIRST_HEADLINE ? label(headline) : t("Find your table.")}><span className="discover-desktop-title">{label(headline)}</span><span className="discover-mobile-title">{headline === FIRST_HEADLINE ? t("Find your table.") : label(headline)}</span></h1><p>{t("See the room and choose where you’ll sit.")}</p>
     </section>
     {!wide&&<button className="discover-summary" type="button" aria-label={`When and where: ${contextSummary(place,date,time,party)}`} aria-haspopup="dialog" aria-expanded={drawer} onClick={openFilters}>{contextSummary(place,date,time,party)} <span aria-hidden="true">▾</span></button>}
-    <DiscoverBar wide={wide} text={text} onText={setText} place={place} onPlace={choosePlace} locating={locating} onNearMe={nearMe} date={date} time={time} party={party} onDate={changeDate} onTime={setTime} onParty={setParty} onClearWhen={clearWhen} features={features} onFeatures={setFeatures} filterCount={filterCount} drawerOpen={drawer} onDrawer={openFilters}/>
+    <DiscoverBar wide={wide} text={text} onText={setText} place={place} onPlace={choosePlace} locating={locating} onNearMe={nearMe} date={date} time={time} party={party} onDate={changeDate} onTime={setTime} onParty={setParty} onClearWhen={clearWhen} cuisines={cuisines} onCuisines={setCuisines} filterCount={filterCount} drawerOpen={drawer} onDrawer={openFilters}/>
       {locationNote&&<p role="status">{locationNote}</p>}
       {interpreted.length>0 && text===q && <div className="discover-active" aria-label={t("Search interpretation")}>{interpreted.map((chip,index)=><button type="button" className="discover-chip" key={index} onClick={()=>{
         const fold=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -244,9 +245,9 @@ export default function DiscoverPage() {
         if(at>=0) setText((text.slice(0,at)+" "+text.slice(at+chip.length)).trim());
       }}>{chip} ×</button>)}</div>}
     <div className="discover-active" aria-label={t("Active filters")}>
-      {cuisines.map(key=><button key={key} type="button" className="discover-chip" aria-label={`Remove ${label(cuisineLabel(key))}`} onClick={()=>setCuisines(cuisines.filter(c=>c!==key))}>{label(cuisineLabel(key))} ×</button>)}
+      {cuisines.filter(key=>!wide||!(QUICK_CUISINES as readonly string[]).includes(key)).map(key=><button key={key} type="button" className="discover-chip" aria-label={`Remove ${label(cuisineLabel(key))}`} onClick={()=>setCuisines(cuisines.filter(c=>c!==key))}>{label(cuisineLabel(key))} ×</button>)}
       {prices.map(n=><button key={n} type="button" className="discover-chip" aria-label={`Remove price level ${n}`} onClick={()=>setPrices(prices.filter(p=>p!==n))}>{"€".repeat(n)} ×</button>)}
-      {features.filter(key=>!wide||key==="accessible").map(key=><button key={key} type="button" className="discover-chip" aria-label={`Remove ${label(DISCOVERY_FEATURE_LABELS[key])}`} onClick={()=>setFeatures(features.filter(f=>f!==key))}>{label(DISCOVERY_FEATURE_LABELS[key])} ×</button>)}
+      {features.map(key=><button key={key} type="button" className="discover-chip" aria-label={`Remove ${label(DISCOVERY_FEATURE_LABELS[key])}`} onClick={()=>setFeatures(features.filter(f=>f!==key))}>{label(DISCOVERY_FEATURE_LABELS[key])} ×</button>)}
     </div>
     {features.includes("sun")&&<p className="discover-filter-note">{t("Sunlight at your booking time appears on the table map.")}</p>}
     <FilterDrawer open={drawer} onClose={()=>setDrawer(false)} onApply={applyFilters} cuisines={draft.cuisines} onCuisines={value=>setDraft({...draft,cuisines:value})} prices={draft.prices} onPrices={value=>setDraft({...draft,prices:value})} features={draft.features} onFeatures={value=>setDraft({...draft,features:value})} allCuisines={allCuisines} onAllCuisines={setAllCuisines} hasWhen={completeWhen(draft.date,draft.time,Number(draft.party))!==null} availableOnly={draft.availableOnly} onAvailableOnly={value=>setDraft({...draft,availableOnly:value})} onClear={()=>setDraft({...draft,cuisines:[],prices:[],features:[],availableOnly:true})} total={previewTotal} showQuick narrowExtras={<ContextControls variant="stacked" place={draft.place} onPlace={value=>setDraft({...draft,place:value})} date={draft.date} time={draft.time} party={draft.party} onDate={value=>setDraft({...draft,date:value,time:draft.time||(value?DEFAULT_TIME:"")})} onTime={value=>setDraft({...draft,time:value})} onParty={value=>setDraft({...draft,party:value})} onClearWhen={()=>setDraft({...draft,date:"",time:""})}/>}/>
@@ -258,11 +259,11 @@ export default function DiscoverPage() {
     {place?.label==="Near me"&&<p role="status" className="discover-sort-note">{t("Sorted by distance from where you are.")}</p>}
     <div className={`discover-results discover-view-${view}${results.status==="ready"&&!items.length?" is-empty":""}`}>
       <section className="discover-list" aria-label={t("Restaurants")} aria-busy={results.status==="loading"||updating}>
-        {updating&&<p role="status">{when?"Updating availability…":"Updating restaurants…"}</p>}
+        {updating&&<p role="status">{when?t("Updating availability…"):t("Updating restaurants…")}</p>}
         {results.status==="loading"&&<Skeleton label={t("Finding restaurants")} lines={6}/>}
         {results.status==="error"&&<ErrorState message={results.message} onRetry={search}/>}
         {results.status==="ready"&&<>
-          {!items.length?<EmptyState title={text?`No restaurants match “${text}”`:when?t("Nothing available near this time"):t("No restaurants match")} action={<><Button onClick={()=>{if(text){setText("");setQ("");}else openFilters();}}>{text?t("Clear search term"):when?t("Change time"):t("Edit filters")}</Button>{text&&<Button variant="secondary" onClick={openFilters}>{t("Edit filters")}</Button>}</>}><p>{text?t("Try a different name or clear the search term."):when?t("Try another time or adjust the availability filter."):t("Try another cuisine or room feature.")}</p></EmptyState>:<div className="discover-cards">{items.map(card=><RestaurantCard key={card.public_id} card={card} when={results.when} navigationWhen={when} pending={updating} priorityFeatures={features} selected={!previewId&&pinned===card.public_id} highlighted={previewId===card.public_id} onHighlight={previewCard} onSelect={() => selectCard(card.public_id)} number={pinNumbers.get(card.public_id)}/>)}</div>}
+          {!items.length?<EmptyState title={text?t("No restaurants match “{text}”",{text}):when?t("No tables available around {time}",{time:when.time}):t("No restaurants match")} action={<><Button onClick={()=>{if(text){setText("");setQ("");}else openFilters();}}>{text?t("Clear search term"):when?t("Change time"):t("Edit filters")}</Button>{text&&<Button variant="secondary" onClick={openFilters}>{t("Edit filters")}</Button>}</>}><p>{text?t("Try a different name or clear the search term."):when?t("No restaurant has a free table for {party} on {date} around that time. Try another time or another day.",{party:Number(party)===1?t("1 person"):t("{count} people",{count:party}),date:new Date(`${when.date}T12:00:00`).toLocaleDateString(activeTag(),{weekday:"short",day:"numeric",month:"short"})}):t("Try another cuisine or room feature.")}</p></EmptyState>:<div className="discover-cards">{items.map(card=><RestaurantCard key={card.public_id} card={card} when={results.when} navigationWhen={when} pending={updating} priorityFeatures={features} selected={!previewId&&pinned===card.public_id} highlighted={previewId===card.public_id} onHighlight={previewCard} onSelect={() => selectCard(card.public_id)} number={pinNumbers.get(card.public_id)}/>)}</div>}
           {moreError&&<p role="alert">{moreError}</p>}
           {items.length<results.total&&<Button className="discover-load-more" variant="secondary" busy={loadingMore} disabled={updating} onClick={()=>void showMore()}>{t("Show more")}</Button>}
         </>}

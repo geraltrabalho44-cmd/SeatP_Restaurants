@@ -5,6 +5,9 @@ import { getRooms } from "../../api/rooms";
 import type { RoomsAnswer } from "../../api/rooms";
 import type { VenueDetail } from "../../api/types";
 import { Button, ErrorState, Field, Select, Skeleton } from "../../design/components";
+import { useT } from "../../i18n/I18nProvider";
+import { activeTag, tr } from "../../i18n/locale";
+import { roomName, word } from "./names";
 import { OwnerShell } from "../owner/OwnerShell";
 import { useUnsavedGuard } from "../editor/useUnsavedGuard";
 import { useLoad } from "../restaurant/useLoad";
@@ -34,15 +37,17 @@ import "./room-editor.css";
 
 export default function RoomEditorPage() {
   const { venueId = "" } = useParams();
+  const { t } = useT();
   const { state, reload } = useLoad(async () => ({ info: await getVenue(venueId), rooms: await getRooms(venueId) }), venueId);
-  return <OwnerShell title="Rooms" venueId={venueId} venueName={state.status === "ready" ? state.data.info.name : undefined} current="rooms" width="wide">
-    {state.status === "loading" && <Skeleton label="Loading your rooms" lines={4} />}
-    {state.status === "error" && (state.error instanceof ApiError && state.error.status === 401 ? <p><Link to={`/owner/sign-in?next=${encodeURIComponent(`/owner/${venueId}/rooms`)}`}>Sign in to edit your rooms</Link></p> : <ErrorState title="We could not open these rooms" message="Check the restaurant link or try again." onRetry={() => reload()} />)}
-    {state.status === "ready" && (state.data.info.kind === "restaurant" ? <RoomSession venueId={venueId} info={state.data.info} server={state.data.rooms} /> : <p>Restaurant not found.</p>)}
+  return <OwnerShell title={t("Rooms")} venueId={venueId} venueName={state.status === "ready" ? state.data.info.name : undefined} current="rooms" width="wide">
+    {state.status === "loading" && <Skeleton label={t("Loading your rooms")} lines={4} />}
+    {state.status === "error" && (state.error instanceof ApiError && state.error.status === 401 ? <p><Link to={`/owner/sign-in?next=${encodeURIComponent(`/owner/${venueId}/rooms`)}`}>{t("Sign in to edit your rooms")}</Link></p> : <ErrorState title={t("We could not open these rooms")} message={t("Check the restaurant link or try again.")} onRetry={() => reload()} />)}
+    {state.status === "ready" && (state.data.info.kind === "restaurant" ? <RoomSession venueId={venueId} info={state.data.info} server={state.data.rooms} /> : <p>{t("Restaurant not found.")}</p>)}
   </OwnerShell>;
 }
 
 function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDetail; server: RoomsAnswer }) {
+  const { t, locale } = useT();
   const draft = useRoomDraft(venueId, server);
   const history = draft.history;
   const [selectedRoom, setSelectedRoom] = useState(server.rooms[0].key);
@@ -69,7 +74,7 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
     setSelectedTables(keys); setObject(keys.includes(key) ? key : keys.at(-1) ?? null); setChair(selectedChair); if (long) setMultiple(true);
   };
   const dirty = draft.dirty;
-  const problems = useMemo(() => validateRooms(history.present.rooms), [history.present]);
+  const problems = useMemo(() => validateRooms(history.present.rooms), [history.present, locale]);
   useUnsavedGuard(dirty);
   // Moving on to the next step: saves first when there is something unsaved, and stays put if the save fails.
   const navigate = useNavigate(), [advancing, setAdvancing] = useState(false);
@@ -89,7 +94,7 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
   };
   const closeShape = () => {
     try { const changed = finishOutline(room); if (changed !== room) changeRoom(changed); setDrawingRoom(null); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : "Check the corners."); }
+    catch (caught) { setError(caught instanceof Error ? caught.message : tr("Check the corners.")); }
   };
   const placeObject = (point: Point, value: string) => {
     if (drawing) return;
@@ -111,7 +116,7 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
       const next = addTable(room, table, snappedPoint(top, null, true, false)); changeRoom(next); updateKeys([next.tables.at(-1)!.key]); setTool("Tables");
     } else return;
     setPlacement(null);
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not place this object."); }
+    } catch (caught) { setError(caught instanceof Error ? caught.message : tr("Could not place this object.")); }
   };
   const centreOfRoom = (): Point => { const points = room.outline.points; return { x: (Math.min(...points.map(p => p.x)) + Math.max(...points.map(p => p.x))) / 2, y: (Math.min(...points.map(p => p.y)) + Math.max(...points.map(p => p.y))) / 2 }; };
   let area = 0;
@@ -126,7 +131,7 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
     else { setTool(problem.code === "no_tables" ? "Tables" : "Shape"); updateKeys([]); setSelection(null); }
     setFocusTarget(previous => ({ roomKey: target.key, point, serial: (previous?.serial ?? 0) + 1 }));
   };
-  return <section className="room-editor" aria-label="Restaurant room editor" onKeyDown={event => {
+  return <section className="room-editor" aria-label={t("Restaurant room editor")} onKeyDown={event => {
     const target = event.target as HTMLElement;
     if (target.closest("input, textarea, select, [contenteditable=true]")) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); if (event.shiftKey) history.redo(); else history.undo(); }
@@ -136,52 +141,53 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
       event.preventDefault();
       try {
         if (event.key.toLowerCase() === "d") { const next = duplicateTables(room, tableKeys); updateKeys(next.tables.filter(t => !room.tables.some(old => old.key === t.key)).map(t => t.key)); changeRoom(next); }
-        else if (event.key === "Delete") { if (chair) throw new Error("Use the chair count controls to remove a chair."); changeRoom(deleteTables(room, tableKeys)); updateKeys([]); }
+        else if (event.key === "Delete") { if (chair) throw new Error(tr("Use the chair count controls to remove a chair.")); changeRoom(deleteTables(room, tableKeys)); updateKeys([]); }
         else if (event.key.toLowerCase() === "r") changeRoom(rotateTables(room, tableKeys));
         else { const distance = event.shiftKey ? 10 : 1, dx = event.key === "ArrowLeft" ? -distance : event.key === "ArrowRight" ? distance : 0, dy = event.key === "ArrowUp" ? -distance : event.key === "ArrowDown" ? distance : 0; const table = room.tables.find(t => t.key === object), seat = table?.seats.find(s => s.key === chair); changeRoom(table && seat ? editChair(room, table.key, seat.key, { x: seat.x + dx, y: seat.y + dy }) : moveTables(room, tableKeys, dx, dy)); }
-      } catch (caught) { setError(caught instanceof Error ? caught.message : "Check the selected tables."); }
+      } catch (caught) { setError(caught instanceof Error ? caught.message : tr("Check the selected tables.")); }
     }
     else if (event.key === "Delete" && object && tool === "Fixed") { event.preventDefault(); changeRoom(room.zones.some(z => z.key === object) ? removeZone(room, object) : { ...room, fixtures: room.fixtures.filter(f => f.key !== object) }); setObject(null); }
     else if (event.key === "Delete" && tool === "Walls" && opening) { event.preventDefault(); changeRoom({ ...room, openings: room.openings.filter(o => o.key !== opening) }); setOpening(null); }
     else if (event.key === "Delete" && tool === "Shape" && selection?.kind === "corner") {
       event.preventDefault();
       try { changeRoom(removeCorner(room, selection.index)); setSelection(null); }
-      catch (caught) { setError(caught instanceof Error ? caught.message : "Keep at least three corners."); }
+      catch (caught) { setError(caught instanceof Error ? caught.message : tr("Keep at least three corners.")); }
     }
   }}>
-    <header className="room-header"><div className="room-title"><h1>Room editor</h1><p className="rb-muted">{room.name} · {info.name}</p></div>
-      <div className="room-actions"><span role="status" className={`room-save-state${dirty ? " is-dirty" : ""}`}>{draft.state === "saving" ? "Saving" : dirty ? "Unsaved" : "Saved"}</span><Button variant="secondary" disabled={!history.canUndo} onClick={history.undo}>Undo</Button><Button variant="secondary" disabled={!history.canRedo} onClick={history.redo}>Redo</Button><Button disabled={!dirty || draft.state === "saving"} busy={draft.state === "saving"} onClick={() => void draft.save()}>Save</Button></div>
+    <header className="room-header"><div className="room-title"><h1>{t("Room editor")}</h1><p className="rb-muted">{roomName(room.name)} · {info.name}</p></div>
+      <div className="room-actions"><span role="status" className={`room-save-state${dirty ? " is-dirty" : ""}`}>{draft.state === "saving" ? t("Saving") : dirty ? t("Unsaved") : t("Saved")}</span><Button variant="secondary" disabled={!history.canUndo} onClick={history.undo}>{t("Undo")}</Button><Button variant="secondary" disabled={!history.canRedo} onClick={history.redo}>{t("Redo")}</Button><Button disabled={!dirty || draft.state === "saving"} busy={draft.state === "saving"} onClick={() => void draft.save()}>{t("Save")}</Button></div>
     </header>
     <SaveNotices draft={draft} />
-    <div className="room-tabs"><Select label="Room" value={room.key} onChange={e => { setSelectedRoom(e.target.value); setDrawingRoom(null); setSelection(null); }} options={history.present.rooms.map(r => ({ value: r.key, label: r.name }))} /><Button variant="secondary" disabled={history.present.rooms.length >= 5} onClick={() => setAdding(true)}>Add room</Button></div>
+    <div className="room-tabs"><Select label={t("Room")} value={room.key} onChange={e => { setSelectedRoom(e.target.value); setDrawingRoom(null); setSelection(null); }} options={history.present.rooms.map(r => ({ value: r.key, label: roomName(r.name) }))} /><Button variant="secondary" disabled={history.present.rooms.length >= 5} onClick={() => setAdding(true)}>{t("Add room")}</Button></div>
     {error && <p role="alert" className="room-error">{error}</p>}
     <div className="room-workspace">
       <div className="room-tools">
-        <nav className="room-other-tools" aria-label="Room tools">
-          {["Shape", "Walls", "Fixed", "Tables"].map(name => <Button variant="ghost" key={name} aria-pressed={tool === name} disabled={drawing && name !== "Shape"} onClick={() => { setTool(name); setPlacement(null); setError(""); }}>{name}</Button>)}
+        <nav className="room-other-tools" aria-label={t("Room tools")}>
+          {["Shape", "Walls", "Fixed", "Tables"].map(name => <Button variant="ghost" key={name} aria-pressed={tool === name} disabled={drawing && name !== "Shape"} onClick={() => { setTool(name); setPlacement(null); setError(""); }}>{word(name)}</Button>)}
         </nav>
       </div>
       <RoomCanvas room={room} drawing={drawing} grid={grid} fixtureGrid={!free} onPoint={addPoint} onCloseShape={closeShape} selection={selection} onSelect={setSelection} onChange={changeRoom} onDragStart={history.checkpoint} onError={setError} tool={tool} opening={opening} onOpening={setOpening} placement={placement} object={object} onObject={setObject} onPlace={placeObject} chair={chair} onTableSelect={chooseTable} tableKeys={tableKeys} multiple={multiple} areaMode={areaMode} onArea={keys => { updateKeys(keys); setAreaMode(false); }} problems={problems.filter(p => p.room_key === room.key)} focusTarget={focusTarget} />
-      <aside className="room-properties"><h2>Room properties</h2><div className="room-form">
-        <p className="room-name">Room: <strong>{room.name}</strong></p>
-        {drawing && <><p>Tap each corner, then close the shape.</p><div className="room-fields"><Field label="Corner x (cm)" inputMode="decimal" value={pointX} onChange={e => setPointX(e.target.value)} /><Field label="Corner y (cm)" inputMode="decimal" value={pointY} onChange={e => setPointY(e.target.value)} /></div><Button variant="secondary" onClick={() => { const x = Number(pointX.replace(",", ".")), y = Number(pointY.replace(",", ".")); if (Number.isFinite(x) && Number.isFinite(y)) addPoint({ x, y }); }}>Add corner</Button><Button disabled={room.outline.points.length < 3} onClick={closeShape}>Close shape</Button></>}
-        <p>Walls: {room.outline.points.length} sides</p><p>Tables: {room.tables.length}</p>
+      <aside className="room-properties"><h2>{t("Room properties")}</h2><div className="room-form">
+        <p className="room-name">{t("Room")}: <strong>{roomName(room.name)}</strong></p>
+        {drawing && <><p>{t("Tap each corner, then close the shape.")}</p><div className="room-fields"><Field label={t("Corner x (cm)")} inputMode="decimal" value={pointX} onChange={e => setPointX(e.target.value)} /><Field label={t("Corner y (cm)")} inputMode="decimal" value={pointY} onChange={e => setPointY(e.target.value)} /></div><Button variant="secondary" onClick={() => { const x = Number(pointX.replace(",", ".")), y = Number(pointY.replace(",", ".")); if (Number.isFinite(x) && Number.isFinite(y)) addPoint({ x, y }); }}>{t("Add corner")}</Button><Button disabled={room.outline.points.length < 3} onClick={closeShape}>{t("Close shape")}</Button></>}
+        <p>{t("Walls: {n} sides", { n: room.outline.points.length })}</p><p>{t("Tables: {n}", { n: room.tables.length })}</p>
         {!drawing && tool === "Shape" && <RoomProperties key={`${room.key}:${selection?.kind}:${selection?.index}`} room={room} selection={selection} onSelect={setSelection} onChange={changeRoom} onError={setError} />}
-        {!drawing && tool === "Shape" && room.outline.points.length < 3 && <Button onClick={() => setDrawingRoom(room.key)}>Continue drawing walls</Button>}
+        {!drawing && tool === "Shape" && room.outline.points.length < 3 && <Button onClick={() => setDrawingRoom(room.key)}>{t("Continue drawing walls")}</Button>}
         {!drawing && tool === "Walls" && <WallTools room={room} selection={selection} selected={opening} onSelect={setOpening} onSide={setSelection} onChange={changeRoom} onError={setError} />}
         {!drawing && tool === "Fixed" && <FixtureTools room={room} selected={object} free={free} onFree={setFree} onSelect={setObject} onPlace={value => placeObject(centreOfRoom(), value)} onChange={changeRoom} onError={setError} />}
         {!drawing && tool === "Tables" && <div className="room-form"><TableTools room={room} selected={object} onSelect={key => updateKeys(key ? [key] : [])} onPlace={(value, zoneKey) => { const zone = room.zones.find(z => z.key === zoneKey); placeObject(zone ? { x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 } : centreOfRoom(), value); }} onChange={changeRoom} onError={setError} /></div>}
       </div></aside>
-    </div><footer className="room-status">{area.toLocaleString("pt-PT", { maximumFractionDigits: 1 })} m²<ProblemList problems={problems} onSelect={selectProblem} /><Button className="room-continue" disabled={drawing || draft.state === "saving"} busy={advancing} onClick={() => { if (!dirty) navigate(next); else { setAdvancing(true); void draft.save(); } }}>{dirty ? "Save and continue to review" : "Continue to review"}</Button></footer>
+    </div><footer className="room-status">{area.toLocaleString(activeTag(), { maximumFractionDigits: 1 })} m²<ProblemList problems={problems} onSelect={selectProblem} /><Button className="room-continue" disabled={drawing || draft.state === "saving"} busy={advancing} onClick={() => { if (!dirty) navigate(next); else { setAdvancing(true); void draft.save(); } }}>{dirty ? t("Save and continue to review") : t("Continue to review")}</Button></footer>
     {adding && <NewRoomDialog defaultName={nextRoomName(history.present.rooms)} onClose={() => setAdding(false)} onCreate={(created, draw) => { history.commit(addRoom(history.present, created)); setSelectedRoom(created.key); setDrawingRoom(draw ? created.key : null); setSelection(null); setTool("Shape"); setAdding(false); }} />}
   </section>;
 }
 
 /** What the owner must decide or know about saving: a draft found on this device, another tab that saved first, a blocked delete. */
 function SaveNotices({ draft }: { draft: ReturnType<typeof useRoomDraft> }) {
+  const { t } = useT();
   return <>
-    {draft.found && <div className="room-notice" role="region" aria-label="Unsaved changes found"><p>We found unsaved changes from this device ({new Date(draft.found.saved_at).toLocaleString("en-GB")}).</p><div className="room-actions"><Button onClick={draft.restoreFound}>Restore my changes</Button><Button variant="secondary" onClick={draft.discardFound}>Discard my changes</Button></div></div>}
-    {draft.state === "conflict" && <div className="room-notice" role="alert"><p>This layout was changed in another tab or device. Your work is kept here and on this device.</p><div className="room-actions"><Button variant="secondary" onClick={() => void draft.loadLatest()}>Discard mine and load the latest</Button><Button onClick={() => void draft.saveOverLatest()}>Save mine over it</Button></div></div>}
+    {draft.found && <div className="room-notice" role="region" aria-label={t("Unsaved changes found")}><p>{t("We found unsaved changes from this device ({when}).", { when: new Date(draft.found.saved_at).toLocaleString(activeTag()) })}</p><div className="room-actions"><Button onClick={draft.restoreFound}>{t("Restore my changes")}</Button><Button variant="secondary" onClick={draft.discardFound}>{t("Discard my changes")}</Button></div></div>}
+    {draft.state === "conflict" && <div className="room-notice" role="alert"><p>{t("This layout was changed in another tab or device. Your work is kept here and on this device.")}</p><div className="room-actions"><Button variant="secondary" onClick={() => void draft.loadLatest()}>{t("Discard mine and load the latest")}</Button><Button onClick={() => void draft.saveOverLatest()}>{t("Save mine over it")}</Button></div></div>}
     {draft.notice && <p role="alert" className="room-error">{draft.notice}</p>}
   </>;
 }

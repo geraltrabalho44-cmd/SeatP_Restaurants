@@ -1,3 +1,5 @@
+import { word } from "./names";
+import { useT } from "../../i18n/I18nProvider";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Button } from "../../design/components";
@@ -32,6 +34,7 @@ interface Props {
 }
 
 export function RoomCanvas({ room, drawing, grid, fixtureGrid, onPoint, onCloseShape, selection, onSelect, onChange, onDragStart, onError, tool, opening, onOpening, placement, object, onObject, onPlace, chair, onTableSelect, tableKeys, multiple, areaMode, onArea, problems, focusTarget }: Props) {
+  const { t } = useT();
   const viewport = useRef<HTMLDivElement>(null);
   const patternId = useId();
   const [cursor, setCursor] = useState<Point | null>(null);
@@ -69,7 +72,7 @@ export function RoomCanvas({ room, drawing, grid, fixtureGrid, onPoint, onCloseS
   };
   const rulerX = ticks(viewport.current?.clientWidth ?? 1400, pan.view.x, originX).filter(t => t.at >= RULER_SIDE + 14), rulerY = ticks(viewport.current?.clientHeight ?? 900, pan.view.y, originY).filter(t => t.at >= RULER_TOP + 8);
   return <div className="room-canvas-wrap">
-    <div ref={viewport} className="room-canvas" tabIndex={0} role="region" aria-label="Room plan" {...pan.pointerHandlers} onPointerDown={event => {
+    <div ref={viewport} className="room-canvas" tabIndex={0} role="region" aria-label={t("Room plan")} {...pan.pointerHandlers} onPointerDown={event => {
       if (tool === "Tables" && !placement && (areaMode || event.shiftKey)) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); const start = toWorld(event); areaDrag.current = { start, now: start }; setAreaBox(areaDrag.current); }
       else pan.pointerHandlers.onPointerDown(event);
     }} onPointerUp={event => {
@@ -97,7 +100,7 @@ export function RoomCanvas({ room, drawing, grid, fixtureGrid, onPoint, onCloseS
           {!drawing && bands.map(b => <g key={`view${b.side}`} className={`room-view room-view-${b.surrounding.group}`} data-room-view={b.surrounding.kind} pointerEvents="none">
             <polygon points={b.quad.map(p => `${p.x},${p.y}`).join(" ")} />
             {b.surrounding.group !== "other" && <polygon points={b.quad.map(p => `${p.x},${p.y}`).join(" ")} fill={`url(#${patternId}-${b.surrounding.group})`} />}
-            <text x={b.label.x} y={b.label.y} textAnchor="middle" dominantBaseline="central" fontSize={Math.max(13 / pan.view.k, 15)}>{b.surrounding.label}</text>
+            <text x={b.label.x} y={b.label.y} textAnchor="middle" dominantBaseline="central" fontSize={Math.max(13 / pan.view.k, 15)}>{word(b.surrounding.label)}</text>
           </g>)}
           {!drawing && points.length >= 3 && <path d={outlinePath(room.outline)} className={problems.some(p => p.code === "outline_invalid") ? "room-outline room-outline-invalid" : "room-outline"} />}
           {!drawing && points.length >= 3 && <rect x="-10000" y="-10000" width="20000" height="20000" fill={`url(#${patternId}-check)`} clipPath={`url(#${patternId}-room)`} pointerEvents="none" data-room-checker />}
@@ -120,6 +123,6 @@ export function RoomCanvas({ room, drawing, grid, fixtureGrid, onPoint, onCloseS
       </svg>
     </div>
     <NorthCompass />
-    <div className="room-zoom"><Button variant="secondary" aria-label="Zoom out" onClick={() => pan.zoomBy(0.8)}>−</Button><Button variant="secondary" onClick={pan.fit}>Fit room</Button><Button variant="secondary" aria-label="Zoom in" onClick={() => pan.zoomBy(1.25)}>+</Button></div>
+    <div className="room-zoom"><Button variant="secondary" aria-label={t("Zoom out")} onClick={() => pan.zoomBy(0.8)}>−</Button><Button variant="secondary" onClick={pan.fit}>{t("Fit room")}</Button><Button variant="secondary" aria-label={t("Zoom in")} onClick={() => pan.zoomBy(1.25)}>+</Button></div>
   </div>;
 }

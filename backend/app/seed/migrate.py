@@ -54,6 +54,7 @@ NEW_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("venues", "features", "JSON NOT NULL DEFAULT '{}'"),
     ("venues", "layout_version", "INTEGER NOT NULL DEFAULT 0"),
     ("venues", "published_at", "TIMESTAMP"),
+    ("venues", "allow_larger_tables", "BOOLEAN NOT NULL DEFAULT FALSE"),
     ("tables", "room_id", "INTEGER REFERENCES rooms (id)"),
     ("tables", "is_active", "BOOLEAN NOT NULL DEFAULT TRUE"),
     ("seats", "room_id", "INTEGER REFERENCES rooms (id)"),

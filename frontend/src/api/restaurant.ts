@@ -416,6 +416,8 @@ export interface Schedule {
   services: ServicePeriod[];
   turn_times: TurnTime[];
   blackout_dates: BlackoutDate[];
+  /** Whether a smaller party may be given a bigger table (a couple a table for four). Off by default. */
+  allow_larger_tables?: boolean;
 }
 
 // ---------- Staff: optimiser for one service ----------
@@ -476,6 +478,8 @@ export interface ServerSchedule {
   service_periods: ServicePeriod[];
   turn_times: TurnTime[];
   blackout_dates: BlackoutDate[];
+  /** Whether a smaller party may be given a bigger table. Off by default. */
+  allow_larger_tables?: boolean;
 }
 
 /** GET /r/{vid}. */
@@ -734,7 +738,12 @@ export function toDashboard(server: ServerDashboard): Dashboard {
 }
 
 export function toSchedule(server: ServerSchedule): Schedule {
-  return { services: server.service_periods, turn_times: server.turn_times, blackout_dates: server.blackout_dates };
+  return {
+    services: server.service_periods,
+    turn_times: server.turn_times,
+    blackout_dates: server.blackout_dates,
+    ...(server.allow_larger_tables === undefined ? {} : { allow_larger_tables: server.allow_larger_tables }),
+  };
 }
 
 // ---------- Paths ----------
@@ -931,6 +940,11 @@ export async function getSchedule(vid: string): Promise<Schedule> {
 }
 
 export async function saveSchedule(vid: string, schedule: Schedule): Promise<Schedule> {
-  const body = { service_periods: schedule.services, turn_times: schedule.turn_times, blackout_dates: schedule.blackout_dates };
+  const body = {
+    service_periods: schedule.services,
+    turn_times: schedule.turn_times,
+    blackout_dates: schedule.blackout_dates,
+    ...(schedule.allow_larger_tables === undefined ? {} : { allow_larger_tables: schedule.allow_larger_tables }),
+  };
   return toSchedule(await api.put<ServerSchedule>(`${staff(vid)}/schedule`, body));
 }
