@@ -137,7 +137,11 @@ async def _unexpected_error(_request: Request, _exc: Exception) -> JSONResponse:
 async def _add_security_headers(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    response = await call_next(request)
+    if chr(0) in request.url.path:
+        # No route has a NUL in its address, and Postgres refuses it with a 500 where SQLite does not (audit BE-5).
+        response: Response = JSONResponse(error_body("not_found", "Not found."), status_code=404)
+    else:
+        response = await call_next(request)
     for name, value in _SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
     # API answers are personal (seat maps, bookings), so no shared caching.

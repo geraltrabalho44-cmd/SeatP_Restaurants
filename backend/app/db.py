@@ -45,7 +45,15 @@ def make_engine(database_url: str) -> Engine:
     # Serverless functions are frozen between requests, so a pool of open
     # connections would only hold idle sockets. NullPool opens one connection
     # per session and closes it afterwards.
-    return create_engine(database_url, poolclass=NullPool, pool_pre_ping=True)
+    # connect_timeout: a database that does not answer fails after 10 s instead of holding the function
+    # for its whole 30 s. (A statement_timeout would help too, but Neon's pooled address refuses the
+    # "options" setting it needs, so it is left out.) Only for a Postgres address.
+    connect_args: dict[str, object] = {}
+    if database_url.startswith(("postgresql", "postgres")):
+        connect_args = {"connect_timeout": 10}
+    return create_engine(
+        database_url, poolclass=NullPool, pool_pre_ping=True, connect_args=connect_args
+    )
 
 
 def init_engine(database_url: str) -> Engine:

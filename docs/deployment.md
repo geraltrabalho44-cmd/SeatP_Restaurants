@@ -95,7 +95,7 @@ Set these for **Production** in the Vercel project. Every name is read by
 | `SECRET_KEY` | A new 64-character hex secret (step 0) | Signs login sessions. Required on Postgres, and the app refuses to start with fewer than 32 characters. Must be the same on every instance, otherwise people are logged out at random |
 | `FRONTEND_ORIGIN` | The site address, for example `https://seatplan-demo.vercel.app` (no trailing slash) | CORS allows only this origin |
 | `PUBLIC_BASE_URL` | The same site address | Links inside emails start with it |
-| `DEMO_MODE` | `1` for the graded demo, otherwise leave unset | Turns on `/api/demo/links` and `/api/demo/reset` |
+| `DEMO_MODE` | `1` for the graded demo, **`0` or unset for any real use** | Turns on `/api/demo/links` (organiser links of Events included) and `/api/demo/reset`; with it on, anyone can read those links |
 | `DEMO_KEY` | A new secret | The only way to call `POST /api/demo/reset` (header `X-Demo-Key`). Empty means nobody can reset |
 | `DEMO_ORGANISER_PASSWORD` | A private password | The public local defaults never apply on Postgres |
 | `DEMO_STAFF_PASSWORD` | A private password | Same as above |
@@ -249,6 +249,10 @@ emails are written to the outbox and logged in one line each.
 4. In Vercel set `EMAIL_PROVIDER=resend`, `RESEND_API_KEY=<the key>`,
    `EMAIL_FROM=SeatPlan <noreply@your-domain>` and keep `EMAIL_ALLOWLIST` to
    the team's own inboxes. Redeploy.
+   From this moment one mailbox may start at most 5 bookings or waitlist places
+   an hour (`MAX_EMAILS_PER_RECIPIENT_PER_HOUR` in `restaurant_service/booking_caps.py`);
+   the sixth gets a 429 "Too many emails have been sent to this address in the
+   last hour". It is off while `EMAIL_PROVIDER=console`.
 5. Make one booking to an address on the allowlist and run the cron by hand
    (step 7). Check the email arrives and `GET /api/emails/log` shows `sent`.
 

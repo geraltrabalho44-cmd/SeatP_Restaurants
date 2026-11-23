@@ -442,3 +442,11 @@ def test_a_control_character_in_a_smart_search_is_a_422_not_a_500(client: TestCl
         assert got.json()["error"]["code"] == "validation"
     ok = client.get("/api/restaurants", params={"q": "pizza", "understand": "true"})
     assert ok.status_code == 200
+
+
+def test_a_nul_in_the_address_is_a_404_before_it_reaches_the_database(client: TestClient) -> None:
+    # Audit BE-5: on Postgres a NUL in a path parameter was a 500; no route has one, so it is a 404 at the door.
+    for path in ("/api/restaurants/%00", "/api/r/%00", "/api/b/a%00b"):
+        got = client.get(path)
+        assert got.status_code == 404, (path, got.status_code)
+        assert got.headers["x-content-type-options"] == "nosniff"

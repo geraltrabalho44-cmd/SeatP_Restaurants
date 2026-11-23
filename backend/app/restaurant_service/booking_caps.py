@@ -17,6 +17,14 @@ caps sit in front of POST /r/{vid}/bookings; both answer 429 `rate_limited`:
 The email is never checked, so anyone can type a new one: the email cap only
 stops an honest diner from over-booking. The address cap is the real brake.
 
+A third limit protects the people whose address is typed. A booking, or a place
+on a waitlist, sends an email to whatever address was typed, so a script could
+use SeatPlan to flood one mailbox (and to ruin the sender's reputation with
+the mail provider). One mailbox may start MAX_EMAILS_PER_RECIPIENT_PER_HOUR
+bookings or waitlist places an hour, from any connection. It only applies once
+real email is switched on (EMAIL_PROVIDER is not "console"): with the console
+provider nothing leaves the building, and the demo and the tests book freely.
+
 A real diner never meets either. Staff bookings and walk-ins do not count:
 they are written by staff routes, never through this one, and only
 source="diner" rows are counted. Like the hold caps these are soft limits:
@@ -29,10 +37,11 @@ the same way; they are imported from there.
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.core.errors import ApiError
 from app.models import Booking, Venue, utc_now
 from app.restaurant_service.occupancy import ACTIVE_STATUSES
-from app.security import mailbox, network_of, rate_limit
+from app.security import keyed_hash, mailbox, network_of, rate_limit
 
 MAX_UPCOMING_PER_EMAIL = 4
 # A busy household books a few nights; 60 a day only matters to a script.
@@ -40,6 +49,28 @@ MAX_UPCOMING_PER_EMAIL = 4
 # with more than 10 diners on one network saw the 429; see docs/security.md, S8).
 MAX_BOOKINGS_PER_ADDRESS_PER_DAY = 60
 DAY_SECONDS = 24 * 60 * 60
+# A diner who books a few tables for friends uses a few; five an hour is far above that and far below a flood.
+MAX_EMAILS_PER_RECIPIENT_PER_HOUR = 5
+HOUR_SECONDS = 60 * 60
+
+
+def check_email_recipient_limit(session: Session, email: str) -> None:
+    """429 when too many emails have been started for this mailbox in the last hour (real email only).
+
+    Counted by a keyed hash of the mailbox (security.mailbox, so capitals and "+tag" do not make a new one);
+    the address itself is not stored. Commits at once (see rate_limit), so call it before any other write.
+    """
+    if get_settings().email_provider == "console":
+        return
+    try:
+        key = f"email-to:{keyed_hash(mailbox(email))}"
+        rate_limit(session, key, limit=MAX_EMAILS_PER_RECIPIENT_PER_HOUR, window_s=HOUR_SECONDS)
+    except ApiError:
+        raise ApiError(
+            429,
+            "rate_limited",
+            "Too many emails have been sent to this address in the last hour. Please try again later.",
+        ) from None
 
 
 def _upcoming_for_email(session: Session, venue: Venue, email: str) -> int:
@@ -72,6 +103,7 @@ def check_booking_caps(session: Session, venue: Venue, email: str, address: str)
             f"This email already has {MAX_UPCOMING_PER_EMAIL} upcoming bookings here. "
             "Please change or cancel one of them first.",
         )
+    check_email_recipient_limit(session, email)
     try:
         key = f"r-book-day:{venue.public_id}|{network_of(address)}"
         rate_limit(session, key, limit=MAX_BOOKINGS_PER_ADDRESS_PER_DAY, window_s=DAY_SECONDS)
