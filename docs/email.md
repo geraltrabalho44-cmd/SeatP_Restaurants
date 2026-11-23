@@ -16,7 +16,7 @@ route (booking, seat, waitlist)
    v
 email_outbox table  <---- GET /api/emails/log (organisers, masked recipients)
    ^
-   |  every 15 min: GitHub Actions -> POST /api/internal/email/process (X-Cron-Secret)
+   |  right after a change, and once a minute on traffic: app/scheduler.py
    |
 process_due()  -> allowlist check -> Provider.send() -> Resend HTTP API (or console log)
 ```
@@ -73,8 +73,8 @@ Resend remembers for 24 hours **[verified 2026-11-10]**.
 **Backoff.** After a failed try, `attempts` goes up by one and the row waits
 5, 10, 20, then 40 minutes (`5 min * 2^(attempts-1)`). The fifth failure marks
 it `failed` and stops. `last_error` keeps the reason (max 500 characters,
-never the API key). Because the cron runs every 15 minutes, the real gaps are
-rounded up to the next run.
+never the API key). Because the work runs on traffic, a retry waits for the next visit
+after its time.
 
 **Reminders.** A reminder is a row whose `next_attempt_at` is in the future:
 a day before the start, or two hours before when that has passed, or none.
@@ -100,8 +100,8 @@ database keeps only hashes of those tokens everywhere else. So:
 - Retention: every `POST /internal/email/process` also runs
   `scrub_expired()`, which empties words and invite of finished rows older
   than `RETENTION_DAYS = 30`. The table has no `created_at`, so the age is
-  `sent_at`, or `next_attempt_at` when the row was never sent. If the cron
-  stops, retention stops with it.
+  `sent_at`, or `next_attempt_at` when the row was never sent. If nobody
+  visits the site, retention waits too.
 - `GET /emails/log` never returned bodies; its subject and error columns now
   also pass through `redact_links()`.
 
@@ -230,38 +230,25 @@ this section records the agreement, the code is theirs.
 
 ## 8. Scheduler
 
-`process_due()` needs something to call it regularly, including for reminders
-that are due at a set time.
+`process_due()` needs something to call it. Version 1 used a GitHub Actions workflow every
+15 minutes; it needed two repository secrets and was removed on 2026-11-23 (the project is a
+student demo, so "eventually" is enough). Now `backend/app/scheduler.py` is called by a
+middleware after each API answer:
 
-What we verified in the Vercel documentation on 2026-11-10
-(https://vercel.com/docs/cron-jobs/usage-and-pricing, now at
-`/docs/schedules/cron-jobs/usage-and-pricing`, last updated 2026-07-15):
+- after a booking, change or cancellation that went through (a 2xx answer to POST, PUT, PATCH
+  or DELETE), up to 5 due emails are sent at once, so a confirmation arrives within seconds;
+- on any API request, at most once a minute per server instance, the full work runs: up to 20
+  due emails (reminders), retention, expired codes, unpaid deposits, phone messages, offers;
+- the secret endpoint, live streams and files trigger nothing; any error is logged and never
+  fails the request; `SEND_ON_REQUEST=0` switches it off (the test suite does).
 
-- Hobby (free) plan: 100 cron jobs per project, **minimum interval once per
-  day**, scheduling precision per hour (plus or minus 59 minutes).
-  "Cron expressions that would run more frequently will fail during deployment."
-- Pro: once per minute. Cron Jobs are described as a legacy feature that will
-  be migrated to Vercel Schedules.
-
-So a Vercel cron on the free plan could send reminders up to a day late. We use
-a **GitHub Actions scheduled workflow** instead (`.github/workflows/email-cron.yml`):
-every 15 minutes plus a manual "Run workflow" button, calling
-`POST /api/internal/email/process` with `SEATPLAN_URL` and `CRON_SECRET` from
-repository secrets. What we verified in the GitHub docs on 2026-11-10
-(https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows):
-
-- the shortest interval is once every 5 minutes;
-- runs "can be delayed during periods of high loads";
-- scheduled workflows only run on the default branch;
-- in a public repository they are disabled after 60 days without activity.
-
-Whether GitHub Actions minutes are free for this repository depends on whether
-it is public or private and on the account plan **[not verified]**; each run
-takes a few seconds.
+Cost: the request that triggers the work waits for it (an email takes up to 10 s to time out,
+a Vercel function lasts at most 30 s). With nobody visiting, a reminder waits for the next
+visit. `POST /api/internal/email/process` with `X-Cron-Secret` runs the same work by hand.
 
 ## 9. Environment variables used
 
-`CRON_SECRET`, `EMAIL_PROVIDER` (`console` or `resend`), `RESEND_API_KEY`,
+`CRON_SECRET` (only the by-hand endpoint), `SEND_ON_REQUEST` (default on), `EMAIL_PROVIDER` (`console` or `resend`), `RESEND_API_KEY`,
 `EMAIL_FROM` (for example `SeatPlan <noreply@your-domain>`), `EMAIL_ALLOWLIST`,
 `PUBLIC_BASE_URL` (for links built by the callers).
 
@@ -274,7 +261,7 @@ Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
 | `account_code` | The address typed on the sign-up form | At once (`send_now`), after `POST /j/{token}/register` | No | Greets "Hello," with no name (the name is not proven yet); the 6-digit code is never in the subject; "Never give this code to anyone" |
 | `password_code` | An existing account's address | At once, after `POST /guest/password/forgot` | No | Only when the account exists; the answer is the same either way |
 | `account_exists` | An address that already has an account | At once, after a sign-up attempt | No | At most one an hour per address; says to open the shared link again and choose "I already have an account" |
-| `seat_confirmed`, `seat_changed` for an account holder | The account's proven address | Outbox cron, as today | **Yes** | After the holder's own confirm, a single organiser move, or an applied plan, undo or redo |
+| `seat_confirmed`, `seat_changed` for an account holder | The account's proven address | Outbox, as today | **Yes** | After the holder's own confirm, a single organiser move, or an applied plan, undo or redo |
 | `seat_cancelled`, reminder for an account holder | The account's address | As today | No | Link to `/my/<event>`, which needs a sign-in, so no secret link is in the email |
 
 - **The picture** is an indexed-colour PNG (8 colours, white background)
@@ -287,9 +274,9 @@ Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
   wedding 640 x 467, 3 744 bytes; conference 2 657 bytes. Tests cap it at
   60 KB and 150 ms.
 - **Codes are secrets.** Code emails are sent at once by `send_now`, which
-  claims the one row with the same `_claim` as the cron, so a code is never
+  claims the one row with the same `_claim` as the scheduler, so a code is never
   sent twice. Once a code row is finished its words become `[code removed]`;
-  a code that is used or replaced stops its queued email. The cron deletes
+  a code that is used or replaced stops its queued email. The scheduler deletes
   expired `email_codes` rows.
 - **Allowlist.** Code emails follow `EMAIL_ALLOWLIST` like every email. With
   today's list, real guests outside it never get a code: an open question for

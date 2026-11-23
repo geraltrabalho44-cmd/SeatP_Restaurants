@@ -85,15 +85,16 @@ waiting it is rewritten in place (new seat, new time) instead of adding rows.
 ## Data flow
 
 1. A route calls `enqueue()`, then commits together with its own change.
-2. Every 15 minutes GitHub Actions calls `POST /api/internal/email/process`
-   with the `X-Cron-Secret` header.
+2. `app/scheduler.py` runs `process_due()` right after a change that went through,
+   and on any request at most once a minute per server (no cron). The secret
+   endpoint `POST /api/internal/email/process` still runs it by hand.
 3. `process_due()` picks due rows, claims each one (`queued` to `sending`),
    skips addresses not on `EMAIL_ALLOWLIST`, sends the rest and records the
    result: `sent`, `queued` again with a later time, or `failed` after 5 tries.
    A row that ends `sent`, `skipped` or `failed` has every personal link in
    its words, invite and error replaced by `[personal link removed]` (S9);
    a `queued` row keeps it, because the email still has to work.
-4. The same cron call runs `scrub_expired()`: 30 days after `sent_at` (or
+4. The same chores run `scrub_expired()`: 30 days after `sent_at` (or
    after `next_attempt_at` when never sent) a finished row keeps only subject,
    recipient, status and times.
 5. Organisers read the result at `GET /api/emails/log` (subject and error
