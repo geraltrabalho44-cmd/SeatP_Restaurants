@@ -720,6 +720,11 @@
 @media (min-width: 40rem) { .ow-ready-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 78rem) { .ow-ready-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .ow-ready-grid { align-items: stretch; }
+/* Whatever number of ready-made offers is left, every row is full: the cards of a short last row grow to fill it. */
+.ow-ready-grid { display: flex; flex-wrap: wrap; }
+.ow-ready-grid > * { flex: 1 1 100%; min-width: 0; }
+@media (min-width: 40rem) { .ow-ready-grid > * { flex-basis: calc(50% - var(--space-4) / 2); } }
+@media (min-width: 78rem) { .ow-ready-grid > * { flex-basis: calc(25% - var(--space-4) * 3 / 4); } }
 .ow-ready-card .owner-card-body { padding: var(--space-4); }
 .ow-ready-card .btn { width: 100%; justify-content: center; }
 

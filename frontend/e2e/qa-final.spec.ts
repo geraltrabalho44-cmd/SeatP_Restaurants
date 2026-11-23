@@ -71,3 +71,30 @@ test("on a phone the things you press on the home page and in the owner's wizard
   const back = await page.getByRole("link", { name: /My restaurants/ }).first().evaluate((el) => (el as HTMLElement).offsetHeight);
   expect(back).toBeGreaterThanOrEqual(44);
 });
+
+test("the ready-made offers always fill their rows, also after the owner has taken one", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signIn(page, ORGANISER, "/owner");
+  await page.getByRole("link", { name: /^Edit restaurant/ }).first().click();
+  await page.getByRole("link", { name: "Offers", exact: true }).click();
+  const rows = async () =>
+    page.locator(".ow-ready-grid > *").evaluateAll((els) => {
+      const byTop = new Map<number, { left: number; right: number }[]>();
+      for (const el of els) {
+        const r = el.getBoundingClientRect();
+        const key = Math.round(r.top);
+        byTop.set(key, [...(byTop.get(key) ?? []), { left: r.left, right: r.right }]);
+      }
+      return [...byTop.values()].map((row) => ({ count: row.length, left: Math.min(...row.map((c) => c.left)), right: Math.max(...row.map((c) => c.right)) }));
+    });
+  let layout = await rows();
+  for (const row of layout) expect(Math.abs(row.right - layout[0].right)).toBeLessThan(2);
+  await page.getByRole("button", { name: "Use this offer" }).last().click();
+  await expect(page.getByText("Offer made.")).toBeVisible();
+  layout = await rows();
+  expect(layout.reduce((sum, row) => sum + row.count, 0)).toBe(7);
+  for (const row of layout) {
+    expect(Math.abs(row.right - layout[0].right)).toBeLessThan(2); // the short last row ends where the first one does
+    expect(Math.abs(row.left - layout[0].left)).toBeLessThan(2);
+  }
+});
