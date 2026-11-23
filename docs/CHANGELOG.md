@@ -8,6 +8,7 @@
 - No "demo", "simulate" or "this demo site" on the screens a guest or an owner reads (sign-up code notices, payment page and its decline button), in EN, PT, ES and FR. The footer sentence is the only place that says "Demo data only".
 - Phones: the search field, List and Map, restaurant names, "See available times", back links, the owner's card links, cuisine pills and room tabs are at least 44 px tall.
 - Offers: the ready-made cards always fill their rows (7 left after taking one: 4 and 3 stretched, not 4 and a gap).
+- Search: "sushi" finds the Japanese restaurants and "peixe", "fish" or "marisco" the seafood ones (it returned nothing, or only a restaurant with Peixe in its name); the kind-of-food filters follow the same words.
 - New `frontend/e2e/qa-final.spec.ts` with one test for each of the above that can be seen in a browser.
 
 ## Restaurants branch from Sérgio, staff workspace removed, insights for every restaurant (unreleased)
