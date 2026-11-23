@@ -9,6 +9,10 @@
 - Phones: the search field, List and Map, restaurant names, "See available times", back links, the owner's card links, cuisine pills and room tabs are at least 44 px tall.
 - Offers: the ready-made cards always fill their rows (7 left after taking one: 4 and 3 stretched, not 4 and a gap).
 - Search: "sushi" finds the Japanese restaurants and "peixe", "fish" or "marisco" the seafood ones (it returned nothing, or only a restaurant with Peixe in its name); the kind-of-food filters follow the same words.
+- Two accounts to try the site with: `consumer@example.com` (password `consumer`) and `owner@example.com` (password `owner`), from `python -m app.seed.access_accounts`. The owner has four restaurants (Cervejaria Ramiro, Nori, Gambrinus, Casa da Índia) with a plan and 90 days of bookings; the other restaurants get 21 days. The manual `demo-data` workflow puts them in the shared database.
+- The owner's terms page says again that a team of lawyers prepared the terms (decision of the team). Offers and the terms say email only, and their versions advance to 2026-11-23.
+- Plans: a table on the terrace no longer touches the awning.
+- README: live link, objectives, the two accounts, the seed order for the restaurant side, and who did what.
 - New `frontend/e2e/qa-final.spec.ts` with one test for each of the above that can be seen in a browser.
 
 ## Restaurants branch from Sérgio, staff workspace removed, insights for every restaurant (unreleased)
