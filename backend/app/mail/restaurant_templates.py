@@ -171,7 +171,7 @@ def _photo_html(facts: RestaurantBooking) -> str:
 
 def _details_html(facts: RestaurantBooking) -> str:
     rows = "".join(
-        '<tr><th scope="row" style="text-align:left;padding:6px 16px 6px 0;font-weight:600;'
+        '<tr><th scope="row" style="text-align:left;padding:6px 16px 6px 0;font-weight:600;white-space:nowrap;'
         f'color:{style.MUTED};vertical-align:top;">{html.escape(label)}</th>'
         f'<td style="padding:6px 0;">{html.escape(value)}</td></tr>'
         for label, value in _details(facts)
