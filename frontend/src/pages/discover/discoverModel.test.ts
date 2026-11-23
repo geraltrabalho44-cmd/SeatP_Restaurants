@@ -8,8 +8,8 @@ const EMPTY: SearchQuery = { q: "", cuisines: [], prices: [], features: [], plac
 afterEach(() => sessionStorage.clear());
 
 describe("searchQueryString", () => {
-  it("sends only the limit when nothing is chosen", () => {
-    expect(searchQueryString(EMPTY)).toBe("limit=20");
+  it("sends only the limit and the Lisbon ordering anchor when nothing is chosen", () => {
+    expect(searchQueryString(EMPTY)).toBe("anchor=38.7223%2C-9.1393&limit=20");
   });
 
   it("repeats cuisines, prices and features, and sends the place and the time together", () => {

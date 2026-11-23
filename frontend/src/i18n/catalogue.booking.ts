@@ -121,7 +121,7 @@ export const booking = {
   "e.g. maria@example.com": ["ex.: maria@exemplo.com", "p. ej., maria@ejemplo.com", "ex. : marie@exemple.com"],
   "Add a phone number or a note for the restaurant": ["Acrescentar um telefone ou uma nota para o restaurante", "Añadir un teléfono o una nota para el restaurante", "Ajouter un téléphone ou une note pour le restaurant"],
   "Phone (optional)": ["Telefone (opcional)", "Teléfono (opcional)", "Téléphone (facultatif)"],
-  "Only used if we need to reach you on the day.": ["Só usado se precisarmos de te contactar no dia.", "Solo se usa si necesitamos contactarte ese día.", "Utilisé uniquement si nous devons vous joindre le jour même."],
+  "Only used for messages about this booking.": ["Só usado para mensagens sobre esta reserva.", "Solo se usa para mensajes sobre esta reserva.", "Utilisé uniquement pour les messages concernant cette réservation."],
   "Phone number": ["Número de telefone", "Número de teléfono", "Numéro de téléphone"],
   "Notes for the restaurant (optional)": ["Notas para o restaurante (opcional)", "Notas para el restaurante (opcional)", "Notes pour le restaurant (facultatif)"],
   "Anything else we should know about your visit.": ["Mais alguma coisa que devamos saber sobre a tua visita.", "Cualquier otra cosa que debamos saber sobre tu visita.", "Tout ce que nous devrions savoir sur votre visite."],

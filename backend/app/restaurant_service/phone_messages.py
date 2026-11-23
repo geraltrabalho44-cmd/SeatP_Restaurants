@@ -279,6 +279,33 @@ def link_consent(
     return consent
 
 
+TYPED_VERSION = "2026-11-23-typed"
+
+
+def link_typed_number(
+    session: Session, venue: Venue, booking: Booking, raw_phone: str
+) -> MessageConsent | None:
+    """The diner typed a Portuguese mobile number in the booking form and the restaurant sends phone
+    messages: those messages go to that number, with no box to tick and no code to type. Nothing is
+    created for a number that is not a Portuguese mobile, or when the restaurant sends nothing.
+    The consent row says the number was typed, not proven (consent_version). Does not commit."""
+    phone = normalise_pt_mobile(raw_phone)
+    channels = channels_on(session, venue)
+    if phone is None or not channels or consent_for(session, booking) is not None:
+        return None
+    consent = MessageConsent(
+        venue_id=venue.id,
+        booking_id=booking.id,
+        channel=channels[0],
+        phone_e164=phone,
+        consent_version=TYPED_VERSION,
+        verified_at=utc_now(),
+    )
+    session.add(consent)
+    session.flush()
+    return consent
+
+
 def action_token(consent: MessageConsent) -> str:
     """The secret in a reminder's link: the id, then a signature only the server can make.
 

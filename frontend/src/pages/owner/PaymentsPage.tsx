@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getPaymentSettings, savePaymentSettings } from "../../api/payments";
 import type { DepositRule, PaymentSettings } from "../../api/payments";
-import { Button, ErrorState, Field, Select, Skeleton, useToast } from "../../design/components";
+import { Button, Checkbox, ErrorState, Field, Select, Skeleton, useToast } from "../../design/components";
 import { useT } from "../../i18n/I18nProvider";
 import { tr } from "../../i18n/locale";
 import { errorMessage } from "../restaurant/format";
@@ -69,13 +69,6 @@ function ModeNotice({ settings }: { settings: PaymentSettings }) {
       </p>
     );
   }
-  if (settings.payments_mode === "demo") {
-    return (
-      <p className="rb-notice" role="status">
-        <strong>{t("Demo payments.")}</strong> {t("Guests see a pretend payment page and no real money moves. Real payments are switched on separately, and this page stays the same.")}
-      </p>
-    );
-  }
   if (settings.payments_mode === "test") {
     return (
       <p className="rb-notice" role="status">
@@ -132,7 +125,18 @@ function DepositForm({ venueId, settings, onSaved }: { venueId: string; settings
       <ModeNotice settings={settings} />
       <section className="owner-card" aria-label={t("Deposit rules")}>
         <div className="owner-card-body">
-          {rows.length === 0 && <p>{t("No deposit: guests book without paying anything up front.")}</p>}
+          <Checkbox
+            label={t("Ask guests for a deposit to book")}
+            hint={t("You decide. With this off, guests book without paying anything up front.")}
+            checked={rows.length > 0}
+            disabled={!settings.available}
+            onChange={(event) => {
+              if (event.target.checked && rows.length === 0) {
+                setRows([{ key: next, service_name: "", price: "10", cancel_hours: settings.cancel_hours.includes(24) ? 24 : (settings.cancel_hours[0] ?? 24), min_party: 1 }]);
+                setNext(next + 1);
+              } else if (!event.target.checked) setRows([]);
+            }}
+          />
           {rows.map((row, index) => {
             const error = shown ? rowProblem(row, settings) : null;
             return (

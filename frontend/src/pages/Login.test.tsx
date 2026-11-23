@@ -33,7 +33,7 @@ describe("Sign in", () => {
   it("tells staff they are opening the service floor, with no owner-only buttons", () => {
     open("/login?next=/staff/abc");
     expect(screen.getByRole("heading", { name: "Sign in to open the service floor" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /password/i })).toBeNull();
+    expect(screen.getByRole("button", { name: "Show password" })).toBeTruthy(); // the eye of the password field
     expect(screen.queryByRole("link", { name: /owner account/ })).toBeNull();
   });
 

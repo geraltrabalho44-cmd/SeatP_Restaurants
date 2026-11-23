@@ -13,19 +13,6 @@ export function coverFirst(photos: PublicPhoto[]): PublicPhoto[] {
   return cover <= 0 ? photos : [photos[cover], ...photos.filter((_, i) => i !== cover)];
 }
 
-export function GalleryCredits({ photos }: { photos: PublicPhoto[] }) {
-  const {t} = useT();
-  const credited = photos.filter(photo => photo.credit);
-  if (credited.length === 0) return null;
-  return (
-    <section className="rp-photo-credits" aria-label={t("Photo credits")}>
-      {credited.map(({ credit, url, alt }) => credit && <p key={url}>{t("Photo credit:")} <a href={credit.file}>{alt || t("Source image")}</a> {t("by")} {credit.author}
-        {" · "}<a href={credit.license_url}>{credit.license}</a>
-      </p>)}
-    </section>
-  );
-}
-
 export function Gallery({ photos, name, preview = false }: { photos: PublicPhoto[]; name: string; preview?: boolean }) {
   const {t} = useT();
   const ordered = coverFirst(photos);

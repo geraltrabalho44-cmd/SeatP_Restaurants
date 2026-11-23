@@ -220,4 +220,8 @@ def confirm_booking(
         detail={"tables": list(held.table_ids), "party": needs.size},
     )
     commit_or_seat_taken(session)
+    if not deposit:
+        emails.send_confirmation_now(
+            session, booking
+        )  # a deposit booking is confirmed once it is paid
     return booking, token

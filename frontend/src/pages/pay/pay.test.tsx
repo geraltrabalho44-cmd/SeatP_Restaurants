@@ -38,12 +38,12 @@ beforeEach(() => sessionStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
 
 describe("the demo payment page", () => {
-  it("says plainly that no money moves, and shows the amount", async () => {
+  it("shows the amount, with no demo label", async () => {
     mockApi({ "GET /api/payments/p1": () => payment() });
     open("/pay/demo/p1");
-    expect(await screen.findByText(/No real money moves and no card is needed/)).toBeTruthy();
-    expect(screen.getByText("€40")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Pay €40 (demo)" })).toBeTruthy();
+    expect(await screen.findByText("€40")).toBeTruthy();
+    expect(screen.queryByText(/No real money moves and no card is needed/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Pay €40" })).toBeTruthy();
   });
 
   it("paying sends the outcome and goes back to the result page", async () => {
@@ -57,7 +57,7 @@ describe("the demo payment page", () => {
       },
     });
     open("/pay/demo/p1");
-    fireEvent.click(await screen.findByRole("button", { name: "Pay €40 (demo)" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Pay €40" }));
     expect(await screen.findByRole("heading", { name: "Deposit paid. Booking confirmed." })).toBeTruthy();
     expect(callsTo(calls, "POST", "/api/payments/demo/p1")[0]?.body).toEqual({ outcome: "ok" });
   });
@@ -69,8 +69,8 @@ describe("the demo payment page", () => {
     });
     open("/pay/demo/p1");
     fireEvent.click(await screen.findByRole("button", { name: "Simulate a declined card" }));
-    expect(await screen.findByText(/The pretend card was declined/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Pay €40 (demo)" })).toBeTruthy();
+    expect(await screen.findByText(/The card was declined/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Pay €40" })).toBeTruthy();
   });
 
   it("giving up releases the table and shows that it was not kept", async () => {

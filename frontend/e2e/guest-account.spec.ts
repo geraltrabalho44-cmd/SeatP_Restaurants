@@ -99,7 +99,7 @@ test.describe.serial("a visitor with the shared link", () => {
     await page.goto(`/my/${eventId}`);
     await page.waitForURL((url) => url.pathname === "/my/sign-in");
     await page.getByRole("textbox", { name: "Email" }).fill(VISITOR.email);
-    await page.getByLabel("Password").fill(VISITOR.password);
+    await page.getByLabel("Password", { exact: true }).fill(VISITOR.password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL((url) => url.pathname === `/my/${eventId}`);
 
@@ -135,7 +135,7 @@ test.describe.serial("a visitor with the shared link", () => {
   test("signs out, and signing back in brings the seat back", async ({ page }) => {
     await page.goto("/my/sign-in");
     await page.getByRole("textbox", { name: "Email" }).fill(VISITOR.email);
-    await page.getByLabel("Password").fill(VISITOR.password);
+    await page.getByLabel("Password", { exact: true }).fill(VISITOR.password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL((url) => url.pathname === "/my");
     await expect(page.getByText(new RegExp(`Your seat: seat`))).toBeVisible();
@@ -146,7 +146,7 @@ test.describe.serial("a visitor with the shared link", () => {
     await page.goto(`/my/${eventId}`);
     await page.waitForURL((url) => url.pathname === "/my/sign-in" && url.search.includes("next="));
     await page.getByRole("textbox", { name: "Email" }).fill(VISITOR.email);
-    await page.getByLabel("Password").fill(VISITOR.password);
+    await page.getByLabel("Password", { exact: true }).fill(VISITOR.password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL((url) => url.pathname === `/my/${eventId}`);
     await expectConfirmed(page, seatName);

@@ -31,7 +31,7 @@ export function lastPart(link: string): string {
 export async function signIn(page: Page, who: { email: string; password: string }, next: string): Promise<void> {
   await page.goto(`/login?next=${encodeURIComponent(next)}`);
   await page.getByLabel("Email").fill(who.email);
-  await page.getByLabel("Password").fill(who.password);
+  await page.getByLabel("Password", { exact: true }).fill(who.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL((url) => url.pathname === next);
 }

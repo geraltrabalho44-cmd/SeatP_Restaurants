@@ -45,12 +45,13 @@ test("a diner accepts a deposit, pays on the demo page, and cancelling in time r
 
   // The booking is saved and holds the table, but it is not confirmed until the deposit is paid.
   await expect(page).toHaveURL(/\/pay\/demo\//);
-  await expect(page.getByText(/No real money moves and no card is needed/)).toBeVisible();
+  await expect(page.getByText("€20", { exact: true })).toBeVisible(); // the payment page, with no demo label
+  await expect(page.getByText(/No real money moves and no card is needed/)).toHaveCount(0);
   const waiting = await floorBookings(request, venue);
   expect(waiting).toHaveLength(1);
   expect(waiting[0]).toMatchObject({ status: "pending", payment: { status: "pending", amount_cents: 2000 } });
 
-  await page.getByRole("button", { name: "Pay €20 (demo)" }).click();
+  await page.getByRole("button", { name: "Pay €20" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
   await expect(page.getByText(/Deposit paid: €20/)).toBeVisible();
   const paid = await floorBookings(request, venue);
@@ -89,7 +90,7 @@ test("the owner sets the deposit rules from the Deposits page", async ({ page, r
   const venue = await preparedRestaurant(request, "Deposit owner page");
   await page.goto("/login?next=" + encodeURIComponent(`/owner/${venue.id}/payments`));
   await page.getByLabel("Email").fill("organiser@example.com");
-  await page.getByLabel("Password").fill("demo-organiser-2026");
+  await page.getByLabel("Password", { exact: true }).fill("demo-organiser-2026");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Deposits" })).toBeVisible();
   await expect(page.getByText(/guests book without paying anything up front/)).toBeVisible();

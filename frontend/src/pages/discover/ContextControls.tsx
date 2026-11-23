@@ -1,5 +1,5 @@
 import { useT } from "../../i18n/I18nProvider";
-// Where and when: a city (or "near me"), and optionally a date, a time and how many people.
+// Where and when: a city, and optionally a date, a time and how many people.
 // On a wide screen it is one compact capsule in the command bar; on a phone the same four
 // controls sit stacked, with visible labels, inside the filters drawer. Only one of the two
 // is ever on the page.
@@ -8,7 +8,6 @@ import { DiscoveryDate } from "./DiscoveryDate";
 import { CITIES } from "./discoverModel";
 import type { Place } from "./discoverModel";
 export const PARTIES = Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: i === 0 ? "1 person" : `${i + 1} people` }));
-const NEAR = "__near";
 const TIMES = Array.from({ length: 96 }, (_, index) =>
   `${String(Math.floor(index / 4)).padStart(2, "0")}:${String(index % 4 * 15).padStart(2, "0")}`);
 interface Props {
@@ -23,10 +22,9 @@ interface Props {
   onClearWhen: () => void;
   variant: "capsule" | "stacked";
 }
-/** The options of the city list; "Near me" is there only while the location is in use. */
-function cityOptions(place: Place | null): { value: string; label: string }[] {
-  const near = place?.label === "Near me" ? [{ value: NEAR, label: "Near me" }] : [];
-  return [{ value: "", label: "Anywhere" }, ...near, ...CITIES.map((c) => ({ value: c.label, label: c.label }))];
+/** The options of the city list. */
+function cityOptions(): { value: string; label: string }[] {
+  return [{ value: "", label: "Anywhere" }, ...CITIES.map((c) => ({ value: c.label, label: c.label }))];
 }
 function timeOptions(value: string) {
   const times = value && !TIMES.includes(value) ? [...TIMES, value].sort() : TIMES;
@@ -48,15 +46,14 @@ function CapsuleSelect({ label, name, value, onChange, options }: {
 export function ContextControls({ place, onPlace, date, time, party, onDate, onTime, onParty, onClearWhen, variant }: Props) {
   const {t,label} = useT();
   const options=(rows:{value:string;label:string}[])=>rows.map(row=>({...row,label:row.label.endsWith(' people')?t('{count} people',{count:row.value}):label(row.label)}));
-  const cityValue = place ? (place.label === "Near me" ? NEAR : place.label) : "";
+  const cityValue = place ? place.label : "";
   const changeCity = (value: string): void => {
-    if (value === NEAR) return;
     onPlace(CITIES.find((c) => c.label === value) ?? null);
   };
   if (variant === "stacked") {
     return (
       <div className="discover-stacked">
-        <Select className="select-themed" label={t("Choose a city")} value={cityValue} options={options(cityOptions(place))} onChange={(event) => changeCity(event.target.value)} />
+        <Select className="select-themed" label={t("Choose a city")} value={cityValue} options={options(cityOptions())} onChange={(event) => changeCity(event.target.value)} />
         <DiscoveryDate value={date} onChange={onDate} stacked />
         <Select className="select-themed" label={t("Time")} value={time} options={options(timeOptions(time))} onChange={event => onTime(event.target.value)} />
         <Select className="select-themed" label={t("People")} value={party} options={options(PARTIES)} onChange={(event) => onParty(event.target.value)} />
@@ -65,7 +62,7 @@ export function ContextControls({ place, onPlace, date, time, party, onDate, onT
   }
   return (
     <div className="discover-capsule" role="group" aria-label={t("Where and when")}>
-      <CapsuleSelect label={t("Where")} name={t("Choose a city")} value={cityValue} options={options(cityOptions(place))} onChange={changeCity} />
+      <CapsuleSelect label={t("Where")} name={t("Choose a city")} value={cityValue} options={options(cityOptions())} onChange={changeCity} />
       <DiscoveryDate value={date} onChange={onDate} stacked={false} />
       <CapsuleSelect label={t("Around")} name={t("Time")} value={time} options={options(timeOptions(time))} onChange={onTime} />
       <CapsuleSelect label={t("Guests")} name={t("People")} value={party} options={options(PARTIES)} onChange={onParty} />

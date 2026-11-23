@@ -573,3 +573,48 @@ def test_another_owner_cannot_read_or_change_the_settings(
         == 404
     )
     assert client.get(f"/api/owner/restaurants/{place.public_id}/messages").status_code == 401
+
+
+# ---------------------------------------------------------------- the number typed in the form
+
+
+def _book_typed(client: TestClient, place: Place, phone: str) -> dict:
+    held = hold(client, place, future_day(), "19:00", 2)
+    assert held.status_code == 201, held.text
+    booked = book(client, place, held.json()["hold_id"], 2, phone=phone)
+    assert booked.status_code == 201, booked.text
+    return booked.json()
+
+
+def test_the_phone_number_typed_in_the_form_is_messaged_without_a_code(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    _turn_on(client, organiser, place, send_confirmation=True)
+    booked = _book_typed(client, place, "912 345 678")
+    assert booked["messages"]["phone"] == "+351 9•• ••• 678"
+    session.expire_all()
+    consent = session.scalars(select(MessageConsent)).one()
+    assert consent.phone_e164 == "+351912345678"
+    assert consent.consent_version == phone_messages.TYPED_VERSION  # typed, not proven
+    sent = _rows(session)
+    assert [r.kind for r in sent] == ["booking_confirmed"] and sent[0].status == "sent"
+
+
+def test_a_typed_number_that_cannot_get_messages_is_just_kept_for_the_staff(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    _turn_on(client, organiser, place, send_confirmation=True)
+    booked = _book_typed(client, place, "210 123 456")  # a landline
+    assert "messages" not in booked
+    assert _rows(session) == [] and session.scalars(select(MessageConsent)).all() == []
+
+
+def test_a_typed_number_is_not_messaged_when_the_restaurant_sends_no_phone_messages(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    booked = _book_typed(client, place, "912 345 678")
+    assert "messages" not in booked
+    assert session.scalars(select(MessageConsent)).all() == []

@@ -1,5 +1,5 @@
 // Phone reminders, end to end with the real backend and the demo provider (nothing is sent):
-// the owner turns SMS on, a diner types a number, proves the number with the code shown on screen,
+// the owner turns SMS on, a diner types a phone number in the form (nothing else to tick or type),
 // books, and the owner's log shows the message with the number masked.
 
 import { expect, test } from "./fixtures";
@@ -7,7 +7,7 @@ import { dinerMap, holdTable, preparedRestaurant, publishRestaurant } from "./re
 
 const SETTINGS = { sms_enabled: true, whatsapp_enabled: false, send_confirmation: true, reminder_24h: true, reminder_3h: true, monthly_cap: 300 };
 
-test("a diner proves a phone number and books, and the owner sees the masked message", async ({ page, request }) => {
+test("the phone number typed in the form is messaged, and the owner sees the masked message", async ({ page, request }) => {
   const venue = await preparedRestaurant(request, "Phone reminders");
   await publishRestaurant(request, venue);
   const saved = await request.put(`/api/owner/restaurants/${venue.id}/messages`, { headers: venue.headers, data: SETTINGS });
@@ -18,30 +18,12 @@ test("a diner proves a phone number and books, and the owner sees the masked mes
   const panel = page.getByRole("form", { name: "Your details" });
   await panel.getByLabel("Name for the booking").fill("Phone Diner");
   await panel.getByLabel("Email", { exact: true }).fill("phone.diner@example.com");
+
+  // There is no reminders block, no box and no code: the number typed in the form is the one that is messaged.
+  await expect(panel.getByRole("region", { name: "Reminders on your phone" })).toHaveCount(0);
+  await panel.getByText("Add a phone number or a note for the restaurant").click();
+  await panel.getByLabel("Phone (optional)").fill("912 345 678");
   await panel.getByRole("checkbox", { name: /accept the terms/ }).check();
-
-  // There is no box to tick: the number is simply asked for. A number that is not verified blocks the booking, and says why.
-  await expect(panel.getByRole("checkbox", { name: /Send me booking messages/ })).toHaveCount(0);
-  await panel.getByLabel("Mobile number").fill("912 345 678");
-  await panel.getByRole("button", { name: "Confirm booking" }).click();
-  await expect(panel.getByText("Verify your number, or clear it to book without phone messages.")).toBeVisible();
-
-  // A landline is refused; a Portuguese mobile gets a code (shown on screen in demo mode).
-  await panel.getByLabel("Mobile number").fill("210 123 456");
-  await panel.getByRole("button", { name: "Send code" }).click();
-  await expect(panel.getByText(/does not look like a Portuguese mobile number/)).toBeVisible();
-  await panel.getByLabel("Mobile number").fill("912 345 678");
-  await panel.getByRole("button", { name: "Send code" }).click();
-  await expect(panel.getByText(/Demo: no message is sent/)).toBeVisible();
-  const code = (await panel.getByText(/Your code is/).locator("strong").textContent()) ?? "";
-  expect(code).toMatch(/^\d{6}$/);
-
-  await panel.getByLabel("Code", { exact: true }).fill("000000" === code ? "111111" : "000000");
-  await panel.getByRole("button", { name: "Verify" }).click();
-  await expect(panel.getByText(/That code is not right/)).toBeVisible();
-  await panel.getByLabel("Code", { exact: true }).fill(code);
-  await panel.getByRole("button", { name: "Verify" }).click();
-  await expect(panel.getByText(/Verified: \+351 9•• ••• 678 · SMS/)).toBeVisible();
 
   await panel.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
