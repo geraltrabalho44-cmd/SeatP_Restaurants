@@ -1,4 +1,4 @@
-"""The demo owner has three restaurants with a complete floor plan and a history of bookings; everything else is theirs to see
+"""The demo owner has four restaurants with a complete floor plan and a history of bookings; everything else is theirs to see
 only on the public site, and every table keeps its guests 90 minutes."""
 
 import pytest
@@ -26,7 +26,7 @@ from app.seed.run import DEMO_ORGANISER_EMAIL
 from app.seed.tidy_layouts import footprint, tidy_all
 
 
-def test_the_demo_owner_has_three_complete_restaurants(session: Session) -> None:
+def test_the_demo_owner_has_four_complete_restaurants(session: Session) -> None:
     owner = make_user(session, DEMO_ORGANISER_EMAIL)
     lisbon_catalogue.seed(session, owner, LISBON)
     lisbon_catalogue.seed(session, owner, PORTO)
@@ -36,7 +36,7 @@ def test_the_demo_owner_has_three_complete_restaurants(session: Session) -> None
     report = owner_demo.run(session)
     assert set(owner_demo.KEEP) <= set(
         report
-    )  # the three, and a history for every other restaurant too
+    )  # the four, and a history for every other restaurant too
 
     mine = list(session.scalars(select(Venue).where(Venue.organiser_id == owner.id)))
     assert sorted(v.slug for v in mine) == sorted(owner_demo.KEEP)
@@ -46,7 +46,7 @@ def test_the_demo_owner_has_three_complete_restaurants(session: Session) -> None
     others = session.scalar(
         select(func.count()).select_from(Venue).where(Venue.organiser_id == catalogue.id)
     )
-    assert others == 35 - 3
+    assert others == 35 - len(owner_demo.KEEP)
 
     for venue in mine:
         rooms = list(

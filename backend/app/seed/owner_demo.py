@@ -1,14 +1,14 @@
-"""Give the demo owner account three restaurants, each with a complete floor plan and a history of bookings.
+"""Give the owner account four restaurants, each with a complete floor plan and a history of bookings.
 
     python -m app.seed.owner_demo                 a local SQLite demo database (DEMO_MODE=1)
     python -m app.seed.owner_demo --allow-remote  the shared demo database (Neon): only after a backup
 
 What it does, repeatably:
 
-1. keeps three restaurants with the demo owner (`organiser@example.com`) and hands every other demo restaurant to a
-   second account (`catalogue@example.com`, nobody signs in with it), so the owner's page lists three restaurants
-   while the public site keeps all of them;
-2. draws each of the three a complete floor plan (a room with a glass wall, windows, a door, a bar, toilets,
+1. keeps four restaurants (KEEP) with the owner (`owner@example.com` from `access_accounts` when it exists, else the demo
+   `organiser@example.com`) and hands every other demo restaurant to a second account (`catalogue@example.com`, nobody
+   signs in with it), so the owner's page lists four restaurants while the public site keeps all of them;
+2. draws each of the four a complete floor plan (a room with a glass wall, windows, a door, a bar, toilets,
    kitchen, plants and a dozen tables, and a second room or terrace), made up and different for each;
 3. gives them 90 days of bookings, so the insights have something to show (skipped when a restaurant already has bookings);
 4. sets every table of every demo restaurant to 90 minutes, and switches phone messages off everywhere (only the
@@ -47,6 +47,7 @@ from app.restaurant_service import booking_rows, features, occupancy
 from app.restaurant_service.availability import PartyNeeds
 from app.restaurant_service.clock import booking_window, now_local
 from app.security import hash_password
+from app.seed.access_accounts import OWNER_EMAIL
 from app.seed.demo_restaurant import (
     DEMO_ORGANISER_EMAIL,
     PARTIES_PER_SERVICE,
@@ -58,9 +59,10 @@ from app.seed.demo_showcase import Fixture, Opening, ShowRoom, Table, _add_room,
 from app.seed.run import ensure_demo_users
 from app.seed.tidy_layouts import footprint, tidy_all
 
-KEEP = ("cervejaria-ramiro", "cafe-majestic", "escondidinho")
+KEEP = ("cervejaria-ramiro", "nori-restaurante", "gambrinus", "casa-da-india")
 CATALOGUE_EMAIL = "catalogue@example.com"
-HISTORY_DAYS = 90
+HISTORY_DAYS = 90  # the owner's restaurants, whose insights are read
+OTHER_HISTORY_DAYS = 21  # the others: enough for busy and quiet times on their public pages, and light on the database
 UPCOMING_DAYS = 14
 SIZES = (2, 2, 4, 4, 4, 6, 2, 4, 6, 2, 4, 8)
 
@@ -122,7 +124,7 @@ def rich_rooms(slug: str) -> tuple[ShowRoom, ...]:
             _rect(60, 650, right, 880),
             tuple(Table(f"T{i + 1}", 120 + i * 175, 720, 2 if i % 2 == 0 else 4) for i in range(5)),
             outdoor=True,
-            fixtures=(Fixture("awning", 500, 660, 440, 70, "Awning"),),
+            fixtures=(Fixture("awning", 500, 655, 440, 35, "Awning"),),
         )
     else:
         second = ShowRoom(
@@ -402,7 +404,7 @@ def _profile(slug: str) -> tuple[float, float, float, tuple[int, ...]]:
     )
 
 
-def _history(session: Session, venue: Venue) -> int:
+def _history(session: Session, venue: Venue, days: int | None = None) -> int:
     """90 days of bookings and the next two weeks, placed by the optimiser like guests booking one by one.
 
     Every restaurant gets its own pattern (see `_profile`), so no two insights pages look alike."""
@@ -414,7 +416,7 @@ def _history(session: Session, venue: Venue) -> int:
     busy, weekend, lunch, sizes = _profile(venue.slug)
     rng = random.Random(venue.slug)
     today = now_local(venue).date()
-    for offset in range(-HISTORY_DAYS, UPCOMING_DAYS):
+    for offset in range(-(days or HISTORY_DAYS), UPCOMING_DAYS):
         day = today + timedelta(days=offset)
         for service in SERVICES:
             if day.weekday() not in service[1]:
@@ -473,7 +475,10 @@ def link_tables(session: Session, venue: Venue) -> int:
 
 def run(session: Session, keep: tuple[str, ...] = KEEP) -> dict[str, object]:
     settings = get_settings()
-    owner = session.scalar(select(Organiser).where(Organiser.email == DEMO_ORGANISER_EMAIL))
+    # The restaurants go to the owner account of access_accounts when it exists, else to the demo organiser.
+    owner = session.scalar(select(Organiser).where(Organiser.email == OWNER_EMAIL))
+    if owner is None:
+        owner = session.scalar(select(Organiser).where(Organiser.email == DEMO_ORGANISER_EMAIL))
     if owner is None:
         ensure_demo_users(session, settings)
         owner = session.scalars(
@@ -529,7 +534,9 @@ def run(session: Session, keep: tuple[str, ...] = KEEP) -> dict[str, object]:
         if not session.scalar(
             select(func.count()).select_from(Booking).where(Booking.venue_id == venue.id)
         ):
-            report[venue.slug] = f"{_history(session, venue)} bookings"
+            report[venue.slug] = (
+                f"{_history(session, venue, min(HISTORY_DAYS, OTHER_HISTORY_DAYS))} bookings"
+            )
     # Finished bookings from earlier runs gain their table, so "the tables guests book most" has something to show.
     for venue in session.scalars(
         select(Venue).where(Venue.kind == "restaurant", Venue.is_demo.is_(True))

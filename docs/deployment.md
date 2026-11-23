@@ -273,6 +273,20 @@ Status: **not done yet**
   [`CHANGELOG.md`](CHANGELOG.md): date, address, what was checked, what failed.
 - Change every "not done yet" above that is now done.
 
+## The sign-in accounts, plans and booking history (demo-data workflow)
+
+The `database` workflow (every push to `main`) creates tables and the 35 restaurants with their reviews. Two more things
+are put in by hand, from the Actions tab, with the **demo-data** workflow ("Run workflow"; same secret and `DEMO_SEED`
+variable as `database`):
+
+- `python -m app.seed.access_accounts`: `consumer@example.com` (password `consumer`) and `owner@example.com` (password
+  `owner`). The passwords are short and public on purpose; the database holds nothing but demo data.
+- `python -m app.seed.owner_demo`: gives `owner@example.com` four restaurants (Cervejaria Ramiro, Nori, Gambrinus, Casa da
+  Índia) with a floor plan each and 90 days of bookings for the insights, and every other restaurant 21 days of bookings so
+  that their pages show busy and quiet times. It is repeatable, and leaves a restaurant that already has bookings alone.
+
+It writes only demo data and takes up to about an hour on Neon. Take a backup first.
+
 ## Rolling back
 
 Status: **not done yet** (never needed so far)
