@@ -143,6 +143,9 @@
 .when-requirements .rb-needs:last-child .checkbox:hover { border-color:var(--c-primary); }
 .when-requirements .rb-needs:last-child .checkbox:has(input:checked) { background:var(--c-primary-soft);border-color:var(--c-primary);color:var(--c-primary); }
 
+/* While the times are shown the restaurant's card keeps its own height instead of stretching to the booking box beside it. */
+.rp-hero-layout:has(.when-times) .rp-visit { align-self:start; }
+
 /* Below the booking: About, Hours and Find us read a little larger, and the map is bigger. */
 @media (min-width: 60.01rem) { .rp-columns { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } }
 .rp-columns { font-size:1.0625rem; }

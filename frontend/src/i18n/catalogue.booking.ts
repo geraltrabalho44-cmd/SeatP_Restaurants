@@ -81,6 +81,8 @@ export const booking = {
   "Choose a table at {time}": ["Escolher uma mesa às {time}", "Elegir una mesa a las {time}", "Choisir une table à {time}"],
   "You’ll choose your table next. Nothing is reserved yet.": ["A seguir escolhes a mesa. Ainda não está nada reservado.", "A continuación elegirás tu mesa. Todavía no hay nada reservado.", "Vous choisirez votre table ensuite. Rien n'est encore réservé."],
   "No times left today": ["Já não há horas hoje", "Ya no quedan horas hoy", "Plus d'horaires aujourd'hui"],
+  "This date has passed": ["Esta data já passou", "Esta fecha ya ha pasado", "Cette date est passée"],
+  "Choose today or a later day to see the free times.": ["Escolhe hoje ou um dia seguinte para ver as horas livres.", "Elige hoy o un día posterior para ver las horas libres.", "Choisissez aujourd’hui ou un jour suivant pour voir les horaires libres."],
   "Every time on this day has already passed. Please pick another date.": ["Todas as horas deste dia já passaram. Escolhe outra data.", "Todas las horas de este día ya han pasado. Elige otra fecha.", "Tous les horaires de ce jour sont passés. Choisissez une autre date."],
   "No times on this day": ["Sem horas neste dia", "Sin horas este día", "Aucun horaire ce jour-là"],
   "There are no bookable times for {people} on this day. Try another date or a smaller party.": ["Não há horas disponíveis para {people} neste dia. Tenta outra data ou um grupo mais pequeno.", "No hay horas disponibles para {people} este día. Prueba otra fecha o un grupo más pequeño.", "Aucun horaire n'est réservable pour {people} ce jour-là. Essayez une autre date ou un groupe plus petit."],
