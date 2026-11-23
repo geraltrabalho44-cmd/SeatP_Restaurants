@@ -9,7 +9,7 @@ import datetime as dt
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Header, Query, Request
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from app import db
 from app.core.errors import ApiError
@@ -58,8 +58,8 @@ def search(
     offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
 ) -> dict[str, Any]:
     if understand and q:
-        return natural_search(
-            NaturalSearch(
+        try:
+            body = NaturalSearch(
                 q=q,
                 cuisine=cuisine or [],
                 features=features or [],
@@ -72,10 +72,11 @@ def search(
                 available=available,
                 limit=limit,
                 offset=offset,
-            ),
-            request,
-            session,
-        )
+            )
+        except ValidationError:
+            # Control characters are refused by the shared text rules; say so as a 422, not a 500.
+            raise _invalid("The search text has characters that cannot be used.") from None
+        return natural_search(body, request, session)
     _read_limit(session, request)
     if (lat is None) != (lng is None):
         raise _invalid("Send both lat and lng, or neither.")

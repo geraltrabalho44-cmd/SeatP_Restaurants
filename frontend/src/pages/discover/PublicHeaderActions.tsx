@@ -1,33 +1,22 @@
 import { useT } from "../../i18n/I18nProvider";
-// The diner account stays visible in the public header. On phones the owner link sits behind Menu.
+// The public header: the link for restaurant owners and the diner's log-in, side by side on every screen. There used to be
+// a "Menu" button on phones, but it only ever held the owners link, so the link is now shown directly.
 // The language control is in the page frame (PageShell), so every page has it in the same place.
-import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getGuestToken, getSessionToken } from "../../api/client";
 import "./discover.css";
 
 export function PublicHeaderActions() {
-  const {t} = useT();
-  const [open, setOpen] = useState(false);
-  const nav = useRef<HTMLElement>(null);
-  const button = useRef<HTMLButtonElement>(null);
-  const close = (): void => { setOpen(false); button.current?.focus(); };
-  useEffect(() => {
-    if (!open) return;
-    const escape = (event: KeyboardEvent): void => { if (event.key === "Escape") { setOpen(false); button.current?.focus(); } };
-    const outside = (event: PointerEvent): void => { if (event.target instanceof Node && !nav.current?.contains(event.target)) setOpen(false); };
-    document.addEventListener("keydown", escape);
-    document.addEventListener("pointerdown", outside);
-    return () => { document.removeEventListener("keydown", escape); document.removeEventListener("pointerdown", outside); };
-  }, [open]);
+  const { t } = useT();
   const owners = getSessionToken() ? "/owner" : "/owner/sign-in";
   return (
-    <nav ref={nav} className="site-nav" aria-label={t("Main")} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
-      <button ref={button} type="button" className="btn btn-ghost site-nav-toggle" aria-expanded={open} aria-controls="site-nav-links" onClick={() => setOpen((v) => !v)}>{t("Menu")}</button>
-      <div id="site-nav-links" className={`site-nav-links${open ? " is-open" : ""}`}>
-        <Link to={owners} className="btn btn-ghost" onClick={close}>{t("For restaurant owners")}</Link>
-      </div>
-      <Link to="/restaurants/account" className="btn btn-primary site-nav-login" onClick={() => setOpen(false)}>
+    <nav className="site-nav" aria-label={t("Main")}>
+      {/* The narrowest phones show the short word; the link's name is always the full one. */}
+      <Link to={owners} className="btn btn-ghost site-nav-owners" aria-label={t("For restaurant owners")}>
+        <span className="site-nav-owners-long" aria-hidden="true">{t("For restaurant owners")}</span>
+        <span className="site-nav-owners-short" aria-hidden="true">{t("Owners")}</span>
+      </Link>
+      <Link to="/restaurants/account" className="btn btn-primary site-nav-login">
         {getGuestToken() ? t("My account") : t("Log in")}
       </Link>
     </nav>

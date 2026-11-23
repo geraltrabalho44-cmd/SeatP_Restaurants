@@ -7,8 +7,8 @@ test("staff inspect an outside-service time and preview a walk-in without creati
  await signIn(page,STAFF,links.restaurant_staff);
  await page.getByRole("button",{name:"Change floor time"}).click();
  const slider=page.getByRole("slider",{name:"View floor time"});
- await slider.fill("165");
- await expect(page.getByRole("status").filter({hasText:"Viewing 02:45"})).toHaveCount(1);
+ await slider.fill("165"); // 02:45. Between 02:45 and 02:59 that is "now", so the status says "Live now" instead of "Viewing".
+ await expect(page.getByRole("status").filter({hasText:/(Viewing|Live now)\D+02:45/})).toHaveCount(1);
  let writes=0;
  page.on("request",r=>{if(r.method()==="POST" && /\/walkins$/.test(new URL(r.url()).pathname)) writes++;});
  await page.getByRole("button",{name:"New walk-in"}).click();

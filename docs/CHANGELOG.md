@@ -1,5 +1,34 @@
 # Changelog
 
+## Fixes from the audit of 2026-11-23 (unreleased)
+
+See `docs/auditoria-2026-11-23.md` for the finding ids.
+
+- BE-3: `GET /api/restaurants?q=…&understand=true` with a control character (NUL, BEL, ESC, DEL) answers 422 with a message, not 500.
+- OPS-1: a deposit booking nobody pays for gives its table back by itself. Every look at a restaurant (diner pages, staff pages) settles that restaurant's overdue waits first, so it no longer depends on the cron job being switched on (`venue_access.release_unpaid_deposits`). The cron still does it for all restaurants.
+- IOS-1: on touch screens every typed field is 16px, so iPhone Safari no longer zooms the page when a field is tapped.
+- DEMO-1: when no code appears on the sign-up screen (owner and diner), it says the demo sends no real emails and to use an address ending in @example.com.
+- A11Y-1 and A11Y-2: the note under each figure on Insights is a `dd` (a `dl` may only hold `dt` and `dd`); the "page not found" and "this link does not work" pages (restaurant, booking, message, unsubscribe) have a main heading.
+- UI-8: the staff page has the same light header as the owner area. On a phone the logo and language share a row and the four tabs share the next one, so "Schedule" is no longer cut off.
+- FE-1: only the discovery, restaurant, booking and diner-account pages are in the first download; owner, staff, event and payment pages load when opened. The first script is 369 KB (115 KB gzip) instead of 715 KB (209 KB gzip).
+- DEP-2: the files under `/assets/` have a hash in their name and now carry `Cache-Control: public, max-age=31536000, immutable` (`vercel.json`). The e2e server only copies the security headers of the `/(.*)` rule.
+- PERF-4: the list keeps the height of a screen while the first cards load, so the footer does not jump down.
+- TEST-1: the staff e2e accepts "Live now · 02:45" as well as "Viewing 02:45" (it failed every day between 02:45 and 02:59). TEST-2: Playwright retries once on CI (not on a laptop); a test that needed the retry is shown as "flaky" in the report.
+- CI-1: a `backend-postgres` job runs the whole backend suite on Postgres 16, the database the live site uses.
+- DOC-1: `docs/openapi.json` exported again (159 paths, 182 operations, 88 schemas).
+
+## Phone polish and the owner pages (unreleased, 2026-11-23)
+
+- The public header shows "For restaurant owners" next to "Log in" instead of a "Menu" button that only held that link (on the narrowest phones it reads "Owners").
+- The filters panel, also opened by "Anywhere · Any date · 2 people" on a phone, slides in: from the bottom on a phone, as a sheet with a handle, a one-line header, one scrolling area and the buttons resting on the bottom edge; from the right on a wide screen. The page behind does not scroll while it is open. The "Apply · Show N restaurants" button is translated.
+- On a phone the map and the list arrive with a short movement when "Map" or "List" is chosen, each restaurant card rises a little as it comes into view and gives way when pressed, and a picked pin's card slides up. Movement only, never transparency, and nothing moves when the system asks for reduced motion.
+- Reviews read at a comfortable size: a large score with large chairs, and each review with the author's initial, its score in a pill and the text at body size.
+- A free time on the "Choose a time" step shows just the time ("Available" is still read out); nearly full and full times keep their words. On a phone the buttons of the confirmation and of the booking page fill the card's width.
+- The owner pages look like the rest of the site: a light menu with the page you are on in purple, and on a phone one "Menu" button that names the page and opens the list in two columns (it used to be two rows of links sliding sideways). My restaurants is a grid of upright cards.
+- Restaurant profile: cuisines are pills that wrap instead of 26 rows of boxes, the price range is four buttons (€ to €€€€) with the range under each, Identity and Location are underline tabs, and the location map is the same light map as the public pages, with a drop-shaped pin.
+- Menu and prices: each dish is one closed line (name, category and price) that opens to edit it; a new dish starts open. Turn times, Insights totals and the "next step" buttons are laid out for a phone.
+- `python -m app.seed.remove_mock_restaurants` deletes the five made-up restaurants of the first demo (Casa Lumen, Tagus Terrace, Tasca do Bairro, Miradouro 7, Pátio das Laranjeiras) with everything that hangs off them and their demo links. Only demo restaurants with those addresses; anything an owner made is never touched. `--allow-remote` for the shared demo database, after a backup. `app.seed.run` still creates them, because the automated tests are built on them.
+
 ## Restaurant discovery and weather (unreleased)
 
 - Restaurant booking shows the forecast and bookable sunset tables. Restaurants can enable optional indoor table offers for rainy terrace bookings.

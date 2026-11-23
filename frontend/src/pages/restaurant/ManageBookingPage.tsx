@@ -41,7 +41,7 @@ function ManageError({ error, onRetry }: { error: unknown; onRetry: () => void }
   const { t } = useT();
   if (error instanceof ApiError && error.code === "not_found") {
     return (
-      <EmptyState title={t("This link does not work")}>
+      <EmptyState headingLevel={1} title={t("This link does not work")}>
         <p>
           {t("It may be mistyped, or the booking was made with a different link. Open the link exactly as it appears in your confirmation email, or contact the restaurant.")}
         </p>

@@ -50,18 +50,27 @@ function MenuEditor({ venueId, initial, onReload }: { venueId: string; initial: 
     } catch (error) { setProblem(errorMessage(error)); }
     finally { setBusy(false); }
   }
-  return <form onSubmit={event => void save(event)}>
-    <fieldset disabled={busy} style={{ border: 0, padding: 0 }}>
-      {items.map((item, index) => <fieldset key={item.key} className="rb-card" style={{ marginBlock: "1rem" }}>
-        <legend>{t("Dish {n}", { n: index + 1 })}</legend>
-        <Field label={t("Dish name")} required maxLength={120} value={item.name} onChange={event => change(index, { name: event.target.value })} />
-        <Field label={t("Category")} required maxLength={60} value={item.category} onChange={event => change(index, { category: event.target.value })} />
-        <Field label={t("Description")} maxLength={500} value={item.description} onChange={event => change(index, { description: event.target.value })} />
-        <Field label={t("Price (€)")} required inputMode="decimal" value={item.price} onChange={event => change(index, { price: event.target.value })} />
-        <Field label={t("Allergens")} maxLength={500} value={item.allergens} onChange={event => change(index, { allergens: event.target.value })} />
-        <Checkbox label={t("Available on the public menu")} checked={item.available} onChange={event => change(index, { available: event.target.checked })} />
-        <Button variant="ghost" onClick={() => setItems(items.filter((_, i) => i !== index))}>{t("Remove dish {n}", { n: index + 1 })}</Button>
-      </fieldset>)}
+  const initialCount = initial.items.length;
+  // Each dish is one closed line (name, category and price) that opens to edit it, so a long menu stays short on a phone.
+  // A dish added now starts open. If the browser stops the save on an empty required field, that dish opens first.
+  return <form onSubmit={event => void save(event)} onInvalidCapture={event => (event.target as HTMLElement).closest("details")?.setAttribute("open", "")}>
+    <fieldset disabled={busy} className="ow-dishes">
+      {items.map((item, index) => <details key={item.key} className="rb-card ow-dish" open={item.key >= initialCount || undefined}>
+        <summary>
+          <span className="ow-dish-name">{item.name.trim() || t("New dish")}</span>
+          <span className="ow-dish-meta">{item.category}{item.price ? ` · ${item.price.replace(".", ",")} €` : ""}{!item.available && <> · <em>{t("Hidden from the menu")}</em></>}</span>
+        </summary>
+        <fieldset className="ow-dish-fields">
+          <legend className="visually-hidden">{t("Dish {n}", { n: index + 1 })}</legend>
+          <Field label={t("Dish name")} required maxLength={120} value={item.name} onChange={event => change(index, { name: event.target.value })} />
+          <Field label={t("Category")} required maxLength={60} value={item.category} onChange={event => change(index, { category: event.target.value })} />
+          <Field label={t("Description")} maxLength={500} value={item.description} onChange={event => change(index, { description: event.target.value })} />
+          <Field label={t("Price (€)")} required inputMode="decimal" value={item.price} onChange={event => change(index, { price: event.target.value })} />
+          <Field label={t("Allergens")} maxLength={500} value={item.allergens} onChange={event => change(index, { allergens: event.target.value })} />
+          <Checkbox label={t("Available on the public menu")} checked={item.available} onChange={event => change(index, { available: event.target.checked })} />
+          <Button variant="ghost" className="ow-dish-remove" onClick={() => setItems(items.filter((_, i) => i !== index))}>{t("Remove dish {n}", { n: index + 1 })}</Button>
+        </fieldset>
+      </details>)}
       <Button variant="secondary" disabled={items.length >= 100} onClick={() => { setItems([...items, { key: nextKey, name: "", category: "Menu", description: "", price: "", price_cents: 0, allergens: "", available: true }]); setNextKey(nextKey + 1); }}>{t("Add dish")}</Button>
     </fieldset>
     {problem && <p role="alert">{problem} <Button variant="ghost" disabled={busy} onClick={onReload}>{t("Reload saved menu")}</Button></p>}

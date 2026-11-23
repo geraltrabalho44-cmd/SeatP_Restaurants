@@ -22,7 +22,7 @@ export default function UnsubscribePage() {
         {state.status === "loading" && <Skeleton lines={3} label={t("Loading")} />}
         {state.status === "error" &&
           (state.error instanceof ApiError && state.error.code === "not_found" ? (
-            <EmptyState title={t("This link no longer works")}>
+            <EmptyState headingLevel={1} title={t("This link no longer works")}>
               <p>{t("It may be old or mistyped. To change what a restaurant sends you, use the link on your booking page.")}</p>
             </EmptyState>
           ) : (

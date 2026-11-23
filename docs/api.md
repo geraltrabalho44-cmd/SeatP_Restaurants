@@ -34,18 +34,17 @@ read. The design agreement is section 5 of [`CONTRACT.md`](CONTRACT.md).
 ## Where the OpenAPI file comes from
 
 `docs/openapi.json` is exported from the real FastAPI app, not written by
-hand. It was last made on 2026-11-13 (after the ambience, discovery and email work) with this command (run from `backend/`; the
-temporary SQLite file goes in `$TMPDIR` so nothing is left in the repository):
-hand. Last export: 2026-11-13, including the restaurant owner/room/ambience APIs.
-Run from the repository root; the script uses and removes a temporary SQLite
-database and does not touch the local application database:
+hand. Last export: 2026-11-23, after the restaurant owner, offers, payments,
+phone messages and reviews APIs were added. Run it from the repository root; the
+script uses and removes a temporary SQLite database and does not touch the local
+application database:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/export_openapi.py
 ```
 
 What that run reported: OpenAPI `3.1.0`, title `SeatPlan API`, version
-`0.1.0`, **93 paths, 108 operations, 62 schemas**. Run the command again after
+`0.1.0`, **159 paths, 182 operations, 88 schemas**. Run the command again after
 changing any router, so the file never drifts from the code.
 
 ## Restaurant platform API implemented on this branch
@@ -123,7 +122,7 @@ nothing. Sessions expire after 12 hours (`SESSION_HOURS` in `security.py`).
 
 ## Endpoint groups
 
-Counted from `openapi.json` by tag:
+Counted from `openapi.json` by tag. This table is the short version from 2026-11-13 and is older than the file: for the exact and current list, use `openapi.json`.
 
 | Tag | Operations | What it is for | Router file |
 |---|---|---|---|

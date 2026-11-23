@@ -60,7 +60,7 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
     <div className="ow-stat">
       <dt>{label}</dt>
       <dd>{value}</dd>
-      {note && <p className="rb-muted">{note}</p>}
+      {note && <dd className="rb-muted ow-stat-note">{note}</dd>}
     </div>
   );
 }

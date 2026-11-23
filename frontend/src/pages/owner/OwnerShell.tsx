@@ -1,7 +1,9 @@
 // The owner's workspace: a short side menu (My restaurants, then the steps of one restaurant)
 // beside the page. Every owner page sits in it, so the owner always knows where they are and
 // can reach the next step without going back to the list.
-import { useEffect, useRef } from "react";
+// On a phone the menu folds behind one "Menu" button at the top of the page (it used to be two rows of links that slid
+// sideways and broke onto two lines); the button names the page you are on, and the list opens under it.
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { logout } from "../../api/client";
 import { PageShell } from "../../design/components";
@@ -43,17 +45,44 @@ const STEPS: { key: Exclude<OwnerSection, "restaurants">; label: Message; path: 
 export function OwnerShell({ title, venueId, venueName, current, publicHref, children, width = "wide" }: OwnerShellProps) {
   const { t } = useT();
   const base = venueId ? `/owner/${encodeURIComponent(venueId)}` : null;
-  const nav = useRef<HTMLElement>(null);
-  // On a phone the steps slide sideways: bring the current one to the middle of its list.
+  const [open, setOpen] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const here = current === "restaurants" ? t("My restaurants") : t(STEPS.find((step) => step.key === current)?.label ?? "My restaurants");
+  // A new page closes the phone menu.
+  useEffect(() => setOpen(false), [current, venueId]);
   useEffect(() => {
-    const here = nav.current?.querySelector<HTMLElement>('a[aria-current="page"]');
-    const list = here?.closest("ul");
-    if (here && list && list.scrollWidth > list.clientWidth) list.scrollLeft = here.offsetLeft - (list.clientWidth - here.offsetWidth) / 2;
-  }, [current, venueId]);
+    if (!open) return undefined;
+    const escape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        toggle.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", escape);
+    return () => document.removeEventListener("keydown", escape);
+  }, [open]);
   return (
     <PageShell title={title} width={width}>
-      <div className="ow-shell">
-        <nav className="ow-nav" ref={nav} aria-label={t("Restaurant owner")}>
+      <div className={`ow-shell${open ? " is-menu-open" : ""}`}>
+        {/* Phone only (CSS): the page you are on, and the button that opens the menu. The page's name is drawn from
+            data-here, so it is not a second copy of the link text in the page. */}
+        <button
+          ref={toggle}
+          type="button"
+          className="ow-menu-toggle"
+          aria-expanded={open}
+          aria-controls="ow-nav"
+          data-here={here}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <span className="ow-menu-label">{t("Menu")}</span>
+          <span className="ow-menu-icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+        <nav className="ow-nav" id="ow-nav" aria-label={t("Restaurant owner")}>
           <p className="rb5-eyebrow">{t("Restaurant owner")}</p>
           <ul>
             <li>

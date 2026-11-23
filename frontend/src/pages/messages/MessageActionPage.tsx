@@ -24,7 +24,7 @@ export default function MessageActionPage() {
         {state.status === "loading" && <Skeleton lines={4} label={t("Loading your booking")} />}
         {state.status === "error" &&
           (state.error instanceof ApiError && state.error.code === "not_found" ? (
-            <EmptyState title={t("This link no longer works")}>
+            <EmptyState headingLevel={1} title={t("This link no longer works")}>
               <p>{t("The booking may have finished, or the link was mistyped. To change a booking, use the link in your confirmation email or call the restaurant.")}</p>
             </EmptyState>
           ) : (

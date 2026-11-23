@@ -394,9 +394,13 @@
   color: var(--c-primary);
 }
 
-.ow-stat p {
+/* A <dl> may only hold dt/dd, so the note under a figure is a second dd (audit A11Y-1). */
+.ow-stat dd.ow-stat-note {
   margin: 0;
+  font-family: inherit;
   font-size: var(--fs-sm);
+  font-weight: 400;
+  color: var(--c-text-muted);
 }
 
 .ow-bars {
@@ -557,3 +561,129 @@
   margin: 0 0 var(--space-3);
   padding-left: var(--space-5);
 }
+
+/* ---------- The owner menu, 2026-11-23 ----------
+   Light like the rest of the site (white card, purple for the page you are on) instead of the dark purple block.
+   On a phone it folds behind one button that names the page you are on; the list opens under it in two columns. */
+.ow-menu-toggle { display:none; }
+.shell:has(.ow-shell) { background:var(--c-bg); }
+.ow-nav { background:var(--c-surface);color:var(--c-text);border:1px solid var(--c-border);box-shadow:var(--shadow-sm); }
+.ow-nav .rb5-eyebrow { color:var(--c-text-muted); }
+.ow-nav a { color:var(--c-text);font-weight:500; }
+.ow-nav a:hover { background:var(--c-surface-sunk);color:var(--c-primary); }
+.ow-nav a[aria-current="page"] { background:var(--c-primary-soft);color:var(--c-primary);font-weight:700; }
+.ow-nav a:focus-visible { outline-color:var(--c-focus); }
+.ow-nav-more a { color:var(--c-text-muted); }
+@keyframes ow-menu-in { from { transform:translateY(-.5rem) scale(.98); } to { transform:none; } }
+@media (max-width:55.99rem) {
+  .ow-shell { gap:var(--space-3); }
+  .ow-menu-toggle {
+    display:flex;align-items:center;gap:var(--space-2);width:100%;min-height:3.25rem;padding:0 var(--space-3) 0 var(--space-4);
+    border:1px solid var(--c-border);border-radius:var(--radius-lg);background:var(--c-surface);color:var(--c-text);
+    font:inherit;box-shadow:var(--shadow-sm);cursor:pointer;text-align:left;
+  }
+  .ow-menu-toggle::before {
+    content:attr(data-here);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-weight:800;font-size:1.0625rem;color:var(--c-primary);
+  }
+  .ow-menu-label { color:var(--c-text-muted);font-size:var(--fs-sm);font-weight:600; }
+  .ow-menu-icon { display:inline-grid;gap:4px;width:1.125rem; }
+  .ow-menu-icon span { display:block;height:2px;border-radius:2px;background:currentColor;transition:transform var(--dur-base) var(--ease-out),opacity var(--dur-fast); }
+  .is-menu-open .ow-menu-icon span:nth-child(1) { transform:translateY(6px) rotate(45deg); }
+  .is-menu-open .ow-menu-icon span:nth-child(2) { opacity:0; }
+  .is-menu-open .ow-menu-icon span:nth-child(3) { transform:translateY(-6px) rotate(-45deg); }
+  .ow-nav { display:none;padding:var(--space-2);border-radius:var(--radius-lg); }
+  .is-menu-open > .ow-nav { display:flex;animation:ow-menu-in var(--dur-base) var(--ease-out); }
+  .ow-nav ul { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;overflow:visible; }
+  .ow-nav li { min-width:0; }
+  .ow-nav a { white-space:normal;min-height:2.75rem;font-size:var(--fs-sm);line-height:1.25; }
+  .ow-nav-more { margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px solid var(--c-border); }
+}
+
+/* ---------- The restaurant profile, 2026-11-23 ----------
+   Cuisines are pills that wrap (the real checkboxes stay inside them), instead of 26 rows of boxes; the price is four
+   buttons side by side with the range under the symbols. */
+.owner-cuisines { display:flex;flex-wrap:wrap;gap:var(--space-2);border:0;padding:0;margin:0; }
+.owner-cuisines legend,.owner-price legend { padding:0;margin-bottom:var(--space-1);font-weight:700;color:var(--c-text); }
+.owner-cuisines-count { flex-basis:100%;margin:0 0 var(--space-1); }
+.owner-cuisines .checkbox {
+  display:inline-flex;align-items:center;gap:var(--space-2);margin:0;padding:0 var(--space-3) 0 var(--space-3);min-height:2.5rem;
+  border:1px solid var(--c-border);border-radius:var(--radius-pill);background:var(--c-surface);
+  transition:background var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out);
+}
+.owner-cuisines .checkbox-input { width:1rem;height:1rem;margin:0; }
+.owner-cuisines .checkbox-label { min-height:2.5rem;font-size:var(--fs-sm);font-weight:600;color:var(--c-text); }
+.owner-cuisines .checkbox:hover { border-color:var(--c-primary); }
+.owner-cuisines .checkbox:has(.checkbox-input:checked) { background:var(--c-primary-soft);border-color:var(--c-primary); }
+.owner-cuisines .checkbox:has(.checkbox-input:checked) .checkbox-label { color:var(--c-primary); }
+.owner-cuisines .checkbox:has(.checkbox-input:disabled) { opacity:.55; }
+.owner-cuisines .checkbox:has(.checkbox-input:disabled) .checkbox-label { cursor:not-allowed; }
+.owner-cuisines .checkbox:has(.checkbox-input:focus-visible) { outline:3px solid var(--c-focus);outline-offset:2px; }
+
+.owner-price { border:0;padding:0;margin:0;min-width:0; }
+.owner-price-hint { margin:0 0 var(--space-2);color:var(--c-text-muted);font-size:var(--fs-sm); }
+.owner-price-options { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-2); }
+.owner-price-option {
+  position:relative;display:grid;justify-items:center;gap:2px;padding:var(--space-3) var(--space-1);
+  border:1px solid var(--c-border);border-radius:var(--radius-md);background:var(--c-surface);cursor:pointer;text-align:center;
+  transition:background var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out);
+}
+.owner-price-option input { position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer; }
+.owner-price-symbol { font-weight:800;font-size:1.125rem;color:var(--c-text);letter-spacing:.02em; }
+.owner-price-range { font-size:var(--fs-xs);color:var(--c-text-muted); }
+.owner-price-option:hover { border-color:var(--c-primary); }
+.owner-price-option:has(input:checked) { background:var(--c-primary);border-color:var(--c-primary); }
+.owner-price-option:has(input:checked) .owner-price-symbol,.owner-price-option:has(input:checked) .owner-price-range { color:var(--c-on-primary); }
+.owner-price-option:has(input:focus-visible) { outline:3px solid var(--c-focus);outline-offset:2px; }
+
+/* The profile's two sections are tabs over the form, the same underline tabs as the public restaurant page. */
+.owner-profile-tabs { gap:var(--space-4);border-bottom:1px solid var(--c-border);margin-bottom:var(--space-2); }
+.ow-shell .ow-main .owner-profile-tabs .btn { min-height:var(--touch-target);padding:0 var(--space-1);border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--c-text-muted);font-weight:600;box-shadow:none; }
+.ow-shell .ow-main .owner-profile-tabs .btn[aria-pressed="true"] { color:var(--c-primary);border-bottom-color:var(--c-primary);background:none; }
+.ow-shell .ow-main .owner-profile-tabs .btn:hover:not(:disabled) { background:none;color:var(--c-primary); }
+.owner-form .field-input,.owner-form textarea.field-input { border-radius:var(--radius-md); }
+.ow-checks > span[role="status"]:empty { display:none; }
+.ow-checks .owner-form { margin-block:var(--space-2) 0; }
+.owner-location-fields .field { flex:1 1 7rem; }
+.owner-cuisines .owner-cuisines-count { flex:0 0 100%;max-width:none; }
+
+/* My restaurants as a grid of upright cards, like the public list, instead of one wide card per row. */
+.ow-main .owner-cards { grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr));gap:var(--space-4); }
+.ow-main .ow-venue-card { display:flex;flex-direction:column;box-shadow:var(--shadow-sm);transition:box-shadow var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out); }
+.ow-main .ow-venue-card .owner-cover { height:auto;aspect-ratio:16 / 9; }
+.ow-main .ow-venue-card .owner-card-body { flex:1;padding:var(--space-4);gap:var(--space-2); }
+.ow-main .ow-venue-card .owner-card-body h2 { font-family:var(--font-body);font-weight:800;font-size:1.375rem;line-height:1.2;margin:0; }
+.ow-main .ow-venue-card .owner-card-main { margin-top:auto;padding-top:var(--space-2); }
+.ow-main .ow-venue-card .owner-card-main .btn { width:100%;justify-content:center; }
+.ow-main .ow-venue-card .ow-card-links { gap:var(--space-1) var(--space-4);font-size:var(--fs-sm); }
+.ow-main .ow-venue-card .ow-card-links a { min-height:2.5rem; }
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  .ow-main .ow-venue-card:hover { box-shadow:var(--shadow-md);transform:translateY(-2px); }
+}
+
+/* Phone layout of a few owner pages: Insights totals two by two, and the "next step" buttons full width, main one first. */
+@media (max-width: 40rem) {
+  .ow-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-3); }
+  .ow-stat dd { font-size: 1.625rem; }
+  .ow-stat dd.ow-stat-note { font-size: var(--fs-sm); }
+  .ow-page-next { flex-direction: column-reverse; align-items: stretch; }
+  .ow-page-next > .btn { width: 100%; justify-content: center; }
+}
+
+/* Menu and prices: one closed line per dish (name, then category and price) that opens to edit it. */
+.ow-dishes { display:grid;gap:var(--space-2);border:0;padding:0;margin:var(--space-4) 0;min-width:0; }
+.ow-dish { margin:0;padding:0;overflow:hidden; }
+.ow-dish > summary { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 var(--space-3);padding:var(--space-3) var(--space-4);min-height:3.5rem;cursor:pointer;list-style:none; }
+.ow-dish > summary::-webkit-details-marker { display:none; }
+.ow-dish > summary::after { content:"";grid-column:2;grid-row:1 / span 2;width:.5rem;height:.5rem;border-right:2px solid var(--c-text-muted);border-bottom:2px solid var(--c-text-muted);transform:rotate(45deg);transition:transform var(--dur-base) var(--ease-out); }
+.ow-dish[open] > summary::after { transform:rotate(-135deg); }
+.ow-dish > summary:hover .ow-dish-name { color:var(--c-primary); }
+.ow-dish-name { font-weight:700;min-width:0;overflow-wrap:anywhere; }
+.ow-dish-meta { grid-column:1;color:var(--c-text-muted);font-size:var(--fs-sm); }
+.ow-dish-meta em { font-style:normal;color:var(--c-accent); }
+.ow-dish-fields { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);border:0;border-top:1px solid var(--c-border);margin:0;padding:var(--space-4);min-width:0; }
+.ow-dish-fields > .field { margin:0; }
+.ow-dish-fields > .field:nth-of-type(3),.ow-dish-fields > .checkbox,.ow-dish-fields > .ow-dish-remove { grid-column:1 / -1; }
+.ow-dish-fields > .ow-dish-remove { justify-self:start;color:var(--c-danger); }
+@media (max-width:30rem) { .ow-dish-fields { grid-template-columns:minmax(0,1fr); } }
+.ow-dishes > .ow-dish.rb-card { padding:0;margin:0; }

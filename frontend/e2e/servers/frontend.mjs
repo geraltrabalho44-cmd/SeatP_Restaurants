@@ -36,6 +36,7 @@ function vercelHeaders() {
   const config = JSON.parse(readFileSync(resolve(frontendDir, "../vercel.json"), "utf8"));
   const headers = {};
   for (const rule of config.headers ?? []) {
+    if (rule.source !== "/(.*)") continue; // other rules (like caching of /assets) are for Vercel only
     for (const { key, value } of rule.headers) headers[key] = value;
   }
   return headers;
