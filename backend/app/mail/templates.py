@@ -18,6 +18,8 @@ from datetime import datetime
 from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
+from app.mail import style
+
 SENDER_NAME = "SeatPlan"
 # The outbox column is VARCHAR(200); a longer subject would be refused by Postgres.
 MAX_SUBJECT_LENGTH = 200
@@ -64,6 +66,7 @@ _STOP_TEXT = (
     "To stop these emails, cancel or decline with the link above: you will get "
     "nothing more about it. We never send marketing."
 )
+NO_REPLY_TEXT = "Please do not reply to this email: nobody reads this address."
 
 
 def _text_version(
@@ -78,30 +81,47 @@ def _text_version(
     for paragraph in paragraphs:
         lines += [paragraph, ""]
     lines += [f"{link_label}: {link}", "", f"The {SENDER_NAME} team", "", "--", reason]
-    lines.append(stop)
+    lines += [stop, NO_REPLY_TEXT]
     return "\n".join(lines) + "\n"
 
 
 # Inline styles because many email apps ignore <style> blocks. One column with a
-# max width reads well on a phone and on a desktop, and nothing needs images.
+# max width reads well on a phone and on a desktop. The only image is the logo,
+# sent inside the email as cid:logo (app/mail/logo.py); with images off the
+# word "SeatPlan" next to it still reads. Colours and fonts: app/mail/style.py.
 _PAGE = (
     '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
     '<meta name="viewport" content="width=device-width, initial-scale=1"></head>'
-    '<body style="margin:0;padding:0;background:#f4f4f5;">'
-    '<div style="max-width:560px;margin:0 auto;padding:24px 16px;'
-    'font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#18181b;">'
-    '<p style="margin:0 0 16px;font-size:14px;font-weight:bold;color:#3f3f46;">{sender}</p>'
-    '<div style="background:#ffffff;border-radius:8px;padding:24px;">{content}</div>'
-    '<p style="margin:16px 0 0;font-size:13px;color:#52525b;">{footer}</p>'
-    "</div></body></html>"
+    '<body style="margin:0;padding:0;background:' + style.BG + ';">'
+    '<div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:'
+    + style.FONT_BODY
+    + ";font-size:16px;line-height:1.5;color:"
+    + style.INK
+    + ';">'
+    '<table role="presentation" style="margin:0 0 16px;border-collapse:collapse;"><tr>'
+    '<td><img src="cid:logo" width="40" height="40" alt="SeatPlan" '
+    'style="display:block;border:0;width:40px;height:40px;"></td>'
+    '<td style="padding-left:10px;font-family:'
+    + style.FONT_DISPLAY
+    + ";font-size:22px;font-weight:bold;color:"
+    + style.INK
+    + ';">{sender}</td></tr></table>'
+    '<div style="background:'
+    + style.CARD
+    + ";border:1px solid "
+    + style.BORDER
+    + ';border-radius:10px;padding:24px;">{content}</div>'
+    '<p style="margin:16px 0 0;font-size:13px;color:'
+    + style.MUTED
+    + ';">{footer}<br>'
+    + html.escape(NO_REPLY_TEXT)
+    + "</p></div></body></html>"
 )
-_BUTTON = (
-    '<p style="margin:24px 0;"><a href="{href}" style="display:inline-block;'
-    "background:#1d4ed8;color:#ffffff;text-decoration:none;padding:12px 20px;"
-    'border-radius:6px;font-weight:bold;">{label}</a></p>'
-    '<p style="margin:0 0 16px;font-size:13px;color:#52525b;word-break:break-all;">'
-    "If the button does not work, copy this link: {href}</p>"
-)
+
+
+def _button_block(href: str, label: str) -> str:
+    """One primary button in its own paragraph. No address is printed under it."""
+    return f'<p style="margin:24px 0;">{style.button_html(href, label)}</p>'
 
 
 def _paragraph(text: str) -> str:
@@ -118,7 +138,7 @@ def _html_version(
 ) -> str:
     escape = html.escape
     content = _paragraph(greeting) + "".join(_paragraph(text) for text in paragraphs)
-    content += _BUTTON.format(href=escape(link, quote=True), label=escape(link_label))
+    content += _button_block(link, link_label)
     content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
     footer = f"{escape(reason)}<br>{escape(stop)}"
     return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
@@ -336,7 +356,7 @@ def _account_seat_text(facts: AccountSeat) -> str:
     lines += [f"{label}: {value}" for label, value in _account_details(facts)]
     lines += ["", _PICTURE_NOTE, "", _deadline_sentence(facts), ""]
     lines += [f"See my seat: {facts.link}", "", f"The {SENDER_NAME} team", "", "--"]
-    lines += [_account_reason(facts.event_name), _ACCOUNT_STOP_TEXT]
+    lines += [_account_reason(facts.event_name), _ACCOUNT_STOP_TEXT, NO_REPLY_TEXT]
     return "\n".join(lines) + "\n"
 
 
@@ -357,8 +377,8 @@ def _picture_html(facts: AccountSeat) -> str:
     return (
         f'<img src="cid:seatmap" width="{width}" alt="{alt}" '
         f'style="display:block;width:100%;max-width:{width}px;height:auto;'
-        'border:1px solid #d4d4d8;border-radius:6px;margin:16px 0 8px;">'
-        f'<p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Your seat: {seat}, marked YOU.</p>'
+        f'border:1px solid {style.BORDER};border-radius:6px;margin:16px 0 8px;">'
+        f'<p style="margin:0 0 16px;font-size:14px;color:{style.MUTED};">Your seat: {seat}, marked YOU.</p>'
     )
 
 
@@ -368,7 +388,7 @@ def _account_seat_html(facts: AccountSeat) -> str:
     content += "".join(_paragraph(sentence) for sentence in _account_opening(facts))
     content += _details_table(facts) + _picture_html(facts)
     content += _paragraph(_deadline_sentence(facts))
-    content += _BUTTON.format(href=escape(facts.link, quote=True), label="See my seat")
+    content += _button_block(facts.link, "See my seat")
     content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
     footer = f"{escape(_account_reason(facts.event_name))}<br>{escape(_ACCOUNT_STOP_TEXT)}"
     return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)

@@ -7,6 +7,7 @@ reminder carry the same. The queue stays idempotent, and nothing names anyone el
 """
 
 import base64
+import html
 import re
 import struct
 from datetime import date
@@ -18,6 +19,7 @@ from test_chosen_seat import add_seats, booked, room_with_window
 from test_restaurant_helpers import future_day, make_restaurant
 
 from app.mail.restaurant_templates import RestaurantBooking, booking_email, picture_alt, seat_line
+from app.mail.templates import NO_REPLY_TEXT
 from app.models import EmailOutbox, Organiser, Seat, Venue, VenuePhoto
 
 PNG = b"\x89PNG\r\n\x1a\n"
@@ -84,7 +86,7 @@ def test_the_confirmation_has_the_photo_the_table_the_chair_the_sentences_and_th
     # The mini-map is the one inline image, with words for screen readers.
     assert 'src="cid:seatmap"' in row.body_html and "Floor plan of Test Bistro" in row.body_html
     assert "https://www.google.com/maps/search/" in row.body_html
-    assert row.body_html.count("<img") == 2
+    assert row.body_html.count("<img") == 3  # the logo, the photo and the map
     # Ambience sentences for the stay (the table is by a window of a room with a north).
     assert "<ul" in row.body_html and "- " in row.body_text
     # The calendar invite names the address too.
@@ -205,9 +207,15 @@ def test_the_seat_line_and_the_words_for_the_picture() -> None:
     assert "seat" not in picture_alt("Casa Azul", "4", None).replace("seen from above", "")
 
 
+def test_restaurant_emails_say_not_to_reply() -> None:
+    parts = booking_email("confirmed", facts())
+    assert NO_REPLY_TEXT in parts.body_text and html.escape(NO_REPLY_TEXT) in parts.body_html
+
+
 def test_an_email_with_no_photo_map_or_address_leaves_those_parts_out() -> None:
     parts = booking_email("confirmed", facts())
-    assert "<img" not in parts.body_html and "cid:seatmap" not in parts.body_html
+    assert parts.body_html.count("<img") == 1  # only the logo
+    assert "cid:seatmap" not in parts.body_html
     assert "Where:" not in parts.body_text and "Map:" not in parts.body_text
     assert parts.subject == "Booked: Casa Azul, Fri 21 Nov at 20:00"
 

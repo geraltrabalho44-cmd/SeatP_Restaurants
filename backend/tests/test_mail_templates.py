@@ -1,5 +1,7 @@
 """Email templates: escaping, manage link in both versions, footer, subject safety."""
 
+import html
+import re
 from datetime import UTC, datetime
 
 import pytest
@@ -54,7 +56,29 @@ def test_html_is_single_column_and_mobile_friendly() -> None:
     parts = _all_templates("Ana Silva")[0]
     assert 'name="viewport"' in parts.body_html
     assert "max-width:560px" in parts.body_html
-    assert "<img" not in parts.body_html
+    # The only image is the logo, which travels inside the email as cid:logo.
+    assert parts.body_html.count("<img") == 1
+    assert 'src="cid:logo"' in parts.body_html and 'alt="SeatPlan"' in parts.body_html
+
+
+def test_header_still_reads_with_images_off() -> None:
+    for parts in _all_templates("Ana Silva"):
+        without_images = re.sub(r"<img[^>]*>", "", parts.body_html)
+        visible = re.sub(r"<[^>]+>", " ", without_images)
+        assert "SeatPlan" in visible.split("Hello")[0]
+
+
+def test_every_email_says_not_to_reply() -> None:
+    for parts in _all_templates("Ana Silva"):
+        assert templates.NO_REPLY_TEXT in parts.body_text
+        assert html.escape(templates.NO_REPLY_TEXT) in parts.body_html
+
+
+def test_html_prints_no_web_address() -> None:
+    for parts in _all_templates("Ana Silva"):
+        without_hrefs = re.sub(r'href="[^"]*"', "", parts.body_html)
+        assert "seatplan.example.com" not in without_hrefs
+        assert "If the button does not work" not in parts.body_html
 
 
 def test_subject_is_one_line_and_not_too_long() -> None:
