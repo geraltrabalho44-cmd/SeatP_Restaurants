@@ -1,5 +1,14 @@
 # Email: SeatPlan look, logo, and change/cancel buttons
 
+> **Revision 2026-11-23 evening.** The first build used the old linen and bottle-green look
+> (branch `claude/table-step`) and the owner rejected it after seeing the real email in Gmail.
+> The email now follows the site's restaurants look and logo, on `restaurants/main`:
+> palette from `frontend/src/design/restaurant-theme.css` (lavender, white, purple, pink main
+> action, red cancel), the site's real logo (a 300 px copy in `backend/app/mail/assets/`),
+> restaurant words in four languages through `restaurant_text.py`, and no separate payments
+> note (the existing `payment_line` is kept). Where this file names the old colours or the drawn
+> logo, the revision wins.
+
 Date: 2026-11-23. Branch: `claude/email-branding` (from `claude/table-step`). Status: approved by the project owner on 2026-11-23 (with: no staff part, no printed links).
 Size: small change (one shared email shell, two buttons, one deep link).
 

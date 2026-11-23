@@ -303,29 +303,37 @@ Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
 
 Added 2026-11-23 (`docs/superpowers/specs/2026-11-23-email-branding-design.md`).
 
-- **Colours and fonts** come from `frontend/src/design/tokens.css` (linen page,
-  bottle-green buttons, serif headings) and are written out in
-  `backend/app/mail/style.py`, because email apps ignore CSS variables and web
-  fonts. `tests/test_mail_style.py` fails if a value drifts from the tokens or a
-  text pair drops under 4.5:1 contrast. All emails share the one shell in
-  `templates.py` (`_PAGE`), so event and account emails got the new look too;
+- **The look is the site's restaurants look**: lavender page `#f8f7fc`, white
+  card, deep-purple headline `#4f3f8f`, one sans family, 12 px buttons. The
+  values come from `frontend/src/design/restaurant-theme.css` and are written
+  out in `backend/app/mail/style.py`, because email apps ignore CSS variables
+  and web fonts. `tests/test_mail_style.py` fails if a value drifts from the
+  theme or a text pair drops under 4.5:1 contrast. All emails share the one
+  shell in `templates.py` (`_PAGE`), so code and event emails got the same look;
   their words, keys and timing did not change.
-- **Logo.** `mail/logo.py` draws the favicon's shapes as a 96 x 96 PNG with
-  `png.py` (about 600 bytes), shown at 40 px. `ResendProvider` attaches it as
-  the inline image `cid:logo` whenever the HTML uses it; it is never stored in
-  `email_outbox`. With images off, the word "SeatPlan" beside it still reads.
+- **Logo.** The site's own logo (`frontend/src/design/seatplan-logo.png`, the
+  purple pin with an armchair and the word SeatPlan) resized to 300 px wide and
+  kept in `backend/app/mail/assets/` (the deployed function leaves out
+  `frontend/`). It is shown at 150 px. `ResendProvider` attaches it as the
+  inline image `cid:logo` whenever the HTML uses it; it is never stored in
+  `email_outbox`. With images off, its alt text "SeatPlan" reads.
 - **Buttons.** Confirmed, changed and reminder restaurant emails carry **Change
-  time** (filled) and **Cancel booking** (outlined). They open
+  time** (the site's pink main action) and **Cancel booking** (the site's
+  white button with red text and border). They open
   `/b/<token>?action=change` and `?action=cancel`. The manage page only opens
   the time form or the confirmation dialog from that: a link that is opened (by
   a person, a scanner or a preview) never changes or cancels anything. No
-  account or sign-in is involved: the secret link is the key (section 7).
+  account or sign-in is involved: the secret link is the key (section 7). The
+  HTML prints no web address; the plain-text version keeps the link.
+- **Languages.** The button labels, the "Cannot tap a button? Call ..." line and
+  the no-reply line are in `restaurant_text.py` in English, Portuguese, Spanish
+  and French, like the rest of the booking emails.
 - **No reply.** Every email says not to reply. There is no `Reply-To`: there is
-  no inbox behind the sender. Under the buttons, a diner who cannot tap one is
-  told to call the restaurant (its phone, when it has one).
-- **Payments, later.** `RestaurantBooking.note` and the `note` argument of
-  `booking_cancellation()` carry one optional sentence about money (a deposit
-  refunded or kept). Nothing fills them yet: the deposit code lives on the
-  branch `seatp-restaurants-main`.
-- **Not verified yet:** how Gmail, Outlook and Apple Mail show the logo, the
-  colours and the buttons (a real send to the Resend test address is the check).
+  no inbox behind the sender.
+- **Deposits.** The existing `payment_line` of `RestaurantBooking` still shows
+  the deposit row; the Stripe set-up and a refund sentence in the cancellation
+  email are a later job.
+- **Not verified yet:** how this look shows in a real inbox. The first version
+  (linen and green) was sent through Resend to the test address on 2026-11-23
+  and rejected; this one is redone in the site's colours. Outlook, Apple Mail
+  and Gmail on a phone are not checked either.

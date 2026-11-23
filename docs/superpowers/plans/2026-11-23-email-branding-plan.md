@@ -1,5 +1,14 @@
 # Email branding Implementation Plan
 
+> **Revision 2026-11-23 evening.** The first build used the old linen and bottle-green look
+> (branch `claude/table-step`) and the owner rejected it after seeing the real email in Gmail.
+> The email now follows the site's restaurants look and logo, on `restaurants/main`:
+> palette from `frontend/src/design/restaurant-theme.css` (lavender, white, purple, pink main
+> action, red cancel), the site's real logo (a 300 px copy in `backend/app/mail/assets/`),
+> restaurant words in four languages through `restaurant_text.py`, and no separate payments
+> note (the existing `payment_line` is kept). Where this file names the old colours or the drawn
+> logo, the revision wins.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Every SeatPlan email uses the product's palette, fonts and logo; restaurant emails carry "Change time" and "Cancel booking" buttons that open the manage page.
