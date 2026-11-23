@@ -3,14 +3,14 @@
 One layout for the three emails a booking sends the diner: confirmed, changed and
 reminder. In this order: the cover photo, "You're booked at ...", the date, time and
 party, "Table 4 · Seat 2 (facing the window)", the ambience sentences, the mini-map of
-the room, the address with a link to the map and the phone, and the manage link.
-The text version says the same without images. Every value arrives already
+the room, the address with a link to the map and the phone, and two buttons (Change time,
+Cancel booking) that open the manage page. The text version says the same without images,
+with the manage link in words. Every value arrives already
 formatted (app/restaurant_service/emails.py builds it from the booking), so this
 module only chooses words and has no database access.
 
-The cover photo is a remote image (an absolute https URL) because the email
-provider supports a single inline image, and that one is the mini-map
-(`cid:seatmap`). Nothing in here names any other diner: the facts have no field for one.
+The cover photo is a remote image (an absolute https URL) because the inline images are
+the mini-map (`cid:seatmap`) and the SeatPlan logo (`cid:logo`, added by the provider). Nothing in here names any other diner: the facts have no field for one.
 """
 
 import html
