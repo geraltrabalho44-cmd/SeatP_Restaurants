@@ -15,6 +15,7 @@ import { errorMessage, formatDate } from "../restaurant/format";
 import { useLoad } from "../restaurant/useLoad";
 import { OwnerShell } from "./OwnerShell";
 import { euroCents } from "./menuPrice";
+import { OFFER_TEMPLATES } from "./offerTemplates";
 import "./owner.css";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -141,7 +142,7 @@ export default function OffersPage() {
       {state.status === "loading" && <Skeleton label={t("Loading your offers")} lines={4} />}
       {state.status === "error" && <ErrorState message={t("Could not open your offers. Check your sign-in or retry.")} onRetry={() => reload()} />}
       {state.status === "ready" && (
-        <>
+        <div className="ow-stack">
           {creating && (
             <OfferForm
               venueId={venueId}
@@ -151,13 +152,54 @@ export default function OffersPage() {
               }}
             />
           )}
-          {state.data.offers.length === 0 && !creating && <p>{t("No offers yet. Make one to bring guests back, for example 10% off for guests who have not been in for 60 days.")}</p>}
+          {!creating && <ReadyMade venueId={venueId} taken={state.data.offers.map((offer) => offer.name)} onMade={(offer) => setData({ ...state.data, offers: [offer, ...state.data.offers] })} />}
+          {state.data.offers.length === 0 && !creating && <p className="rb-muted">{t("No offers yet. Pick one of the ready-made offers above, or make your own with New offer.")}</p>}
+          {state.data.offers.length > 0 && <h2 className="ow-subtitle ow-offers-title">{t("Your offers")}</h2>}
           {state.data.offers.map((offer) => (
             <OfferCard key={offer.id} venueId={venueId} offer={offer} limits={state.data} firstSegment={firstSegment} onChanged={(next) => setData({ ...state.data, offers: state.data.offers.map((o) => (o.id === next.id ? next : o)) })} />
           ))}
-        </>
+        </div>
       )}
     </OwnerShell>
+  );
+}
+
+/** Offers that are ready to use: one tap makes the offer, and it can be changed afterwards like any other. */
+function ReadyMade({ venueId, taken, onMade }: { venueId: string; taken: string[]; onMade: (offer: OfferView) => void }) {
+  const { t } = useT();
+  const toast = useToast();
+  const [busy, setBusy] = useState<string | null>(null);
+  const left = OFFER_TEMPLATES.filter((template) => !taken.includes(tr(template.name as Message)));
+  if (left.length === 0) return null;
+  const use = async (id: string): Promise<void> => {
+    const template = OFFER_TEMPLATES.find((item) => item.id === id);
+    if (!template) return;
+    setBusy(id);
+    try {
+      onMade(await createOffer(venueId, { ...template.input, name: tr(template.name as Message), gift_text: template.input.gift_text ? tr(template.input.gift_text as Message) : "", note: template.input.note ? tr(template.input.note as Message) : "" }));
+      toast.show(t("Offer made."), "success");
+    } catch (error) {
+      toast.show(errorMessage(error, t("We could not save the offer. Please try again.")), "danger");
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <section className="ow-ready" aria-label={t("Ready-made offers")}>
+      <h2 className="ow-subtitle">{t("Ready-made offers")}</h2>
+      <p className="rb-muted">{t("Pick one to start with. You can change anything about it afterwards.")}</p>
+      <div className="ow-ready-grid">
+        {left.map((template) => (
+          <article key={template.id} className="owner-card ow-ready-card">
+            <div className="owner-card-body">
+              <h3>{t(template.name as Message)}</h3>
+              <p className="rb-muted">{t(template.about as Message)}</p>
+              <Button variant="secondary" busy={busy === template.id} disabled={busy !== null && busy !== template.id} onClick={() => void use(template.id)}>{t("Use this offer")}</Button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

@@ -1,5 +1,11 @@
 """Demo data for the restaurants vertical: one invented restaurant, "Casa Lumen".
 
+TEST FIXTURE, NOT A PUBLIC RESTAURANT. "Casa Lumen" exists only because the automated tests (backend tests and
+the browser tests in frontend/e2e) need a small, predictable restaurant with known tables, hours and bookings. It
+is not shown on the public site: `public_catalogue` turns it into a draft, so visitors only see the 20 Lisbon and
+15 Porto restaurants. It is kept in the code on purpose, not forgotten; do not delete it without rewriting the
+tests that use it.
+
 seed() adds the rows (it assumes the demo organiser exists), does not commit,
 and returns entry links by name for the demo home page.
 
@@ -255,15 +261,21 @@ def _seed_service(
     day: date,
     service: tuple[str, range, time, time, int],
     rng: random.Random,
+    parties: int | None = None,
+    sizes: tuple[int, ...] = PARTY_SIZES,
 ) -> None:
-    """Place one service's parties with the optimiser, like diners booking one by one."""
+    """Place one service's parties with the optimiser, like diners booking one by one.
+
+    `parties` (how many ask for a table) and `sizes` (the usual party sizes) default to the same for every restaurant;
+    the history seed passes its own so that each restaurant has a busyness of its own.
+    """
     name, _weekdays, start, end, cap = service
     times = times_between(start, end, 15)[:-4]  # nobody books in the last hour
     busy: occupancy.Busy = {}
     arriving: dict[time, int] = {}
     past = day < now_local(venue).date()
-    for _ in range(PARTIES_PER_SERVICE[name]):
-        size, at = rng.choice(PARTY_SIZES), rng.choice(times)
+    for _ in range(PARTIES_PER_SERVICE[name] if parties is None else parties):
+        size, at = rng.choice(sizes), rng.choice(times)
         window = window_for(at, _turn(size))
         picks = recommend_table(specs, busy, PartyNeeds(size).spec(window), top=1)
         if not picks or arriving.get(at, 0) + size > cap:

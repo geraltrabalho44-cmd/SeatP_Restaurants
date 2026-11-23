@@ -110,7 +110,7 @@ seatplan/
     usability/                 Usability test kit (script, consent, SUS, results template)
     report/                    Project report (Markdown and PDF)
     team/                      Team pack: tasks, issues, walkthrough questions, demo script
-  .github/workflows/           CI and the email cron
+  .github/workflows/           CI
 ```
 
 Rule for parallel work: **edit only the files your task owns.** Stub files exist

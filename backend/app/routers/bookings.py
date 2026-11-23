@@ -31,6 +31,7 @@ from app.restaurant_service import (
 )
 from app.restaurant_service.alternatives import conflict_response
 from app.restaurant_service.availability import MAX_ONLINE_PARTY, check_party_size, max_party
+from app.restaurant_service.booking_caps import check_email_recipient_limit
 from app.restaurant_service.changes import record_change
 from app.restaurant_service.clock import hhmm, is_past, venue_zone
 from app.restaurant_service.venue_access import load_published
@@ -197,6 +198,9 @@ def cancel_booking(manage_token: str, request: Request, session: db.SessionDep) 
     venue = _venue_of(session, booking.venue_id)
     if booking.status != "confirmed":
         raise ApiError(409, "conflict", "This booking can no longer be cancelled.")
+    # A meal that already started (or happened) cannot be "cancelled" by the diner: it would
+    # corrupt the restaurant's numbers and send a cancellation email for a meal already eaten.
+    manage_flow.check_changeable(venue, booking)
     manage_flow.cancel_booking(session, venue, booking, actor="diner", token=manage_token)
     session.commit()
     detail = booking_rows.describe(session, venue, booking)
@@ -210,6 +214,7 @@ def join_waitlist(
 ) -> dict[str, Any]:
     """Join the waitlist. Answers with the place in line and an estimated wait."""
     _limit(session, request, "waitlist", WAITLIST_LIMIT)
+    check_email_recipient_limit(session, str(body.email))
     venue = load_published(session, venue_public_id)
     check_party_size(session, venue, body.party)
     if is_past(venue, body.date, body.time):

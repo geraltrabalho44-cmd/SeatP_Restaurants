@@ -3,6 +3,7 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
+import { Field } from "./Field";
 import { Legend } from "./Legend";
 
 describe("Button", () => {
@@ -85,5 +86,25 @@ describe("Legend", () => {
     render(<Legend states={["free"]} markedLabel="Changed by this preview" />);
     expect(screen.getByText("Changed by this preview")).toBeTruthy();
     expect(document.querySelector("rect.ring-marked")).not.toBeNull();
+  });
+});
+
+describe("Field with a password", () => {
+  it("has an eye inside the field that shows and hides what is typed", () => {
+    render(<Field label="Password" type="password" />);
+    const input = screen.getByLabelText("Password") as HTMLInputElement;
+    expect(input.type).toBe("password");
+    const eye = screen.getByRole("button", { name: "Show password" });
+    expect(eye.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(eye);
+    expect(input.type).toBe("text");
+    expect(screen.getByRole("button", { name: "Hide password" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(input.type).toBe("password");
+  });
+
+  it("is not added to a field that is not a password", () => {
+    render(<Field label="Email" type="email" />);
+    expect(screen.queryByRole("button")).toBeNull();
   });
 });

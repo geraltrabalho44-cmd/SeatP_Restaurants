@@ -8,7 +8,6 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { searchRestaurants } from "../../api/discovery";
 import type { FeatureKey, RestaurantCard as Card, SearchQuery, SearchWhen } from "../../api/discovery";
 import { Button, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
-import { MapCredits } from "../../maps/MapCredits";
 import { errorMessage } from "../restaurant/format";
 import { ContextControls } from "./ContextControls";
 import { DiscoverBar } from "./DiscoverBar";
@@ -17,7 +16,7 @@ import { PublicHeaderActions } from "./PublicHeaderActions";
 import { RestaurantCard } from "./RestaurantCard";
 import { completeWhen, cuisineLabel, DISCOVERY_FEATURE_LABELS, loadPlace, savePlace } from "./discoverModel";
 import type { Place } from "./discoverModel";
-import { loadDiscoveryState, saveDiscoveryState } from "./discoveryState";
+import { emptyDiscoveryState, loadDiscoveryState, saveDiscoveryState } from "./discoveryState";
 import { FIRST_HEADLINE, visitHeadline } from "./visitHeadline";
 import "./discover.css";
 const ResultsMap = lazy(() => import("../../maps/ResultsMap"));
@@ -45,9 +44,13 @@ function contextSummary(place: Place | null, date: string, time: string, party: 
   const when = new Date(year, month - 1, day).toLocaleDateString(activeTag(), { day: "numeric", month: "short" });
   return `${where} · ${when}, ${time} · ${people}`;
 }
-export default function DiscoverPage() {
+/** `fresh`: the visitor clicked the logo, so the page starts as on arriving, with no place, filters, search or scroll kept. */
+/** The map of the home page opens on Lisbon until the visitor chooses a place. */
+const HOME_VIEW = { lat: 38.7223, lng: -9.1393, zoom: 13 };
+
+export default function DiscoverPage({ fresh = false }: { fresh?: boolean } = {}) {
   const {t,label,locale} = useT();
-  const [saved] = useState(loadDiscoveryState);
+  const [saved] = useState(fresh ? emptyDiscoveryState : loadDiscoveryState);
   const [headline, setHeadline] = useState(FIRST_HEADLINE);
   useEffect(() => setHeadline(visitHeadline()), []);
   const [text, setText] = useState(saved.text);
@@ -55,9 +58,8 @@ export default function DiscoverPage() {
   const [cuisines, setCuisines] = useState<string[]>(saved.cuisines);
   const [prices, setPrices] = useState<number[]>(saved.prices);
   const [features, setFeatures] = useState<FeatureKey[]>(saved.features);
-  const [place, setPlace] = useState<Place | null>(loadPlace);
-  const [locating, setLocating] = useState(false);
-  const [locationNote, setLocationNote] = useState("");
+  const [place, setPlace] = useState<Place | null>(fresh ? null : loadPlace);
+  useEffect(() => { if (fresh) { savePlace(null); window.scrollTo?.(0, 0); } }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, when the page opens fresh
   const [date, setDate] = useState(saved.date);
   const [time, setTime] = useState(saved.time);
   const [party, setParty] = useState(saved.party);
@@ -153,26 +155,6 @@ export default function DiscoverPage() {
   const choosePlace = (next: Place | null): void => {
     setPlace(next);
     savePlace(next);
-    setLocationNote("");
-  };
-  const nearMe = (): void => {
-    setLocationNote("");
-    if (!("geolocation" in navigator)) {
-      setLocationNote("Your browser cannot tell us where you are. Choose a city instead.");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocating(false);
-        choosePlace({ label: t("Near me"), lat: position.coords.latitude, lng: position.coords.longitude });
-      },
-      () => {
-        setLocating(false);
-        setLocationNote("We could not get your location. Choose a city instead.");
-      },
-      { timeout: 10_000, maximumAge: 300_000 },
-    );
   };
   // Picking a date is enough to ask "what is free": the time starts at dinner, ready to change.
   const changeDate = (value: string): void => {
@@ -212,7 +194,9 @@ export default function DiscoverPage() {
   };
   const closePinSummary = (): void => {
     // A hidden Leaflet map remains mounted behind the fallback diagram.
-    const pin = document.querySelector<HTMLElement>('.schematic-pin[aria-pressed="true"]') ?? document.querySelector<HTMLElement>(".discover-pin-selected");
+    // By the picked pin's id, not by "pressed": while the pointer rests on another pin the diagram shows that
+    // one's preview and nothing is pressed, and the focus would not come back.
+    const pin = (pinned ? document.querySelector<HTMLElement>(`.schematic-pin[data-pin-id="${CSS.escape(pinned)}"]`) : null) ?? document.querySelector<HTMLElement>('.schematic-pin[aria-pressed="true"]') ?? document.querySelector<HTMLElement>(".discover-pin-selected");
     setPinned(null);
     window.requestAnimationFrame(() => pin?.focus({preventScroll:true}));
   };
@@ -232,13 +216,12 @@ export default function DiscoverPage() {
   const selectedCard = items.find(card => card.public_id === pinned);
   // Hover and selection share one outline, including when the pointer is over the selected card.
   const previewId = highlighted === pinned ? null : highlighted;
-  return <div className={`discover-route${!wide && view === "map" ? " is-map-view" : ""}`}><PageShell title={t("Find a table you will love")} width="wide" restaurantBrand headerActions={<PublicHeaderActions />} footerContent={showMap && <MapCredits />}>
+  return <div className={`discover-route${!wide && view === "map" ? " is-map-view" : ""}`}><PageShell title={t("Find a table you will love")} width="wide" restaurantBrand headerActions={<PublicHeaderActions />}>
     <section className={`discover-top${!wide && view === "map" ? " discover-top-compact" : ""}`} aria-labelledby="discover-heading">
       <h1 id="discover-heading" aria-label={wide || headline !== FIRST_HEADLINE ? label(headline) : t("Find your table.")}><span className="discover-desktop-title">{label(headline)}</span><span className="discover-mobile-title">{headline === FIRST_HEADLINE ? t("Find your table.") : label(headline)}</span></h1><p>{t("See the room and choose where you’ll sit.")}</p>
     </section>
     {!wide&&<button className="discover-summary" type="button" aria-label={`When and where: ${contextSummary(place,date,time,party)}`} aria-haspopup="dialog" aria-expanded={drawer} onClick={openFilters}>{contextSummary(place,date,time,party)} <span aria-hidden="true">▾</span></button>}
-    <DiscoverBar wide={wide} text={text} onText={setText} place={place} onPlace={choosePlace} locating={locating} onNearMe={nearMe} date={date} time={time} party={party} onDate={changeDate} onTime={setTime} onParty={setParty} onClearWhen={clearWhen} cuisines={cuisines} onCuisines={setCuisines} filterCount={filterCount} drawerOpen={drawer} onDrawer={openFilters}/>
-      {locationNote&&<p role="status">{locationNote}</p>}
+    <DiscoverBar wide={wide} text={text} onText={setText} place={place} onPlace={choosePlace} date={date} time={time} party={party} onDate={changeDate} onTime={setTime} onParty={setParty} onClearWhen={clearWhen} cuisines={cuisines} onCuisines={setCuisines} filterCount={filterCount} drawerOpen={drawer} onDrawer={openFilters}/>
       {interpreted.length>0 && text===q && <div className="discover-active" aria-label={t("Search interpretation")}>{interpreted.map((chip,index)=><button type="button" className="discover-chip" key={index} onClick={()=>{
         const fold=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
         const at=fold(text).indexOf(fold(chip));
@@ -250,13 +233,11 @@ export default function DiscoverPage() {
       {features.map(key=><button key={key} type="button" className="discover-chip" aria-label={`Remove ${label(DISCOVERY_FEATURE_LABELS[key])}`} onClick={()=>setFeatures(features.filter(f=>f!==key))}>{label(DISCOVERY_FEATURE_LABELS[key])} ×</button>)}
     </div>
     {features.includes("sun")&&<p className="discover-filter-note">{t("Sunlight at your booking time appears on the table map.")}</p>}
-    <FilterDrawer open={drawer} onClose={()=>setDrawer(false)} onApply={applyFilters} cuisines={draft.cuisines} onCuisines={value=>setDraft({...draft,cuisines:value})} prices={draft.prices} onPrices={value=>setDraft({...draft,prices:value})} features={draft.features} onFeatures={value=>setDraft({...draft,features:value})} allCuisines={allCuisines} onAllCuisines={setAllCuisines} hasWhen={completeWhen(draft.date,draft.time,Number(draft.party))!==null} availableOnly={draft.availableOnly} onAvailableOnly={value=>setDraft({...draft,availableOnly:value})} onClear={()=>setDraft({...draft,cuisines:[],prices:[],features:[],availableOnly:true})} total={previewTotal} showQuick narrowExtras={<ContextControls variant="stacked" place={draft.place} onPlace={value=>setDraft({...draft,place:value})} date={draft.date} time={draft.time} party={draft.party} onDate={value=>setDraft({...draft,date:value,time:draft.time||(value?DEFAULT_TIME:"")})} onTime={value=>setDraft({...draft,time:value})} onParty={value=>setDraft({...draft,party:value})} onClearWhen={()=>setDraft({...draft,date:"",time:""})}/>}/>
+    <FilterDrawer open={drawer} onClose={()=>setDrawer(false)} onApply={applyFilters} cuisines={draft.cuisines} onCuisines={value=>setDraft({...draft,cuisines:value})} prices={draft.prices} onPrices={value=>setDraft({...draft,prices:value})} features={draft.features} onFeatures={value=>setDraft({...draft,features:value})} allCuisines={allCuisines} onAllCuisines={setAllCuisines} hasWhen={completeWhen(draft.date,draft.time,Number(draft.party))!==null} availableOnly={draft.availableOnly} onAvailableOnly={value=>setDraft({...draft,availableOnly:value})} onClear={()=>setDraft({...draft,cuisines:[],prices:[],features:[],availableOnly:true,date:"",time:"",party:"2"})} total={previewTotal} showQuick narrowExtras={<ContextControls variant="stacked" place={draft.place} onPlace={value=>setDraft({...draft,place:value})} date={draft.date} time={draft.time} party={draft.party} onDate={value=>setDraft({...draft,date:value,time:draft.time||(value?DEFAULT_TIME:"")})} onTime={value=>setDraft({...draft,time:value})} onParty={value=>setDraft({...draft,party:value})} onClearWhen={()=>setDraft({...draft,date:"",time:""})}/>}/>
     <div className="discover-results-head"><h2 id="discover-results-title" tabIndex={-1}>{text?t("Search results"):results.status==="ready"?`${results.total} ${results.total===1?t("restaurant"):t("restaurants")}${place?" "+t("near {place}",{place:place.label==="Lisboa" && locale==="en"?"Lisbon":place.label}):""}`:t("Finding restaurants")}</h2>
-      {(features.length+cuisines.length+prices.length)>0&&<button type="button" className="discover-more" onClick={()=>{setCuisines([]);setPrices([]);setFeatures([]);}}>{t("Clear filters")}</button>}
+      {(features.length+cuisines.length+prices.length>0||date!==""||time!=="")&&<button type="button" className="discover-more" onClick={()=>{setCuisines([]);setPrices([]);setFeatures([]);setDate("");setTime("");}}><span aria-hidden="true">✕</span>{t("Clear filters")}</button>}
       <div className="discover-view-switch" role="group" aria-label={t("Results view")}><Button variant={view==="list"?"primary":"secondary"} aria-pressed={view==="list"} onClick={()=>setView("list")}>{t("List")}</Button><Button variant={view==="map"?"primary":"secondary"} aria-pressed={view==="map"} onClick={()=>setView("map")}>{t("Map")}</Button></div>
-      {wide&&when&&<p>{t("Around")} {when.time} · {t("Select a time to book")}</p>}
     </div>
-    {place?.label==="Near me"&&<p role="status" className="discover-sort-note">{t("Sorted by distance from where you are.")}</p>}
     <div className={`discover-results discover-view-${view}${results.status==="ready"&&!items.length?" is-empty":""}`}>
       <section className="discover-list" aria-label={t("Restaurants")} aria-busy={results.status==="loading"||updating}>
         {updating&&<p role="status">{when?t("Updating availability…"):t("Updating restaurants…")}</p>}
@@ -268,7 +249,7 @@ export default function DiscoverPage() {
           {items.length<results.total&&<Button className="discover-load-more" variant="secondary" busy={loadingMore} disabled={updating} onClick={()=>void showMore()}>{t("Show more")}</Button>}
         </>}
       </section>
-      {showMap&&<div className="discover-map-column"><Suspense fallback={<Skeleton label={t("Loading the map")} lines={4}/>}><ResultsMap pins={pins} highlightedId={previewId} selectedId={previewId ? null : pinned} centerRequest={mapFocus?.id === pinned ? mapFocus : null} onSelect={selectPin} center={place} onFallback={setDiagram}/></Suspense>
+      {showMap&&<div className="discover-map-column"><Suspense fallback={<Skeleton label={t("Loading the map")} lines={4}/>}><ResultsMap pins={pins} highlightedId={previewId} selectedId={previewId ? null : pinned} centerRequest={mapFocus?.id === pinned ? mapFocus : null} onSelect={selectPin} center={place} home={HOME_VIEW} onFallback={setDiagram}/></Suspense>
         {!wide&&selectedCard&&<div id="discover-selected-result" className="discover-pin-summary" aria-live="polite"><RestaurantCard card={selectedCard} when={updating?null:when} navigationWhen={when} pending={updating} highlighted={false} selected onHighlight={()=>{}} number={pinNumbers.get(selectedCard.public_id)} compact/><button type="button" className="discover-map-close" aria-label={t("Close summary")} onClick={closePinSummary}>×</button></div>}
       </div>}
     </div>

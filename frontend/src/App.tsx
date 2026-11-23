@@ -1,12 +1,12 @@
 // The complete route table. Every screen of SeatPlan is listed here once,
 // so feature owners fill in their page file and never need to touch this one.
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "./design/components";
 import DinerAccountPage from "./pages/discover/DinerAccountPage";
 import DinerSignUpPage from "./pages/discover/DinerSignUpPage";
 import DinerSocialCallbackPage from "./pages/discover/DinerSocialCallbackPage";
-import DiscoverPage from "./pages/discover/DiscoverPage";
+import DiscoverRoute from "./pages/discover/DiscoverRoute";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import BookingPage from "./pages/restaurant/BookingPage";
@@ -33,14 +33,13 @@ const NewRestaurantWizard = lazy(() => import("./pages/owner/NewRestaurantWizard
 const ProfilePage = lazy(() => import("./pages/owner/ProfilePage"));
 const PhotoEditorPage = lazy(() => import("./pages/owner/PhotoEditor"));
 import WeatherRainOffer from "./pages/restaurant/WeatherRainOffer";
-const StaffPage = lazy(() => import("./pages/restaurant/StaffPage"));
 const HoursPage = lazy(() => import("./pages/owner/HoursPage"));
 const MenuPage = lazy(() => import("./pages/owner/MenuPage"));
 const PublishReview = lazy(() => import("./pages/owner/PublishReview"));
 const UnsubscribePage = lazy(() => import("./pages/legal/UnsubscribePage"));
 const InsightsPage = lazy(() => import("./pages/owner/InsightsPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/owner/ForgotPasswordPage"));
-const MessagesPage = lazy(() => import("./pages/owner/MessagesPage"));
+const MessagesPage = lazy(() => import("./pages/owner/EmailMessagesPage"));
 const OffersPage = lazy(() => import("./pages/owner/OffersPage"));
 const PaymentsPage = lazy(() => import("./pages/owner/PaymentsPage"));
 const ResetPasswordPage = lazy(() => import("./pages/owner/ResetPasswordPage"));
@@ -52,11 +51,16 @@ const MessageActionPage = lazy(() => import("./pages/messages/MessageActionPage"
 const PaymentReturnPage = lazy(() => import("./pages/pay/PaymentReturnPage"));
 const RoomEditorPage = lazy(() => import("./pages/room-editor/RoomEditorPage"));
 
+function ToOpeningHours() {
+  const { venueId = "" } = useParams();
+  return <Navigate to={`/owner/${encodeURIComponent(venueId)}/hours`} replace />;
+}
+
 export default function App() {
   return (
     <Suspense fallback={<Skeleton lines={4} label="Loading" />}>
     <Routes>
-      <Route path="/" element={<DiscoverPage />} />
+      <Route path="/" element={<DiscoverRoute />} />
       {/* The original SeatPlan home page, with the demo links, moved here (spec 4.1). */}
       <Route path="/demo" element={<Home />} />
       <Route path="/login" element={<Login />} />
@@ -81,7 +85,8 @@ export default function App() {
       <Route path="/m/:token" element={<MessageActionPage />} />
       <Route path="/owner/:venueId/review" element={<PublishReview />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />
-      <Route path="/owner/:venueId/dashboard" element={<StaffPage />} />
+      {/* The service floor and the staff workspace were removed: SeatPlan is for bookings, not for the day-to-day service. */}
+      <Route path="/owner/:venueId/dashboard" element={<ToOpeningHours />} />
       <Route path="/owner/:venueId/rooms" element={<RoomEditorPage />} />
       {/* Events: personal attendee link, organiser workspace */}
       <Route path="/e/:token" element={<AttendeePage />} />
@@ -108,7 +113,7 @@ export default function App() {
       {/* Deposits: the pretend payment page (demo only) and where every payment page sends the diner back. */}
       <Route path="/pay/demo/:paymentId" element={<DemoCheckoutPage />} />
       <Route path="/pay/return/:paymentId" element={<PaymentReturnPage />} />
-      <Route path="/staff/:venueId" element={<StaffPage />} />
+      <Route path="/staff/:venueId" element={<Navigate to="/owner" replace />} />
       {/* Shared: floor-plan editor for both kinds of venue */}
       <Route path="/editor/:venueId" element={<EditorPage />} />
       <Route path="*" element={<NotFound />} />

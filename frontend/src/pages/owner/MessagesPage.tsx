@@ -59,7 +59,6 @@ function MessagesForm({ venueId, view, onSaved }: { venueId: string; view: Messa
   const [problem, setProblem] = useState<string | null>(null);
   const capValue = parseCap(cap);
   const set = (patch: Partial<MessageSettings>): void => setDraft({ ...draft, ...patch });
-  const demo = view.sms_provider === "demo" && view.whatsapp_provider === "demo";
   const save = async (): Promise<void> => {
     if (capValue === null) {
       setProblem(t("The monthly limit is a whole number from 0 to 5000."));
@@ -79,11 +78,6 @@ function MessagesForm({ venueId, view, onSaved }: { venueId: string; view: Messa
   };
   return (
     <>
-      {demo && (
-        <p className="rb-notice" role="status">
-          <strong>{t("Demo mode.")}</strong> {t("Messages are written to the log, never sent. When a provider is connected, this page stays the same.")}
-        </p>
-      )}
       <section className="owner-card" aria-label={t("Channels")}>
         <div className="owner-card-body">
           <h2 className="ow-subtitle">{t("Channels")}</h2>

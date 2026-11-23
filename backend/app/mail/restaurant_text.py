@@ -41,16 +41,16 @@ _TEXT: dict[str, dict[str, str]] = {
         "fr": "Un rappel de votre réservation chez {restaurant}.",
     },
     "closing": {
-        "en": "You can change or cancel the booking, or pick another chair, with the link below.",
-        "pt": "Podes alterar ou cancelar a reserva, ou escolher outra cadeira, com a ligação abaixo.",
-        "es": "Puedes cambiar o cancelar la reserva, o elegir otra silla, con el enlace de abajo.",
-        "fr": "Vous pouvez modifier ou annuler la réservation, ou choisir une autre chaise, avec le lien ci-dessous.",
+        "en": "Use the buttons below to change the booking or cancel it.",
+        "pt": "Usa os botões abaixo para alterar a reserva ou cancelá-la.",
+        "es": "Usa los botones de abajo para cambiar la reserva o cancelarla.",
+        "fr": "Utilisez les boutons ci-dessous pour modifier la réservation ou l'annuler.",
     },
     "closing_reminder": {
-        "en": "If you cannot come, please cancel with the link below so someone else can have the table.",
-        "pt": "Se não puderes vir, cancela com a ligação abaixo para que outra pessoa possa ficar com a mesa.",
-        "es": "Si no puedes venir, cancela con el enlace de abajo para que otra persona pueda tener la mesa.",
-        "fr": "Si vous ne pouvez pas venir, annulez avec le lien ci-dessous pour qu'une autre personne puisse avoir la table.",
+        "en": "If you cannot come, please cancel with the button below so someone else can have the table.",
+        "pt": "Se não puderes vir, cancela com o botão abaixo para que outra pessoa possa ficar com a mesa.",
+        "es": "Si no puedes venir, cancela con el botón de abajo para que otra persona pueda tener la mesa.",
+        "fr": "Si vous ne pouvez pas venir, annulez avec le bouton ci-dessous pour qu'une autre personne puisse avoir la table.",
     },
     "subject_confirmed": {"en": "Booked", "pt": "Reservado", "es": "Reservado", "fr": "Réservé"},
     "subject_changed": {"en": "Updated", "pt": "Atualizada", "es": "Actualizada", "fr": "Modifiée"},
@@ -99,11 +99,29 @@ _TEXT: dict[str, dict[str, str]] = {
         "es": "Gestionar mi reserva",
         "fr": "Gérer ma réservation",
     },
-    "button_help": {
-        "en": "If the button does not work, copy this link:",
-        "pt": "Se o botão não funcionar, copia esta ligação:",
-        "es": "Si el botón no funciona, copia este enlace:",
-        "fr": "Si le bouton ne fonctionne pas, copiez ce lien :",
+    "change_time": {
+        "en": "Change time",
+        "pt": "Alterar hora",
+        "es": "Cambiar la hora",
+        "fr": "Modifier l'heure",
+    },
+    "cancel_booking": {
+        "en": "Cancel booking",
+        "pt": "Cancelar reserva",
+        "es": "Cancelar reserva",
+        "fr": "Annuler la réservation",
+    },
+    "cannot_tap": {
+        "en": "Cannot tap a button? Call {phone}.",
+        "pt": "Não consegues carregar num botão? Liga para {phone}.",
+        "es": "¿No puedes pulsar un botón? Llama al {phone}.",
+        "fr": "Impossible d'appuyer sur un bouton ? Appelez le {phone}.",
+    },
+    "no_reply": {
+        "en": "Please do not reply to this email: nobody reads this address.",
+        "pt": "Não respondas a este email: ninguém lê este endereço.",
+        "es": "No respondas a este email: nadie lee esta dirección.",
+        "fr": "Merci de ne pas répondre à cet email : personne ne lit cette adresse.",
     },
     "team": {
         "en": "The {sender} team",
@@ -120,22 +138,22 @@ _TEXT: dict[str, dict[str, str]] = {
     # The footer does not say "we never send marketing": a diner may have ticked the box for the restaurant's offers.
     "stop": {
         "en": (
-            "This email is only about your booking. To stop these emails, cancel the booking with the link above: you will "
+            "This email is only about your booking. To stop these emails, cancel the booking using the button or link above: you will "
             "get nothing more about it. If you ticked the box for offers from this restaurant, those arrive in separate "
             "emails and each has its own link to stop them."
         ),
         "pt": (
-            "Este email é só sobre a tua reserva. Para deixares de os receber, cancela a reserva com a ligação acima: não "
+            "Este email é só sobre a tua reserva. Para deixares de os receber, cancela a reserva com o botão ou a ligação acima: não "
             "recebes mais nada sobre ela. Se marcaste a caixa das ofertas deste restaurante, essas chegam em emails à "
             "parte e cada um tem a sua própria ligação para os parares."
         ),
         "es": (
-            "Este email es solo sobre tu reserva. Para dejar de recibirlos, cancela la reserva con el enlace de arriba: no "
+            "Este email es solo sobre tu reserva. Para dejar de recibirlos, cancela la reserva con el botón o el enlace de arriba: no "
             "recibirás nada más sobre ella. Si marcaste la casilla de ofertas de este restaurante, esas llegan en emails "
             "aparte y cada uno tiene su propio enlace para darte de baja."
         ),
         "fr": (
-            "Cet email ne concerne que votre réservation. Pour ne plus les recevoir, annulez la réservation avec le lien "
+            "Cet email ne concerne que votre réservation. Pour ne plus les recevoir, annulez la réservation avec le bouton ou le lien "
             "ci-dessus : vous ne recevrez plus rien à son sujet. Si vous avez coché la case des offres de ce restaurant, "
             "elles arrivent dans des emails séparés, chacun avec son propre lien pour les arrêter."
         ),

@@ -44,6 +44,10 @@ ENGLISH_MARKERS = (
     "Your table",
     "If the button does not work",
     "The SeatPlan team",
+    "Change time",
+    "Cancel booking",
+    "Cannot tap",
+    "Please do not reply",
 )
 
 
@@ -68,8 +72,10 @@ def test_an_email_in_another_language_has_no_english_in_it(locale: str) -> None:
     head, day, at, opening, manage, table = FACTS[locale]
     parts = booking_email("confirmed", facts(locale))
     assert parts.subject == f"{head} Casa Lumen, {day} {at}"
+    # The text version has the manage link; the HTML has the two buttons instead (tested below).
+    assert manage in parts.body_text, locale
     for body in (parts.body_text, parts.body_html):
-        assert opening in body and manage in body and table in body, locale
+        assert opening in body and table in body, locale
         for english in ENGLISH_MARKERS:
             assert english not in body, (locale, english)
     assert f'<html lang="{locale}">' in parts.body_html
@@ -97,15 +103,39 @@ def test_english_is_unchanged_and_an_unknown_language_reads_as_english() -> None
     assert odd.subject == english.subject and odd.body_text == english.body_text
 
 
-def test_the_email_wears_the_restaurant_colours_not_the_old_blue() -> None:
+def test_the_email_wears_the_site_look_not_the_old_blue() -> None:
     html = booking_email(
         "confirmed", facts("pt", maps_url="https://maps.example.com/x", address="Rua Augusta 1")
     ).body_html
-    assert "#a12f6f" in html  # the button: the site's pink
+    assert "#b0347a" in html  # the main button: the site's pink
     assert "#1d4ed8" not in html  # the old blue
     assert "#f8f7fc" in html  # the site's paper
-    assert "#4f3f8f" in html  # the map link: the site's purple
-    assert re.search(r"<a [^>]*background:#a12f6f[^>]*>Gerir a minha reserva</a>", html)
+    assert "#4f3f8f" in html  # the headline and the map link: the site's purple
+    assert re.search(r"<a [^>]*background:#b0347a[^>]*>Alterar hora</a>", html)
+    assert re.search(r"<a [^>]*color:#923b31[^>]*>Cancelar reserva</a>", html)
+
+
+@pytest.mark.parametrize(
+    ("locale", "change", "cancel", "tap", "no_reply"),
+    [
+        ("pt", "Alterar hora", "Cancelar reserva", "Liga para +351 210 000 000", "Não respondas"),
+        ("es", "Cambiar la hora", "Cancelar reserva", "Llama al +351 210 000 000", "No respondas"),
+        (
+            "fr",
+            "Modifier l&#x27;heure",
+            "Annuler la réservation",
+            "Appelez le +351 210 000 000",
+            "Merci de ne pas répondre",
+        ),
+    ],
+)
+def test_the_buttons_the_phone_line_and_the_no_reply_line_are_translated(
+    locale: str, change: str, cancel: str, tap: str, no_reply: str
+) -> None:
+    parts = booking_email("confirmed", facts(locale, phone="+351 210 000 000"))
+    assert f">{change}</a>" in parts.body_html and f">{cancel}</a>" in parts.body_html
+    assert tap in parts.body_html
+    assert no_reply in parts.body_html and no_reply in parts.body_text
 
 
 def test_a_chair_and_the_deposit_are_written_in_the_language_without_the_english_sentences() -> (
@@ -187,3 +217,17 @@ def test_the_table_sentences_and_the_chair_are_in_the_language_of_the_booking(
     assert all(
         re.search(r"Direct|Sunset|Facing|window|View of", p) is None for p in facts.phrases
     ), facts.phrases
+
+
+@pytest.mark.parametrize(
+    ("locale", "phrase"),
+    [
+        ("pt", "com o botão ou a ligação acima"),
+        ("es", "con el botón o el enlace de arriba"),
+        ("fr", "avec le bouton ou le lien ci-dessus"),
+    ],
+)
+def test_the_footer_names_the_button_as_well_as_the_link_in_every_language(
+    locale: str, phrase: str
+) -> None:
+    assert phrase in booking_email("confirmed", facts(locale)).body_html

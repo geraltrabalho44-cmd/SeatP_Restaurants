@@ -40,6 +40,10 @@
 .discover-pin-muted span {
   background:#fff;color:#44627a;box-shadow:0 0 0 1px #8ba9bc;transform:scale(.82);
 }
+/* Zoomed far out: a small dot on the true place, no number (see FAR_ZOOM in ResultsMap). */
+.is-far .discover-pin span { width:12px;height:12px;margin:10px;font-size:0;border-width:2px; }
+.is-far .discover-pin-active span,.is-far .discover-pin-selected span { width:20px;height:20px;margin:6px;transform:none; }
+.is-far .discover-pin-muted span { transform:none;background:#fff;box-shadow:0 0 0 1px #8ba9bc; }
 @media (prefers-reduced-motion:reduce) { .discover-pin span { transition:none; } }
 .restaurant-location-pin {
   border:2px solid var(--c-surface);border-radius:50%;background:var(--c-primary);
@@ -74,3 +78,7 @@
 .schematic-pin.is-muted .schematic-pin-disc { fill:var(--c-surface);stroke:var(--c-border-strong);transform:scale(.85); }
 .schematic-pin.is-muted .schematic-pin-number { fill:var(--c-text-muted); }
 .schematic-pin.is-muted .schematic-selected-ring { stroke:var(--c-border-strong); }
+
+/* The owner's location map is the site's map: same basemap, same round zoom buttons. */
+.owner-location-wrap { position: relative; }
+.owner-location-map .leaflet-control-attribution { display: none; }

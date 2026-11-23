@@ -1,8 +1,8 @@
 // Route /b/:token: the manage-or-cancel link from the confirmation page and
 // email. Anyone with the link can view, change or cancel, so the token is
 // the only key; a wrong or old token shows the same "link does not work".
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { cancelBooking, getBooking } from "../../api/restaurant";
 import type { BookingView } from "../../api/restaurant";
@@ -53,15 +53,26 @@ function ManageError({ error, onRetry }: { error: unknown; onRetry: () => void }
 
 /** Only bookings that have not started yet can be changed or cancelled by the diner. */
 function isEditable(booking: BookingView): boolean {
-  return booking.status === "confirmed";
+  return booking.status === "confirmed" && booking.can_change !== false;
 }
 
 function ManageBooking({ token, booking, onUpdate }: { token: string; booking: BookingView; onUpdate: (b: BookingView) => void }) {
   const { t } = useT();
   const toast = useToast();
   // Which part of the booking is being edited: opened by the diner's intent, one at a time.
-  const [panel, setPanel] = useState<"time" | "chair" | null>(null);
-  const [cancelling, setCancelling] = useState(false);
+  // The email's two buttons add ?action=change or ?action=cancel. It only decides what is open at
+  // the start (a form, or the confirmation dialog): opening the link never changes or cancels anything.
+  const [params, setParams] = useSearchParams();
+  const action = isEditable(booking) ? params.get("action") : null;
+  const [panel, setPanel] = useState<"time" | "chair" | null>(action === "change" ? "time" : null);
+  const [cancelling, setCancelling] = useState(action === "cancel");
+  // Once, on arrival: on a phone the form opens below the details card, so bring it into view; then
+  // forget the action, so pressing "Keep booking" and reloading does not open it all over again.
+  useEffect(() => {
+    if (action === "change") document.getElementById("rb-panel-time")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    if (params.has("action")) setParams((current) => { const next = new URLSearchParams(current); next.delete("action"); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Only GET /b/{token} sends max_party, so the answers to a change or a cancel keep the one we had.
   const update = (next: BookingView): void => onUpdate({ ...next, max_party: next.max_party ?? booking.max_party });
   const changed = (next: BookingView): void => {

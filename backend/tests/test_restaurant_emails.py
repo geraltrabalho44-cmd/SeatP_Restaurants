@@ -7,10 +7,12 @@ reminder carry the same. The queue stays idempotent, and nothing names anyone el
 """
 
 import base64
+import html
 import re
 import struct
 from datetime import date
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -18,6 +20,7 @@ from test_chosen_seat import add_seats, booked, room_with_window
 from test_restaurant_helpers import future_day, make_restaurant
 
 from app.mail.restaurant_templates import RestaurantBooking, booking_email, picture_alt, seat_line
+from app.mail.templates import NO_REPLY_TEXT
 from app.models import EmailOutbox, Organiser, Seat, Venue, VenuePhoto
 
 PNG = b"\x89PNG\r\n\x1a\n"
@@ -84,7 +87,7 @@ def test_the_confirmation_has_the_photo_the_table_the_chair_the_sentences_and_th
     # The mini-map is the one inline image, with words for screen readers.
     assert 'src="cid:seatmap"' in row.body_html and "Floor plan of Test Bistro" in row.body_html
     assert "https://www.google.com/maps/search/" in row.body_html
-    assert row.body_html.count("<img") == 2
+    assert row.body_html.count("<img") == 3  # the logo, the photo and the map
     # Ambience sentences for the stay (the table is by a window of a room with a north).
     assert "<ul" in row.body_html and "- " in row.body_text
     # The calendar invite names the address too.
@@ -205,9 +208,15 @@ def test_the_seat_line_and_the_words_for_the_picture() -> None:
     assert "seat" not in picture_alt("Casa Azul", "4", None).replace("seen from above", "")
 
 
+def test_restaurant_emails_say_not_to_reply() -> None:
+    parts = booking_email("confirmed", facts())
+    assert NO_REPLY_TEXT in parts.body_text and html.escape(NO_REPLY_TEXT) in parts.body_html
+
+
 def test_an_email_with_no_photo_map_or_address_leaves_those_parts_out() -> None:
     parts = booking_email("confirmed", facts())
-    assert "<img" not in parts.body_html and "cid:seatmap" not in parts.body_html
+    assert parts.body_html.count("<img") == 1  # only the logo
+    assert "cid:seatmap" not in parts.body_html
     assert "Where:" not in parts.body_text and "Map:" not in parts.body_text
     assert parts.subject == "Booked: Casa Azul, Fri 21 Nov at 20:00"
 
@@ -265,3 +274,112 @@ def test_the_map_marks_the_chair_at_the_second_joined_table_and_highlights_both_
     (row,) = rows(session, "booking_confirmed")
     assert row.image_png is not None
     assert "T5" in row.body_text and "T6" in row.body_text
+
+
+# ---------------------------------------------------------------- sent at once
+
+
+def test_with_resend_the_confirmation_is_sent_at_once_and_the_cron_does_not_send_it_again(
+    client: TestClient, session: Session, organiser: Organiser, monkeypatch
+) -> None:
+    import httpx
+
+    from app.config import get_settings
+    from app.mail.providers import ResendProvider
+
+    monkeypatch.setenv("EMAIL_PROVIDER", "resend")
+    monkeypatch.setenv("RESEND_API_KEY", "re_test_not_a_real_key_123")
+    monkeypatch.setenv("EMAIL_ALLOWLIST", "lia.moreno@example.com")
+    get_settings.cache_clear()
+    sent: list[dict] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        import json
+
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"})
+
+    monkeypatch.setattr(
+        "app.restaurant_service.emails.provider_from_settings",
+        lambda settings: ResendProvider(
+            settings.resend_api_key,
+            "SeatPlan <noreply@example.com>",
+            client=httpx.Client(transport=httpx.MockTransport(answer)),
+        ),
+    )
+    try:
+        seated_booking(client, session, organiser, future_day(7))
+    finally:
+        get_settings.cache_clear()
+    (row,) = rows(session, "booking_confirmed")
+    session.refresh(row)
+    assert row.status == "sent" and row.attempts >= 0
+    assert [message["to"] for message in sent] == [["lia.moreno@example.com"]]
+    assert sent[0]["subject"].startswith("Booked: ")
+
+
+def test_with_the_console_provider_the_confirmation_stays_queued(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    seated_booking(client, session, organiser, future_day(7))
+    (row,) = rows(session, "booking_confirmed")
+    assert row.status == "queued"
+
+
+KINDS = ["confirmed", "changed", "reminder"]
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_two_buttons_open_the_manage_page_on_the_right_panel(kind: str) -> None:
+    parts = booking_email(kind, facts())
+    page = parts.body_html
+    assert 'href="https://seatplan.example/b/tok?action=change"' in page
+    assert 'href="https://seatplan.example/b/tok?action=cancel"' in page
+    assert ">Change time</a>" in page and ">Cancel booking</a>" in page
+    change = re.search(r'<a href="[^"]*action=change"[^>]*>', page)
+    cancel = re.search(r'<a href="[^"]*action=cancel"[^>]*>', page)
+    assert change and "background:#b0347a" in change.group(0)  # the site's pink main action
+    assert cancel and "color:#923b31" in cancel.group(0)  # the site's red-outlined cancel
+    assert "background:#b0347a" not in cancel.group(0)
+    # The buttons are the links: no web address is printed.
+    assert "copy this link" not in page
+    assert "seatplan.example/b/tok" not in re.sub(r'href="[^"]*"', "", page)
+    # Apps that show no buttons still get the address in the text version.
+    assert "Manage my booking: https://seatplan.example/b/tok" in parts.body_text
+
+
+def test_a_link_with_a_query_gets_the_action_after_an_ampersand() -> None:
+    page = booking_email("confirmed", facts(link="https://seatplan.example/b/tok?x=1")).body_html
+    assert 'href="https://seatplan.example/b/tok?x=1&amp;action=cancel"' in page
+    assert "?x=1?action" not in page
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_the_phone_line_helps_a_diner_who_cannot_tap_a_button(kind: str) -> None:
+    with_phone = booking_email(kind, facts(phone="+351 210 000 000")).body_html
+    assert "Cannot tap a button? Call +351 210 000 000." in with_phone
+    assert "Cannot tap" not in booking_email(kind, facts(phone=None)).body_html
+
+
+def test_the_phone_line_escapes_the_phone() -> None:
+    page = booking_email("confirmed", facts(phone="<b>1</b>")).body_html
+    assert "Cannot tap a button? Call &lt;b&gt;1&lt;/b&gt;." in page and "<b>1</b>" not in page
+
+
+def test_the_headline_is_a_purple_heading() -> None:
+    page = booking_email("confirmed", facts()).body_html
+    heading = re.search(r"<h1 [^>]*>(.*?)</h1>", page)
+    assert heading and "You&#x27;re booked at Casa Azul." in heading.group(1)
+    assert "color:#4f3f8f" in heading.group(0) and "font-weight:800" in heading.group(0)
+
+
+def test_the_two_buttons_are_separated_by_a_space() -> None:
+    # Outlook for Windows ignores the margin on links; a plain space keeps the buttons apart,
+    # and in an app that strips styles the two labels do not run together.
+    page = booking_email("confirmed", facts()).body_html
+    assert "Change time</a> <a " in page
+
+
+def test_the_footer_names_the_button_as_well_as_the_link() -> None:
+    page = booking_email("confirmed", facts()).body_html
+    assert "using the button or link above" in page

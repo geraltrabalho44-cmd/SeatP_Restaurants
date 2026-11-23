@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 from sqlalchemy import select
@@ -39,7 +40,11 @@ def test_offer_holds_indoor_table_until_diner_accepts(client, session, organiser
     assert rain_plan.process(session) == 1
     assert rain_plan.process(session) == 0
     email = session.scalar(select(EmailOutbox).where(EmailOutbox.kind == "rain_offer"))
-    link = email.body_text.split()[-1]
+    found = re.search(
+        r"https?://\S+/b/rain/\S+", email.body_text
+    )  # the offer link, wherever it sits
+    assert found is not None
+    link = found.group(0)
     assert link.split("/")[-1] not in redact_links(link)
     path = "/api/b/" + confirmed["manage_token"] + "/rain"
     assert client.get(path).json()["status"] == "offered"

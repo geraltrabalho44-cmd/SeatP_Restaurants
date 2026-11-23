@@ -21,7 +21,7 @@ from app.models import Room, RoomOpening, Venue, VenuePhoto, Zone
 from app.restaurant_service import photos, reviews
 from app.restaurant_service.availability import PartyNeeds, max_party, slot_statuses
 from app.restaurant_service.schedule_edit import read_schedule
-from app.seed.lisbon_data import DEMO_ID_PREFIX, cover_credit
+from app.seed.lisbon_data import cover_credit, is_catalogue_id
 
 FEATURES = ("sun", "view", "accessible", "terrace")
 NEXT_TIMES = 3
@@ -45,6 +45,8 @@ class Search:
     limit: int = 20
     offset: int = 0
     within_m: int | None = None
+    # Only to order the results (nearest first) when the diner has not chosen a place: no distance is shown.
+    anchor: tuple[float, float] | None = None
     quiet: bool = False
     river: bool = False
 
@@ -153,7 +155,7 @@ def _card(
         "features": {name: bool((venue.features or {}).get(name)) for name in FEATURES},
         "next_times": times,
         "reviews": review_summary,
-        "demo_booking": venue.is_demo and venue.public_id.startswith(DEMO_ID_PREFIX),
+        "demo_booking": venue.is_demo and is_catalogue_id(venue.public_id),
     }
 
 
@@ -180,14 +182,20 @@ def search_restaurants(session: Session, search: Search) -> dict[str, Any]:
             if {"river", "rio"} & set(fold(" ".join([*(tags or []), description or ""])).split())
         }
         found = [item for item in found if item[0].id in river]
+
     # Nearest first when we know where the diner is; restaurants without a pin go last.
-    found.sort(
-        key=lambda item: (
-            item[1] is None,
-            item[1] if item[1] is not None else 0.0,
-            fold(item[0].name),
-        )
-    )
+    def order(item: tuple[Venue, float | None]) -> tuple[bool, float, str]:
+        venue, meters = item
+        if (
+            meters is None
+            and search.anchor is not None
+            and venue.lat is not None
+            and venue.lng is not None
+        ):
+            meters = distance_m(search.anchor[0], search.anchor[1], venue.lat, venue.lng)
+        return (meters is None, meters if meters is not None else 0.0, fold(venue.name))
+
+    found.sort(key=order)
     times: dict[int, list[str]] = {}
     if search.available and search.day is not None:
         kept = []
@@ -236,7 +244,7 @@ def public_page(session: Session, venue: Venue, *, preview: bool) -> dict[str, A
         "public_id": venue.public_id,
         "name": venue.name,
         "preview": preview,
-        "demo_booking": venue.is_demo and venue.public_id.startswith(DEMO_ID_PREFIX),
+        "demo_booking": venue.is_demo and is_catalogue_id(venue.public_id),
         "description": venue.description,
         "cuisines": list(venue.cuisines),
         "price_level": venue.price_level,

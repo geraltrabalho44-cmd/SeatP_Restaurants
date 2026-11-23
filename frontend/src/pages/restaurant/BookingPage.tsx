@@ -9,7 +9,6 @@ import { ApiError } from "../../api/client";
 import { getRestaurant } from "../../api/restaurant";
 import type { BookingConfirmation, RestaurantInfo } from "../../api/restaurant";
 import { EmptyState, ErrorState, PageShell, Skeleton, Stepper } from "../../design/components";
-import { WeatherCredit } from "./WeatherCredit";
 import { useT } from "../../i18n/I18nProvider";
 import { ChooseSeat } from "./ChooseSeat";
 import { Confirmation } from "./Confirmation";
@@ -42,7 +41,7 @@ export default function BookingPage() {
   const { state, reload } = useLoad(() => getRestaurant(venueId), venueId);
   const title = state.status === "ready" ? t("Book at {name}", { name: state.data.name }) : t("Book a table");
   return (
-    <PageShell title={title} footerContent={<WeatherCredit />}>
+    <PageShell title={title}>
       <div className="rb-page">
         <h1 className="rb-title">{title}</h1>
         {state.status === "loading" && <Skeleton lines={5} label={t("Loading the restaurant")} />}

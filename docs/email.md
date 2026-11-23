@@ -16,7 +16,7 @@ route (booking, seat, waitlist)
    v
 email_outbox table  <---- GET /api/emails/log (organisers, masked recipients)
    ^
-   |  every 15 min: GitHub Actions -> POST /api/internal/email/process (X-Cron-Secret)
+   |  right after a change, and once a minute on traffic: app/scheduler.py
    |
 process_due()  -> allowlist check -> Provider.send() -> Resend HTTP API (or console log)
 ```
@@ -25,8 +25,9 @@ process_due()  -> allowlist check -> Provider.send() -> Resend HTTP API (or cons
   body_text, body_html)` out. Every user value is HTML-escaped in the HTML
   version; both versions carry the manage-or-cancel link, the sender name
   ("SeatPlan") and a footer saying why the person received the email and how
-  to stop. The HTML is one column, max 560 px wide, inline styles only, no
-  images, and the link is also printed as text in case the button does not work.
+  to stop. The HTML is one column, max 560 px wide, inline styles only, and its
+  one image is the logo (section 11). The buttons are the links: the HTML
+  prints no web address (the plain-text version keeps it).
 - **ics.py**: the calendar invite (section 4).
 - **providers.py**: `Provider` protocol with `send(message) -> provider id`;
   `ConsoleProvider` (logs one line, never the body, because the body holds a
@@ -38,6 +39,8 @@ Why an outbox instead of sending inside the request: a booking must not fail or
 hang because the email service is slow, and a stored row can be retried,
 logged and shown to organisers. Because `enqueue()` does not commit, a booking
 that rolls back leaves no email behind.
+
+**The booking confirmation is also sent at once.** A diner who has just booked is looking at the confirmation page and expects the email within seconds, so `diner_flow.confirm_booking` calls `emails.send_confirmation_now` after the commit. It uses `send_now()` (the same claim as the cron, so nothing is sent twice) and only when `EMAIL_PROVIDER` is not `console`. It never raises: if Resend is down or the key is missing the row stays `queued` and the cron sends it. Changes, cancellations, reminders and deposit bookings still wait for the cron.
 
 ## 2. Idempotency and retries
 
@@ -72,8 +75,8 @@ Resend remembers for 24 hours **[verified 2026-11-10]**.
 **Backoff.** After a failed try, `attempts` goes up by one and the row waits
 5, 10, 20, then 40 minutes (`5 min * 2^(attempts-1)`). The fifth failure marks
 it `failed` and stops. `last_error` keeps the reason (max 500 characters,
-never the API key). Because the cron runs every 15 minutes, the real gaps are
-rounded up to the next run.
+never the API key). Because the work runs on traffic, a retry waits for the next visit
+after its time.
 
 **Reminders.** A reminder is a row whose `next_attempt_at` is in the future:
 a day before the start, or two hours before when that has passed, or none.
@@ -99,8 +102,8 @@ database keeps only hashes of those tokens everywhere else. So:
 - Retention: every `POST /internal/email/process` also runs
   `scrub_expired()`, which empties words and invite of finished rows older
   than `RETENTION_DAYS = 30`. The table has no `created_at`, so the age is
-  `sent_at`, or `next_attempt_at` when the row was never sent. If the cron
-  stops, retention stops with it.
+  `sent_at`, or `next_attempt_at` when the row was never sent. If nobody
+  visits the site, retention waits too.
 - `GET /emails/log` never returned bodies; its subject and error columns now
   also pass through `redact_links()`.
 
@@ -229,38 +232,25 @@ this section records the agreement, the code is theirs.
 
 ## 8. Scheduler
 
-`process_due()` needs something to call it regularly, including for reminders
-that are due at a set time.
+`process_due()` needs something to call it. Version 1 used a GitHub Actions workflow every
+15 minutes; it needed two repository secrets and was removed on 2026-11-23 (the project is a
+student demo, so "eventually" is enough). Now `backend/app/scheduler.py` is called by a
+middleware after each API answer:
 
-What we verified in the Vercel documentation on 2026-11-10
-(https://vercel.com/docs/cron-jobs/usage-and-pricing, now at
-`/docs/schedules/cron-jobs/usage-and-pricing`, last updated 2026-07-15):
+- after a booking, change or cancellation that went through (a 2xx answer to POST, PUT, PATCH
+  or DELETE), up to 5 due emails are sent at once, so a confirmation arrives within seconds;
+- on any API request, at most once a minute per server instance, the full work runs: up to 20
+  due emails (reminders), retention, expired codes, unpaid deposits, phone messages, offers;
+- the secret endpoint, live streams and files trigger nothing; any error is logged and never
+  fails the request; `SEND_ON_REQUEST=0` switches it off (the test suite does).
 
-- Hobby (free) plan: 100 cron jobs per project, **minimum interval once per
-  day**, scheduling precision per hour (plus or minus 59 minutes).
-  "Cron expressions that would run more frequently will fail during deployment."
-- Pro: once per minute. Cron Jobs are described as a legacy feature that will
-  be migrated to Vercel Schedules.
-
-So a Vercel cron on the free plan could send reminders up to a day late. We use
-a **GitHub Actions scheduled workflow** instead (`.github/workflows/email-cron.yml`):
-every 15 minutes plus a manual "Run workflow" button, calling
-`POST /api/internal/email/process` with `SEATPLAN_URL` and `CRON_SECRET` from
-repository secrets. What we verified in the GitHub docs on 2026-11-10
-(https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows):
-
-- the shortest interval is once every 5 minutes;
-- runs "can be delayed during periods of high loads";
-- scheduled workflows only run on the default branch;
-- in a public repository they are disabled after 60 days without activity.
-
-Whether GitHub Actions minutes are free for this repository depends on whether
-it is public or private and on the account plan **[not verified]**; each run
-takes a few seconds.
+Cost: the request that triggers the work waits for it (an email takes up to 10 s to time out,
+a Vercel function lasts at most 30 s). With nobody visiting, a reminder waits for the next
+visit. `POST /api/internal/email/process` with `X-Cron-Secret` runs the same work by hand.
 
 ## 9. Environment variables used
 
-`CRON_SECRET`, `EMAIL_PROVIDER` (`console` or `resend`), `RESEND_API_KEY`,
+`CRON_SECRET` (only the by-hand endpoint), `SEND_ON_REQUEST` (default on), `EMAIL_PROVIDER` (`console` or `resend`), `RESEND_API_KEY`,
 `EMAIL_FROM` (for example `SeatPlan <noreply@your-domain>`), `EMAIL_ALLOWLIST`,
 `PUBLIC_BASE_URL` (for links built by the callers).
 
@@ -273,7 +263,7 @@ Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
 | `account_code` | The address typed on the sign-up form | At once (`send_now`), after `POST /j/{token}/register` | No | Greets "Hello," with no name (the name is not proven yet); the 6-digit code is never in the subject; "Never give this code to anyone" |
 | `password_code` | An existing account's address | At once, after `POST /guest/password/forgot` | No | Only when the account exists; the answer is the same either way |
 | `account_exists` | An address that already has an account | At once, after a sign-up attempt | No | At most one an hour per address; says to open the shared link again and choose "I already have an account" |
-| `seat_confirmed`, `seat_changed` for an account holder | The account's proven address | Outbox cron, as today | **Yes** | After the holder's own confirm, a single organiser move, or an applied plan, undo or redo |
+| `seat_confirmed`, `seat_changed` for an account holder | The account's proven address | Outbox, as today | **Yes** | After the holder's own confirm, a single organiser move, or an applied plan, undo or redo |
 | `seat_cancelled`, reminder for an account holder | The account's address | As today | No | Link to `/my/<event>`, which needs a sign-in, so no secret link is in the email |
 
 - **The picture** is an indexed-colour PNG (8 colours, white background)
@@ -286,9 +276,9 @@ Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
   wedding 640 x 467, 3 744 bytes; conference 2 657 bytes. Tests cap it at
   60 KB and 150 ms.
 - **Codes are secrets.** Code emails are sent at once by `send_now`, which
-  claims the one row with the same `_claim` as the cron, so a code is never
+  claims the one row with the same `_claim` as the scheduler, so a code is never
   sent twice. Once a code row is finished its words become `[code removed]`;
-  a code that is used or replaced stops its queued email. The cron deletes
+  a code that is used or replaced stops its queued email. The scheduler deletes
   expired `email_codes` rows.
 - **Allowlist.** Code emails follow `EMAIL_ALLOWLIST` like every email. With
   today's list, real guests outside it never get a code: an open question for
@@ -297,3 +287,47 @@ Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
   also empty `image_png`.
 - **Not verified yet:** a real Resend send with an inline image, and how
   Gmail, Outlook and Apple Mail show it.
+
+## 11. Look, logo and buttons
+
+Added 2026-11-23 (`docs/superpowers/specs/2026-11-23-email-branding-design.md`).
+
+- **The look is the site's restaurants look**: lavender page `#f8f7fc`, white
+  card, deep-purple headline `#4f3f8f`, one sans family, 12 px buttons. The
+  values come from `frontend/src/design/restaurant-theme.css` and are written
+  out in `backend/app/mail/style.py`, because email apps ignore CSS variables
+  and web fonts. `tests/test_mail_style.py` fails if a value drifts from the
+  theme or a text pair drops under 4.5:1 contrast. All emails share the one
+  shell in `templates.py` (`_PAGE`), so code and event emails got the same look;
+  their words, keys and timing did not change.
+- **Logo.** The site's own logo (`frontend/src/design/seatplan-logo.png`, the
+  purple pin with an armchair and the word SeatPlan) resized to 300 px wide and
+  kept in `backend/app/mail/assets/` (the deployed function leaves out
+  `frontend/`). It is shown at 150 px. `ResendProvider` attaches it as the
+  inline image `cid:logo` whenever the HTML uses it; it is never stored in
+  `email_outbox`. With images off, its alt text "SeatPlan" reads.
+- **Buttons.** Confirmed, changed and reminder restaurant emails carry **Change
+  time** (the site's pink main action) and **Cancel booking** (the site's
+  white button with red text and border). They open
+  `/b/<token>?action=change` and `?action=cancel`. The manage page only opens
+  the time form or the confirmation dialog from that: a link that is opened (by
+  a person, a scanner or a preview) never changes or cancels anything. No
+  account or sign-in is involved: the secret link is the key (section 7). The
+  HTML prints no web address; the plain-text version keeps the link.
+- **Languages.** The button labels, the "Cannot tap a button? Call ..." line and
+  the no-reply line are in `restaurant_text.py` in English, Portuguese, Spanish
+  and French, like the rest of the booking emails.
+- **No reply.** Every email says not to reply. There is no `Reply-To`: there is
+  no inbox behind the sender.
+- **Deposits.** The existing `payment_line` of `RestaurantBooking` still shows
+  the deposit row; the Stripe set-up and a refund sentence in the cancellation
+  email are a later job.
+- **Verified 2026-11-23:** two real sends through Resend to the Resend test
+  address (a confirmation in English and one in Portuguese), opened in Gmail on
+  the web by the project owner: logo, colours, both buttons, the phone line and
+  the no-reply line show as designed. (A first version in linen and green was
+  rejected the same day and redone in the site's colours.) **Not verified yet:**
+  Outlook, Apple Mail and Gmail on a phone.
+- **Owner and rain emails.** The owner verification code and the rain offer now
+  use the same shell (`owner_account_code()` and `rain_offer()` in
+  `templates.py`); before, they were bare HTML.

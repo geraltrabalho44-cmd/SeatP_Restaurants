@@ -342,8 +342,12 @@ def book(
         offers.redeem(session, offer, booking)
         answer["offer"] = {"name": offer.name, "what": offers.describe(offer)}
     session.commit()
+    consent = None
     if proof is not None:
         consent = phone_messages.link_consent(session, venue, booking, proof)
+    elif booking.phone:
+        consent = phone_messages.link_typed_number(session, venue, booking, booking.phone)
+    if consent is not None:
         session.commit()
         answer["messages"] = {
             "channel": consent.channel,

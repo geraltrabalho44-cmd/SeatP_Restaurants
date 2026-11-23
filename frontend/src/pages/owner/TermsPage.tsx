@@ -50,7 +50,7 @@ function TermsForm({ venueId, terms, onSaved }: { venueId: string; terms: OwnerT
     }
   };
   return (
-    <>
+    <div className="ow-stack">
       <p className="rb-notice rb-notice-warning" role="note">
         <strong>{t("Draft wording.")}</strong> {t("SeatPlan wrote these terms as a starting point. Have a lawyer review them before you rely on them. You are responsible for your guests' data; SeatPlan stores and sends it on your behalf.")}
       </p>
@@ -75,12 +75,12 @@ function TermsForm({ venueId, terms, onSaved }: { venueId: string; terms: OwnerT
           </div>
         </div>
       </section>
-      <section className="owner-card" aria-label={t("What guests read")}>
+      <section className="owner-card ow-terms-read" aria-label={t("What guests read")}>
         <div className="owner-card-body">
           <h2 className="ow-subtitle">{t("What guests read")}</h2>
           <TermsText document={terms.document} />
         </div>
       </section>
-    </>
+    </div>
   );
 }

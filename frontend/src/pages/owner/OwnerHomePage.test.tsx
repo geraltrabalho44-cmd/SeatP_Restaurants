@@ -19,7 +19,7 @@ describe("My restaurants", () => {
   it("opens the service floor first for a published restaurant, with the public page beside it, and no progress bar for a finished setup", async () => {
     open([PUBLISHED]);
     const card = (await screen.findByRole("heading", { name: "Casa Lumen" })).closest("article") as HTMLElement;
-    expect(within(card).getByRole("link", { name: /Open service floor/ }).getAttribute("href")).toBe("/owner/pub1/dashboard");
+    expect(within(card).getByRole("link", { name: /Manage restaurant/ }).getAttribute("href")).toBe("/owner/pub1/profile");
     expect(within(card).getByRole("link", { name: /View public page/ }).getAttribute("href")).toBe("/restaurants/casa-lumen");
     expect(within(card).queryByText(/Setup 6 of 6/)).toBeNull();
     expect(within(card).queryByRole("progressbar")).toBeNull();
@@ -31,7 +31,7 @@ describe("My restaurants", () => {
     expect(within(card).getByRole("link", { name: /Continue setup/ }).getAttribute("href")).toBe("/owner/dra1/hours");
     expect(within(card).getByText("Next: Add opening hours")).toBeTruthy();
     expect(within(card).getByRole("progressbar", { name: "Novo Sítio setup progress" })).toBeTruthy();
-    expect(within(card).queryByRole("link", { name: /Open service floor/ })).toBeNull();
+    expect(within(card).queryByRole("link", { name: /Manage restaurant/ })).toBeNull();
   });
 
   it("keeps editing, the public page and publishing one step further, under a labelled list", async () => {

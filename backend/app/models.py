@@ -482,6 +482,8 @@ class BlackoutDate(Base):
 
 class Booking(Base):
     __tablename__ = "bookings"
+    # Every screen of a restaurant asks for one day of its bookings (audit DB-8).
+    __table_args__ = (Index("ix_bookings_venue_date", "venue_id", "date"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     public_id: Mapped[str] = mapped_column(String(32), index=True, default=new_public_id)

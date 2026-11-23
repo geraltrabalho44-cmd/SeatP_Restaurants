@@ -3,7 +3,8 @@
 // hears "closed" before choosing a time, not after.
 import type { FormEvent } from "react";
 import type { PartyNeeds, RestaurantInfo } from "../../api/restaurant";
-import { Button, Checkbox, Field, Select } from "../../design/components";
+import { Button, Checkbox, Select } from "../../design/components";
+import { DiscoveryDate } from "../discover/DiscoveryDate";
 import type { SelectOption } from "../../design/components";
 import { useT } from "../../i18n/I18nProvider";
 import { tr } from "../../i18n/locale";
@@ -68,12 +69,11 @@ export function WhenFields({info, needs, onChange}: Pick<StepPartyProps,"info"|"
  const closed=needs.date ? closedReason(info,needs.date):null;
  const dateMissing=needs.date === "";
  return <div className="when-fields">
-      <Field
-        label={t("Date")}
-        type="date"
+      <DiscoveryDate
+        stacked
         min={todayIso()}
         value={needs.date}
-        onChange={(e) => onChange({ ...needs, date: e.target.value })}
+        onChange={(date) => onChange({ ...needs, date })}
         error={dateMissing ? t("Choose a date to see the free times.") : null}
         required
       />

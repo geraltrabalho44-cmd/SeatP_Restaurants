@@ -20,8 +20,6 @@ from app.seed.demo_showcase import Opening, ShowRoom, Table, _add_room, _rect
 from app.seed.run import DEMO_ORGANISER_EMAIL, ensure_demo_users
 from app.seed.tidy_layouts import tidy_all
 
-PHOTO_DIR = Path(__file__).with_name("lisbon_photos")
-
 
 @dataclass(frozen=True)
 class Photo:
@@ -31,9 +29,10 @@ class Photo:
     height: int
 
 
-def _photo(listing: lisbon_data.Listing) -> Photo:
+def _photo(listing: lisbon_data.Listing, collection: lisbon_data.Collection) -> Photo:
     cover = listing["photo"]
-    path = PHOTO_DIR / (listing["slug"] + Path(urlsplit(cover["url"]).path).suffix)
+    folder = Path(__file__).with_name(collection.photo_dir)
+    path = folder / (listing["slug"] + Path(urlsplit(cover["url"]).path).suffix)
     with path.open("rb") as source:
         data = source.read(MAX_BYTES + 1)
     if len(data) > MAX_BYTES:
@@ -83,11 +82,16 @@ def _plan(slug: str) -> tuple[ShowRoom, ...]:
     return (main, second)
 
 
-def _new_venue(session: Session, owner: Organiser, listing: lisbon_data.Listing) -> Venue:
+def _new_venue(
+    session: Session,
+    owner: Organiser,
+    listing: lisbon_data.Listing,
+    collection: lisbon_data.Collection,
+) -> Venue:
     lat, lng = listing["location"]
     maps_query = quote_plus(f"{listing['name']}, {listing['address']}")
     venue = Venue(
-        public_id=lisbon_data.venue_id(listing["slug"]),
+        public_id=lisbon_data.venue_id(listing["slug"], collection),
         organiser_id=owner.id,
         kind="restaurant",
         is_demo=True,
@@ -139,16 +143,20 @@ def _refit_main_room(session: Session, venue: Venue, slug: str) -> bool:
     return True
 
 
-def seed(session: Session, owner: Organiser) -> tuple[int, int]:
+def seed(
+    session: Session, owner: Organiser, collection: lisbon_data.Collection = lisbon_data.LISBON
+) -> tuple[int, int]:
     """Only add missing demo venues and covers. Leave existing edits and bookings in place."""
     created = 0
     added = 0
-    for listing in lisbon_data.catalogue():
+    for listing in lisbon_data.catalogue(collection):
         venue = session.scalar(
-            select(Venue).where(Venue.public_id == lisbon_data.venue_id(listing["slug"]))
+            select(Venue).where(
+                Venue.public_id == lisbon_data.venue_id(listing["slug"], collection)
+            )
         )
         if venue is None:
-            venue = _new_venue(session, owner, listing)
+            venue = _new_venue(session, owner, listing, collection)
             created += 1
         else:
             _refit_main_room(session, venue, listing["slug"])
@@ -159,11 +167,11 @@ def seed(session: Session, owner: Organiser) -> tuple[int, int]:
         )
         if gallery is not None:
             continue
-        photo = _photo(listing)
+        photo = _photo(listing, collection)
         session.add(
             VenuePhoto(
                 venue_id=venue.id,
-                public_id=lisbon_data.cover_id(listing["slug"]),
+                public_id=lisbon_data.cover_id(listing["slug"], collection),
                 data=photo.data,
                 content_type=photo.mime,
                 width=photo.width,
@@ -178,7 +186,7 @@ def seed(session: Session, owner: Organiser) -> tuple[int, int]:
     return created, added
 
 
-def main() -> None:
+def main(collection: lisbon_data.Collection = lisbon_data.LISBON) -> None:
     settings = get_settings()
     if not settings.demo_mode or settings.is_postgres:
         raise SystemExit("Use DEMO_MODE=1 with a local SQLite demo database.")
@@ -191,11 +199,13 @@ def main() -> None:
             owner = session.scalars(
                 select(Organiser).where(Organiser.email == DEMO_ORGANISER_EMAIL)
             ).one()
-        created, photos = seed(session, owner)
+        created, photos = seed(session, owner, collection)
         session.commit()
         tidy_all(session)  # evenly spread tables, none touching another
         session.commit()
-    print(f"Lisbon demo catalogue: {created} restaurants created, {photos} covers added.")
+    print(
+        f"{collection.name} demo catalogue: {created} restaurants created, {photos} covers added."
+    )
 
 
 if __name__ == "__main__":

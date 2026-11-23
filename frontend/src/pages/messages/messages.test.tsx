@@ -117,10 +117,11 @@ describe("parseCap", () => {
 });
 
 describe("The owner's guest messages page", () => {
-  it("says it is demo mode, and shows this month's usage", async () => {
+  it("shows this month's usage, with no demo-mode banner", async () => {
     mockApi({ "GET /api/owner/restaurants/casa123/messages": () => OWNER });
     openOwner();
-    expect(await screen.findByText(/Messages are written to the log, never sent/)).toBeTruthy();
+    expect(await screen.findByTestId("usage")).toBeTruthy();
+    expect(screen.queryByText(/Messages are written to the log, never sent/)).toBeNull();
     expect(screen.getByTestId("usage").textContent).toContain("12 messages · about €0.60 · limit 300");
     expect(screen.getByText(/No messages yet/)).toBeTruthy();
   });

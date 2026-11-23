@@ -64,3 +64,8 @@ def test_restaurant_upgrade_preserves_old_rows_and_is_repeatable(database_url: s
     assert any(
         i["name"] == "uq_venues_slug" and i["unique"] for i in inspector.get_indexes("venues")
     )
+    # Audit DB-8: one day of a restaurant's bookings is found by index, in old databases too.
+    assert any(
+        i["name"] == "ix_bookings_venue_date" and i["column_names"] == ["venue_id", "date"]
+        for i in inspector.get_indexes("bookings")
+    )

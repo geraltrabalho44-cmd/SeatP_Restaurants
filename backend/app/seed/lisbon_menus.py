@@ -1,4 +1,4 @@
-"""Sample menus for the demo restaurants (the five made-up ones, the Lisbon catalogue and Casa Guedes).
+"""Sample menus for the demo restaurants (the five made-up ones, the Lisbon and Porto catalogues and Casa Guedes).
 
 Every menu has the same shape, so they read alike on the restaurant page: Starters, Mains, Desserts, Drinks.
 The dishes are typical of each house and named the way the house names them; the descriptions are short and in English.
@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app import db
 from app.config import get_settings
 from app.models import RestaurantMenu, Venue
+from app.seed.porto_menus import PORTO_MENUS
 
 Item = tuple[str, str, str, float, str]  # category, name, description, price in euros, allergens
 
@@ -778,6 +779,10 @@ MENUS: dict[str, list[Item]] = {
         (B, "Vinho tinto (copo)", "Red, by the glass.", 2.5, "Sulphites"),
     ],
 }
+
+
+# The 15 Porto restaurants (app.seed.porto_catalogue).
+MENUS.update(PORTO_MENUS)
 
 
 def _items(rows: list[Item]) -> list[dict[str, object]]:

@@ -96,6 +96,10 @@ RESTAURANT_INDEXES: tuple[tuple[str, str], ...] = (
         "CREATE INDEX IF NOT EXISTS ix_bookings_account_id ON bookings (account_id)",
     ),
     ("uq_venues_slug", "CREATE UNIQUE INDEX IF NOT EXISTS uq_venues_slug ON venues (slug)"),
+    (
+        "ix_bookings_venue_date",
+        "CREATE INDEX IF NOT EXISTS ix_bookings_venue_date ON bookings (venue_id, date)",
+    ),
 )
 
 

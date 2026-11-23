@@ -17,7 +17,6 @@ import type { Agreements } from "./agreements";
 import { HoldCountdown } from "./HoldCountdown";
 import { formatEuros } from "./money";
 import { OfferCodeField } from "./OfferCodeField";
-import { PhoneOptIn } from "./PhoneOptIn";
 import type { Hold } from "./StepTable";
 import { StepHeading } from "./StepHeading";
 import { validateContact } from "./validation";
@@ -69,13 +68,10 @@ export function StepDetails(props: StepDetailsProps) {
   const [accepted, setAccepted] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
   const [termsRound, setTermsRound] = useState(0);
-  // Reminders on the phone: only used when the restaurant offers them and the diner ticks the box.
   // The last step: terms (required) and, separately, offers (optional, never pre-ticked).
-  const { consent, phone, offer } = agreements;
+  const { consent, offer } = agreements;
   const setOffer = (value: typeof offer): void => onAgreementsChange({ ...agreements, offer: value });
-  const setPhone = (value: typeof phone): void => onAgreementsChange({ ...agreements, phone: value });
   const setConsent = (value: typeof consent): void => onAgreementsChange({ ...agreements, consent: value });
-  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [consentError, setConsentError] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
@@ -114,28 +110,16 @@ export function StepDetails(props: StepDetailsProps) {
       document.getElementById("rb-accept-terms")?.focus();
       return;
     }
-    if (phone.wanted && !phone.verificationId) {
-      setPhoneError(t("Verify your number, or clear it to book without phone messages."));
-      document.getElementById("rb-phone-code")?.focus();
-      return;
-    }
-    setPhoneError(null);
     setBusy(true);
     onSubmittingChange?.(true);
     setProblem(null);
     try {
       // The acceptance is only sent when a deposit applies, so a booking without one is exactly as before.
-      onBooked(await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId, terms !== null, phone.verificationId, consent, offer.code.trim() || null));
+      onBooked(await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId, terms !== null, null, consent, offer.code.trim() || null));
     } catch (error) {
       if (error instanceof ApiError && error.code === "offer_invalid") {
         // The code stopped being valid (or never was): show why, keep the hold and everything typed.
         setOffer({ code: offer.code, applied: null, problem: error.message });
-        return;
-      }
-      if (error instanceof ApiError && (error.code === "phone_not_verified" || error.code === "code_expired")) {
-        // The proof ran out (it lasts 30 minutes): ask for a new code, and keep the hold.
-        setPhone({ wanted: true, verificationId: null });
-        setPhoneError(error.message);
         return;
       }
       if (error instanceof ApiError && error.code === "policy_not_accepted") {
@@ -203,7 +187,6 @@ export function StepDetails(props: StepDetailsProps) {
       <Field label={t("Food allergies (optional)")} maxLength={500} hint={t("The staff will see this. Please confirm safe preparation directly with the restaurant.")} placeholder={t("Tell us about any food allergies")} value={contact.allergies ?? ""} onChange={event => onContactChange({ ...contact, allergies: event.target.value })} />
         {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} disabled={busy} />}
       </details>
-      <PhoneOptIn venueId={venueId} value={phone} onChange={(value) => { setPhone(value); setPhoneError(null); }} disabled={busy} error={phoneError} />
       {terms && <DepositNotice terms={terms} accepted={accepted} disabled={busy} error={termsError} onChange={(value) => { setAccepted(value); if (value) setTermsError(null); }} />}
       <OfferCodeField venueId={venueId} email={contact.email} day={needs.date} party={needs.party} value={offer} onChange={setOffer} disabled={busy} />
       <ConsentBoxes venueId={venueId} value={consent} onChange={(value) => { setConsent(value); if (value.terms) setConsentError(null); }} error={consentError} disabled={busy} />

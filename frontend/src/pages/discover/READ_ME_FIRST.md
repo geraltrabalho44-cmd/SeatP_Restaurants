@@ -9,5 +9,5 @@ The home page (`/`): find a restaurant (spec 9.1). The old home page with the de
 - `PublicHeaderActions.tsx` is the right side of the header on public pages ("For restaurant owners" and Log in; a Menu button on a phone). The language control is not here: it is in `PageShell`.
 - The map is `maps/ResultsMap.tsx`, loaded lazily; it is drawn only on a wide screen or when the diner switches to Map.
 
-"Near me" asks the browser for the location only when the button is pressed. If it is refused, the city list is already on the page.
+The place is chosen from the city list only: there is no "Near me" button (it was removed), so the browser is never asked for the location. A city shows the restaurants up to 25 km from it.
 Only published restaurants with a slug are listed by the server.

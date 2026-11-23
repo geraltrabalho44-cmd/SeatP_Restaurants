@@ -207,6 +207,8 @@ export interface BookingPreferences {
 }
 
 export interface BookingView extends BookingPreferences {
+  // False once the booking has started: the manage page then offers no change or cancel.
+  can_change?: boolean;
   public_id: string;
   venue_public_id: string;
   venue_name: string;
@@ -664,6 +666,7 @@ export function toBookingView(server: ServerBooking): BookingView {
     name: server.name,
     table_labels: server.tables,
     table_ids: server.table_ids ?? [],
+    can_change: server.can_change,
     status: server.status,
     needs_accessible: server.needs_accessible,
     high_chairs: server.high_chairs,

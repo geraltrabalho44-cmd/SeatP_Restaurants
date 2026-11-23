@@ -79,7 +79,7 @@ describe("The deposit terms", () => {
     const notice = await within(panel).findByRole("region", { name: "Deposit" });
     expect(within(notice).getByText("€40")).toBeTruthy();
     expect(within(notice).getByText(/keeps the deposit/)).toBeTruthy();
-    expect(within(notice).getByText("Demo payment: no real money moves.")).toBeTruthy();
+    expect(within(notice).queryByText("Demo payment: no real money moves.")).toBeNull();
     expect(within(panel).getByRole("button", { name: /Pay €40 deposit/ })).toBeTruthy();
     expect(within(panel).queryByRole("button", { name: /Confirm booking/ })).toBeNull();
   });

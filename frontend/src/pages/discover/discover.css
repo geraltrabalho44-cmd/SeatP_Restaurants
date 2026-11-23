@@ -24,6 +24,8 @@
 .discover-date-control input:not(:focus-visible)::-webkit-datetime-edit { opacity:0; }
 .discover-date-preview { position:absolute;inset-inline:0 1.75rem;top:50%;transform:translateY(-50%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;color:var(--c-text);font-size:.875rem;font-weight:600; }
 .discover-date .field-input + .discover-date-preview { inset-inline-start:.75rem; }
+/* In the filters panel the date is a field like the time next to it: its words sit on the same line as the time's. */
+.field.discover-date .discover-date-preview { top:calc(50% - 2px);font-weight:400; }
 .discover-date-control input:focus-visible + .discover-date-preview { visibility:hidden; }
 .discover-calendar-toggle {
   position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding:0 .125rem;
@@ -32,28 +34,43 @@
 .discover-stacked .discover-calendar-toggle { padding-inline-end:.75rem; }
 .discover-calendar-toggle span { width:.875rem;height:.8rem;border:1px solid currentColor;border-radius:.15rem; }
 .discover-calendar-toggle span::before { content:"";display:block;border-top:1px solid currentColor;margin-top:.2rem; }
+/* The calendar: a clean card in the site's own type, with round arrows, round days and a clear mark for today and for the chosen day.
+   It eases down from its field when it opens and back up when it closes. */
+@keyframes calendar-in { from { opacity:0;transform:translateY(-.5rem) scale(.97); } to { opacity:1;transform:none; } }
+@keyframes calendar-out { from { opacity:1;transform:none; } to { opacity:0;transform:translateY(-.5rem) scale(.97); } }
 .discover-calendar {
-  position:absolute;z-index:8;top:calc(100% + .5rem);inset-inline-start:0;
-  width:min(17.5rem,calc(100vw - 5rem));padding:.625rem;
+  position:absolute;z-index:8;top:calc(100% + .5rem);inset-inline-start:0;box-sizing:border-box;
+  width:min(20rem,calc(100vw - 3rem));padding:1rem;
   border:1px solid var(--c-border);border-radius:var(--radius-lg);background:var(--c-surface);
-  box-shadow:var(--shadow-lg);color:var(--c-text);font:.875rem/1.3 var(--font-body);
+  box-shadow:var(--shadow-lg);color:var(--c-text);font-family:var(--font-body);font-size:.9375rem;line-height:1.3;font-weight:400;
+  transform-origin:top left;animation:calendar-in var(--dur-base) var(--ease-out);
 }
-.discover-calendar-header { display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.25rem;margin-bottom:.375rem;text-align:center; }
-.discover-calendar-header button,.discover-calendar-grid button {
-  min-width:0;min-height:2.25rem;padding:0 .125rem;border:0;border-radius:var(--radius-sm);
-  background:transparent;color:var(--c-primary);font:inherit;cursor:pointer;
+.discover-calendar.is-leaving { animation:calendar-out 180ms var(--ease-out) forwards;pointer-events:none; }
+.discover-calendar-header { display:grid;grid-template-columns:2.5rem 1fr 2.5rem;align-items:center;gap:.5rem;margin-bottom:.75rem;text-align:center; }
+.discover-calendar-header strong { font-size:1rem;font-weight:700;color:var(--c-text); }
+.discover-calendar button { font:inherit;cursor:pointer; }
+.discover-calendar-header button {
+  display:grid;place-items:center;width:2.5rem;height:2.5rem;padding:0;border:1px solid var(--c-border);border-radius:var(--radius-pill);
+  background:var(--c-surface);color:var(--c-primary);font-size:1.25rem;line-height:1;
 }
-.discover-calendar-header button { width:2.25rem;font-size:1.375rem; }
-.discover-calendar-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.125rem;text-align:center; }
-.discover-calendar-grid span { padding-block:.25rem;color:var(--c-text-muted);font-size:.75rem; }
-.discover-calendar button:hover:not(:disabled) { background:var(--c-primary-soft); }
-.discover-calendar-grid button[aria-current="date"] { box-shadow:inset 0 0 0 1px var(--c-primary); }
-.discover-calendar-grid button[aria-pressed="true"],.discover-calendar-grid button[aria-pressed="true"]:hover { background:var(--c-primary);color:var(--c-on-primary); }
-.discover-calendar button:disabled { color:var(--c-text-muted);opacity:.5;cursor:default; }
+.discover-calendar-header button:hover:not(:disabled) { background:var(--c-primary-soft);border-color:var(--c-primary); }
+.discover-calendar-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.25rem 0;text-align:center; }
+.discover-calendar-grid span { padding-block:.125rem .5rem;color:var(--c-text-muted);font-size:.75rem;font-weight:600; }
+.discover-calendar-grid button {
+  display:grid;place-items:center;justify-self:center;width:2.5rem;height:2.5rem;min-width:0;min-height:0;padding:0;border:0;border-radius:var(--radius-pill);
+  background:transparent;color:var(--c-text);font-size:.9375rem;
+  transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out);
+}
+.discover-calendar-grid button:hover:not(:disabled) { background:var(--c-primary-soft);color:var(--c-primary); }
+.discover-calendar-grid button[aria-current="date"] { box-shadow:inset 0 0 0 1.5px var(--c-primary);color:var(--c-primary);font-weight:700; }
+.discover-calendar-grid button[aria-pressed="true"],.discover-calendar-grid button[aria-pressed="true"]:hover { background:var(--c-primary);color:var(--c-on-primary);font-weight:700; }
+.discover-calendar-grid button:disabled { color:var(--c-text-muted);opacity:.35;cursor:default; }
+.discover-calendar-header button:disabled { opacity:.35;cursor:default; }
 .discover-calendar-clear {
-  min-height:2.25rem;margin-top:.25rem;padding:0 .5rem;border:0;border-radius:var(--radius-sm);
-  background:transparent;color:var(--c-primary);font:inherit;cursor:pointer;
+  min-height:2.25rem;margin-top:.5rem;padding:0 .75rem;border:0;border-radius:var(--radius-pill);
+  background:transparent;color:var(--c-primary);font-size:.875rem;font-weight:600;
 }
+.discover-calendar-clear:hover { background:var(--c-primary-soft); }
 .discover-primary > .btn { min-height:2.5rem;font-size:.875rem;white-space:nowrap; }
 .discover-secondary { display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem;align-items:center; }
 .discover-secondary > .btn { min-height:2.75rem;font-size:.875rem; }
@@ -63,12 +80,19 @@
 .discover-quick,.discover-chips { display:flex;flex-wrap:wrap;gap:.5rem;align-items:center; }
 .discover-chip { min-height:2.75rem;border:1px solid var(--c-border);background:var(--c-surface);color:var(--c-text);border-radius:var(--radius-md);padding:.5rem .75rem;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;max-width:100%;overflow-wrap:anywhere; }
 .discover-chip.is-on { background:var(--c-primary-soft);border-color:var(--c-primary);color:var(--c-primary); }
-.discover-more { border:0;background:none;color:var(--c-primary);font:inherit;min-height:2.75rem;cursor:pointer; }
+.discover-more { display:inline-flex;align-items:center;gap:.375rem;border:1px solid var(--c-border-strong,var(--c-border));border-radius:var(--radius-pill);background:var(--c-surface);color:var(--c-primary);font:inherit;font-weight:600;font-size:.875rem;min-height:2.25rem;padding:0 .875rem;cursor:pointer; }
+.discover-more:hover { background:var(--c-primary-soft);border-color:var(--c-primary); }
+
+/* Results arrive with a small rise, so choosing a kind of food does not swap the list in a hard cut. */
+@keyframes discover-result-in { from { transform:translateY(.625rem); } to { transform:none; } }
+@media(min-width:64rem){
+ .discover-cards > .discover-card { animation:discover-result-in var(--dur-slow) var(--ease-out) backwards; }
+}
 .discover-summary { display:none; }
 .discover-active { display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1rem; }
 .discover-active:empty { display:none; }
 .discover-filter-note { margin:.25rem 0 0;color:var(--c-text-muted);font-size:.8125rem; }
-.discover-results-head { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:0 0 1rem; }
+.discover-results-head { display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;margin:0 0 1rem; }
 .discover-results-head h2 { font-family:var(--font-body);font-size:1rem;margin:0;font-weight:700; }
 .discover-results-head p { color:var(--c-text-muted);font-size:.8125rem;margin:0; }
 .discover-view-switch { display:none;gap:.25rem;padding:.25rem;border:1px solid var(--c-border);border-radius:var(--radius-md);background:var(--c-surface-sunk); }
@@ -236,9 +260,9 @@
  .discover-capsule > label,.discover-capsule > .discover-date { padding:.125rem .875rem; }
  .discover-capsule > label > span,.discover-capsule .discover-date > label { margin-bottom:0;font-size:.6875rem;line-height:1.2; }
  .discover-capsule select,.discover-capsule input { height:1.5rem;min-height:1.5rem;padding-block:0;padding-inline-start:0;line-height:1.5rem;font-size:.875rem; }
- .discover-date-control { height:1.5rem; }
- .discover-date-preview { top:calc(50% + 1px); }
- .discover-date .field-input + .discover-date-preview { inset-inline-start:0; }
+ .discover-capsule .discover-date-control { height:1.5rem; }
+ .discover-capsule .discover-date-preview { top:calc(50% + 1px); }
+ .discover-capsule .discover-date .field-input + .discover-date-preview { inset-inline-start:0; }
  .discover-primary > .btn { min-height:2.25rem;padding-inline:1.125rem; }
  .discover-secondary { margin-top:.75rem;gap:.5rem;align-items:center; }
  .discover-secondary > .btn,.discover-secondary .discover-chip,.discover-search-field { box-sizing:border-box;height:2.25rem;min-height:2.25rem;display:inline-flex;align-items:center; }

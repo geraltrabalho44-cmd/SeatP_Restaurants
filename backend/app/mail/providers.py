@@ -18,6 +18,7 @@ import httpx
 
 from app.config import APP_VERSION, Settings
 from app.core.privacy import mask_email
+from app.mail.logo import LOGO_CONTENT_ID, logo_base64
 
 logger = logging.getLogger("seatplan.mail")
 
@@ -105,6 +106,11 @@ class ResendProvider:
             # <img src="cid:seatmap"> (Resend docs, "Embed inline images").
             attachments.append(
                 {"filename": "seat-map.png", "content": message.image_png, "content_id": "seatmap"}
+            )
+        if f"cid:{LOGO_CONTENT_ID}" in message.body_html:
+            # The logo of every SeatPlan email: built once, never stored in the outbox.
+            attachments.append(
+                {"filename": "logo.png", "content": logo_base64(), "content_id": LOGO_CONTENT_ID}
             )
         if attachments:
             payload["attachments"] = attachments

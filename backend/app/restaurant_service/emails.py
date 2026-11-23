@@ -1,4 +1,5 @@
-"""Restaurant emails, queued through the outbox (never sent from here).
+"""Restaurant emails, queued through the outbox. They go out with the next cron run; only the booking
+confirmation is also sent at once (send_confirmation_now).
 
 Each email has a stable idempotency key, so the same event can never queue
 the same email twice. A booking can change many times, and may even return to
@@ -16,7 +17,8 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.mail import restaurant_templates, templates
 from app.mail.invites import calendar_invite
-from app.mail.outbox import enqueue
+from app.mail.outbox import enqueue, send_now
+from app.mail.providers import provider_from_settings
 from app.mail.reminders import reminder_time
 from app.models import Booking, EmailOutbox, Venue, WaitlistEntry, utc_now
 from app.restaurant_service.clock import local_datetime
@@ -185,6 +187,22 @@ def queue_confirmation(
         data.picture,
     )
     queue_reminder(session, venue, booking, token)
+
+
+def send_confirmation_now(session: Session, booking: Booking) -> None:
+    """Send the confirmation at once, after the booking is committed: the diner is looking at the
+    confirmation page and expects the email within seconds, not at the next 15-minute run.
+    Never raises. When the provider is down (or RESEND_API_KEY is missing) the row simply stays
+    queued and the cron sends it, exactly as before. With the console provider nothing is sent here
+    (the row stays queued, so the demo can show the email as text)."""
+    settings = get_settings()
+    if settings.email_provider == "console":
+        return
+    try:
+        provider = provider_from_settings(settings)
+    except ValueError:
+        return
+    send_now(session, provider, _confirmation_key(booking), utc_now())
 
 
 def release_confirmation(session: Session, booking: Booking) -> None:

@@ -1,7 +1,6 @@
 """Optional indoor moves for existing terrace bookings. GET never moves a diner."""
 
 from datetime import timedelta
-from html import escape
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +9,7 @@ from app import db
 from app.config import get_settings
 from app.core.errors import ApiError
 from app.core.holds import confirm_hold
+from app.mail import templates
 from app.mail.outbox import enqueue
 from app.models import (
     Booking,
@@ -174,19 +174,20 @@ def process(session):
                 )
             link = get_settings().public_base_url.rstrip("/") + "/b/rain/" + token
             source = (
-                "Simulated weather (demo)"
+                ""
                 if get_settings().weather_provider == "demo"
-                else "Weather data by Open-Meteo.com"
+                else " Weather data by Open-Meteo.com."
             )
             message = f"Rain expected at {wet['time']} ({wet['probability']}%). Indoor table {row.label} is held until {expires.astimezone(venue_zone(venue)):%H:%M}. Your reservation stays unchanged unless you accept. {source}."
+            parts = templates.rain_offer(booking.name, venue.name, message, link)
             enqueue(
                 session,
                 idempotency_key=f"rain-offer-{booking.public_id}",
                 to_email=booking.email,
                 kind="rain_offer",
-                subject=f"An indoor table is available at {venue.name}",
-                body_text=message + " " + link,
-                body_html=f'<p>{escape(message)}</p><p><a href="{escape(link, quote=True)}">Review indoor table</a></p>',
+                subject=parts.subject,
+                body_text=parts.body_text,
+                body_html=parts.body_html,
             )
             session.commit()
             count += 1

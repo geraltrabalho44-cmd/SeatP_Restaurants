@@ -81,11 +81,12 @@ describe("The two boxes on the last step", () => {
     expect(await within(await screen.findByRole("dialog")).findByRole("alert")).toBeTruthy();
   });
 
-  it("marks demo text as a draft nobody has reviewed", async () => {
+  it("shows the terms of a draft document without a demo label", async () => {
     mockApi({ "GET /api/r/casa/terms": () => ({ ...DOCUMENT, draft: true }) });
     render(<Boxes />);
     fireEvent.click(screen.getByRole("button", { name: "Read the terms and privacy notice" }));
-    expect(await screen.findByText(/not been reviewed by a lawyer/)).toBeTruthy();
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(screen.queryByText(/not been reviewed by a lawyer/)).toBeNull();
   });
 });
 

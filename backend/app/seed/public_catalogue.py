@@ -1,4 +1,4 @@
-"""Make the Lisbon catalogue the only public restaurants of a demo database, with reviews.
+"""Make the Lisbon and Porto catalogues the only public restaurants of a demo database, with reviews.
 
 Meant for the shared demo site (the Neon database behind Vercel), which has only the made-up restaurants.
 Run from `backend/`:
@@ -7,7 +7,7 @@ Run from `backend/`:
 
 It does four things, all repeatable:
 
-1. adds the 20 Lisbon restaurants with their rooms, tables and licensed cover photos;
+1. adds the 20 Lisbon and 15 Porto restaurants with their rooms, tables and licensed cover photos;
 2. unpublishes every other demo restaurant (back to a draft: gone from search, nothing is deleted, the
    owner can publish it again);
 3. adds ordinary-looking sample reviews, so every restaurant has a rating;
@@ -28,13 +28,13 @@ from app.config import get_settings
 from app.models import Organiser, Venue
 from app.restaurant_service import publishing
 from app.seed import demo_reviews
-from app.seed.lisbon_catalogue import seed as seed_lisbon
-from app.seed.lisbon_data import DEMO_ID_PREFIX
+from app.seed.lisbon_catalogue import seed as seed_catalogue
+from app.seed.lisbon_data import COLLECTIONS, is_catalogue_id
 from app.seed.run import DEMO_ORGANISER_EMAIL
 
 
 def unpublish_invented(session: Session) -> list[str]:
-    """Back to a draft: every published demo restaurant that is not from the Lisbon catalogue."""
+    """Back to a draft: every published demo restaurant that is not from a city catalogue."""
     venues = session.scalars(
         select(Venue).where(
             Venue.kind == "restaurant", Venue.is_demo.is_(True), Venue.status == "published"
@@ -42,14 +42,18 @@ def unpublish_invented(session: Session) -> list[str]:
     ).all()
     hidden = []
     for venue in venues:
-        if not venue.public_id.startswith(DEMO_ID_PREFIX):
+        if not is_catalogue_id(venue.public_id):
             publishing.unpublish(session, venue, actor="seed.public_catalogue")
             hidden.append(venue.name)
     return hidden
 
 
 def run(session: Session, owner: Organiser) -> dict[str, object]:
-    created, covers = seed_lisbon(session, owner)
+    created = covers = 0
+    for collection in COLLECTIONS:
+        made, added = seed_catalogue(session, owner, collection)
+        created += made
+        covers += added
     session.flush()
     hidden = unpublish_invented(session)
     venues, reviews = demo_reviews.seed(session, plain=True)
@@ -86,7 +90,9 @@ def main() -> None:
                 "The demo organiser does not exist. Run app.seed.run on this database first."
             )
         result = run(session, owner)
-    print(f"Lisbon restaurants created: {result['created']}, covers added: {result['covers']}.")
+    print(
+        f"Restaurants created (Lisbon and Porto): {result['created']}, covers added: {result['covers']}."
+    )
     print(f"Unpublished (drafts, nothing deleted): {', '.join(result['hidden']) or 'none'}.")  # type: ignore[arg-type]
     print(
         f"Reviews: {result['reviews']} added across {result['venues']} published demo restaurants."

@@ -58,6 +58,9 @@ class Settings:
     whatsapp_phone_number_id: str = ""
     # With a real provider, demo restaurants only message these numbers (E.164).
     message_allowlist: tuple[str, ...] = ()
+    # Emails and the other scheduled work run when the site is used (app/scheduler.py), with no cron.
+    # SEND_ON_REQUEST=0 switches that off (the test suite does, so a test sees an email still queued).
+    send_on_request: bool = True
     # Sign-in for restaurant owners and staff: "local" (the built-in email and password, the default)
     # or "supabase" (Supabase Auth proves who they are; SeatPlan keeps its own sessions and accounts).
     auth_provider: str = "local"
@@ -264,6 +267,8 @@ def load_settings() -> Settings:
         whatsapp_access_token=wa_token,
         whatsapp_phone_number_id=wa_phone_id,
         message_allowlist=_read_list("MESSAGE_ALLOWLIST"),
+        send_on_request=os.environ.get("SEND_ON_REQUEST", "1").strip().lower()
+        not in ("0", "false", "no"),
         weather_max_fetches_per_hour=max(
             0, int(os.environ.get("WEATHER_MAX_FETCHES_PER_HOUR", "200"))
         ),

@@ -132,13 +132,12 @@ them all with safe values.
 | `EMAIL_FROM` | Email | `SeatPlan <noreply@example.com>` | Must be on a domain verified in Resend before real sending |
 | `EMAIL_ALLOWLIST` | Email | empty | Comma-separated addresses that may receive email; everyone else is `skipped`. Applies to the console provider too |
 
-## 6. The email cron
+## 6. How emails are sent (no cron)
 
-Emails wait in the `email_outbox` table until something calls
-`POST /api/internal/email/process`. Deployed, `.github/workflows/email-cron.yml`
-does that every 15 minutes (it needs the repository secrets `SEATPLAN_URL` and
-`CRON_SECRET`; until they are set it prints a message and does nothing).
-Locally, call it by hand:
+Emails wait in the `email_outbox` table. `backend/app/scheduler.py` sends them when the site
+is used: right after a change that went through, and on any request at most once a minute per
+server (reminders, retention, deposits, phone messages, offers). `SEND_ON_REQUEST=0` turns it
+off. To run the same work by hand, call the secret endpoint:
 
 ```bash
 export CRON_SECRET='any-local-value'

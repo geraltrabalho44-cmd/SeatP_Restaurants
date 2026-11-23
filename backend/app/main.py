@@ -17,9 +17,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
+from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import db
+from app import db, scheduler
 from app.config import APP_VERSION, Settings, get_settings
 from app.core import live
 from app.core.errors import ApiError
@@ -137,11 +138,26 @@ async def _unexpected_error(_request: Request, _exc: Exception) -> JSONResponse:
 async def _add_security_headers(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    response = await call_next(request)
+    if chr(0) in request.url.path:
+        # No route has a NUL in its address, and Postgres refuses it with a 500 where SQLite does not (audit BE-5).
+        response: Response = JSONResponse(error_body("not_found", "Not found."), status_code=404)
+    else:
+        response = await call_next(request)
     for name, value in _SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
     # API answers are personal (seat maps, bookings), so no shared caching.
     response.headers.setdefault("Cache-Control", "no-store")
+    return response
+
+
+async def _work_after_request(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Send due emails and run the chores when the site is used (app/scheduler.py): no cron."""
+    response = await call_next(request)
+    await run_in_threadpool(
+        scheduler.after_request, request.method, request.url.path, response.status_code
+    )
     return response
 
 
@@ -204,6 +220,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(OverflowError, _out_of_range)
     app.add_exception_handler(Exception, _unexpected_error)
     app.middleware("http")(_add_security_headers)
+    app.middleware("http")(_work_after_request)
     # Only our own frontend may call the API from a browser.
     app.add_middleware(
         CORSMiddleware,
