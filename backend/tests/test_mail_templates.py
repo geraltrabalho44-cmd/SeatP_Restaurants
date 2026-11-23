@@ -62,10 +62,9 @@ def test_html_is_single_column_and_mobile_friendly() -> None:
 
 
 def test_header_still_reads_with_images_off() -> None:
+    # The logo carries the word SeatPlan in its picture; its alt text is what reads when images are off.
     for parts in _all_templates("Ana Silva"):
-        without_images = re.sub(r"<img[^>]*>", "", parts.body_html)
-        visible = re.sub(r"<[^>]+>", " ", without_images)
-        assert "SeatPlan" in visible.split("Hello")[0]
+        assert re.search(r'<img src="cid:logo"[^>]*alt="SeatPlan"', parts.body_html)
 
 
 def test_every_email_says_not_to_reply() -> None:

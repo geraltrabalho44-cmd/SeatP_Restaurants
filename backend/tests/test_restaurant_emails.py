@@ -12,6 +12,7 @@ import re
 import struct
 from datetime import date
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -273,3 +274,50 @@ def test_the_map_marks_the_chair_at_the_second_joined_table_and_highlights_both_
     (row,) = rows(session, "booking_confirmed")
     assert row.image_png is not None
     assert "T5" in row.body_text and "T6" in row.body_text
+
+
+KINDS = ["confirmed", "changed", "reminder"]
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_two_buttons_open_the_manage_page_on_the_right_panel(kind: str) -> None:
+    parts = booking_email(kind, facts())
+    page = parts.body_html
+    assert 'href="https://seatplan.example/b/tok?action=change"' in page
+    assert 'href="https://seatplan.example/b/tok?action=cancel"' in page
+    assert ">Change time</a>" in page and ">Cancel booking</a>" in page
+    change = re.search(r'<a href="[^"]*action=change"[^>]*>', page)
+    cancel = re.search(r'<a href="[^"]*action=cancel"[^>]*>', page)
+    assert change and "background:#b0347a" in change.group(0)  # the site's pink main action
+    assert cancel and "color:#923b31" in cancel.group(0)  # the site's red-outlined cancel
+    assert "background:#b0347a" not in cancel.group(0)
+    # The buttons are the links: no web address is printed.
+    assert "copy this link" not in page
+    assert "seatplan.example/b/tok" not in re.sub(r'href="[^"]*"', "", page)
+    # Apps that show no buttons still get the address in the text version.
+    assert "Manage my booking: https://seatplan.example/b/tok" in parts.body_text
+
+
+def test_a_link_with_a_query_gets_the_action_after_an_ampersand() -> None:
+    page = booking_email("confirmed", facts(link="https://seatplan.example/b/tok?x=1")).body_html
+    assert 'href="https://seatplan.example/b/tok?x=1&amp;action=cancel"' in page
+    assert "?x=1?action" not in page
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_the_phone_line_helps_a_diner_who_cannot_tap_a_button(kind: str) -> None:
+    with_phone = booking_email(kind, facts(phone="+351 210 000 000")).body_html
+    assert "Cannot tap a button? Call +351 210 000 000." in with_phone
+    assert "Cannot tap" not in booking_email(kind, facts(phone=None)).body_html
+
+
+def test_the_phone_line_escapes_the_phone() -> None:
+    page = booking_email("confirmed", facts(phone="<b>1</b>")).body_html
+    assert "Cannot tap a button? Call &lt;b&gt;1&lt;/b&gt;." in page and "<b>1</b>" not in page
+
+
+def test_the_headline_is_a_purple_heading() -> None:
+    page = booking_email("confirmed", facts()).body_html
+    heading = re.search(r"<h1 [^>]*>(.*?)</h1>", page)
+    assert heading and "You&#x27;re booked at Casa Azul." in heading.group(1)
+    assert "color:#4f3f8f" in heading.group(0) and "font-weight:800" in heading.group(0)
