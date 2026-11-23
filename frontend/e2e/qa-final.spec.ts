@@ -49,3 +49,25 @@ test("the sign-up code screen says where the code is without the word demo", asy
   await expect(page.getByText(/No email is sent to an @example\.com address, so your code is \d{6}/)).toBeVisible();
   expect(await page.locator("main").innerText()).not.toMatch(/\bdemo\b/i);
 });
+
+test("on a phone the things you press on the home page and in the owner's wizard are at least 44 px tall", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("article").first().waitFor();
+  const heights = await page.evaluate(() => {
+    const tall = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)].map((el) => el.offsetHeight);
+    return {
+      search: tall(".discover-search-field input"),
+      switch: tall(".discover-view-switch .btn"),
+      names: tall(".discover-card h3 a"),
+      more: tall(".discover-card .discover-card-more"),
+    };
+  });
+  for (const [what, list] of Object.entries(heights)) {
+    expect(list.length, what).toBeGreaterThan(0);
+    for (const h of list) expect(h, what).toBeGreaterThanOrEqual(44);
+  }
+  await signIn(page, ORGANISER, "/owner/new");
+  const back = await page.getByRole("link", { name: /My restaurants/ }).first().evaluate((el) => (el as HTMLElement).offsetHeight);
+  expect(back).toBeGreaterThanOrEqual(44);
+});

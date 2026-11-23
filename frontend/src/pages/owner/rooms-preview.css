@@ -28,3 +28,7 @@
   .ow-left .ow-preview { grid-template-rows: auto; }
   .ow-left .ow-preview-cover { aspect-ratio: 16 / 7; height: auto; max-height: 14rem; }
 }
+
+@media (pointer: coarse), (max-width: 40rem) {
+  .rp-tabs button { min-height: var(--touch-target); }
+}

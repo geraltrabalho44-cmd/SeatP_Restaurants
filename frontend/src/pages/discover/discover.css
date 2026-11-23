@@ -337,3 +337,11 @@
  .site-nav-owners-short { display:inline; }
  .discover-filters-modal .dialog-actions .btn-primary { white-space:normal; }
 }
+
+/* On a phone everything you press is at least 44 by 44 px, the size of a fingertip. */
+@media (pointer: coarse), (max-width: 40rem) {
+  .discover-search-field input { min-height: var(--touch-target); }
+  .discover-view-switch .btn { min-height: var(--touch-target); }
+  .discover-card h3 a { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+  .discover-card .discover-card-more { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+}

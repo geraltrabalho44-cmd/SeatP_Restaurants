@@ -731,3 +731,12 @@
   .ow-terms-read .rb-terms section { break-inside: avoid; margin-bottom: var(--space-4); }
 }
 .ow-terms-read .ow-subtitle { margin: 0 0 var(--space-3); }
+
+/* And on a phone the owner's links, pills and tabs are 44 px tall too. */
+@media (pointer: coarse), (max-width: 40rem) {
+  .ow-main .ow-venue-card .ow-card-links a { min-height: 2.75rem; }
+  .owner-cuisines .checkbox,
+  .owner-cuisines .checkbox .checkbox-label { min-height: var(--touch-target); }
+  .owner-back { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+  .ow-checks .ow-completed-disclosure summary { min-height: var(--touch-target); }
+}
