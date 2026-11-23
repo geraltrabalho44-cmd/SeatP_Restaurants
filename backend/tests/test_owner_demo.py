@@ -15,11 +15,14 @@ from app.models import (
     TurnTime,
     Venue,
     VenueMessageSettings,
+    VenueTable,
+    Zone,
 )
 from app.restaurant_service import insights
 from app.seed import lisbon_catalogue, owner_demo
 from app.seed.lisbon_data import LISBON, PORTO
 from app.seed.run import DEMO_ORGANISER_EMAIL
+from app.seed.tidy_layouts import footprint, tidy_all
 
 
 def test_the_demo_owner_has_three_complete_restaurants(session: Session) -> None:
@@ -86,3 +89,48 @@ def test_the_demo_owner_has_three_complete_restaurants(session: Session) -> None
 
     again = owner_demo.run(session)
     assert all("kept" in text for text in again.values())  # nothing is drawn twice
+
+
+def test_no_table_or_chair_crosses_the_edge_of_a_zone_or_a_piece_of_furniture(
+    session: Session,
+) -> None:
+    owner = make_user(session, DEMO_ORGANISER_EMAIL)
+    lisbon_catalogue.seed(session, owner, LISBON)
+    owner_demo.run(session)
+    tidy_all(session)
+    owner_demo.fit_zones(session)
+    session.flush()
+
+    for venue in session.scalars(select(Venue).where(Venue.organiser_id == owner.id)):
+        seats: dict[int, list[Seat]] = {}
+        for seat in session.scalars(select(Seat).where(Seat.venue_id == venue.id)):
+            seats.setdefault(seat.table_id, []).append(seat)
+        zones = list(session.scalars(select(Zone).where(Zone.venue_id == venue.id)))
+        room_ids = select(Room.id).where(Room.venue_id == venue.id)
+        fixtures = list(
+            session.scalars(select(RoomFixture).where(RoomFixture.room_id.in_(room_ids)))
+        )
+        for table in session.scalars(select(VenueTable).where(VenueTable.venue_id == venue.id)):
+            box = footprint(table, seats.get(table.id, []))
+            for zone in zones:
+                if zone.room_id != table.room_id:
+                    continue
+                inside = zone.x <= box.x0 and box.x1 <= zone.x + zone.w
+                inside = inside and zone.y <= box.y0 and box.y1 <= zone.y + zone.h
+                outside = (
+                    box.x1 <= zone.x
+                    or box.x0 >= zone.x + zone.w
+                    or box.y1 <= zone.y
+                    or box.y0 >= zone.y + zone.h
+                )
+                assert inside or outside, f"{venue.slug} {table.label} crosses {zone.name}"
+            for fixture in fixtures:
+                if fixture.room_id != table.room_id:
+                    continue
+                apart = (
+                    box.x1 <= fixture.x
+                    or box.x0 >= fixture.x + fixture.w
+                    or box.y1 <= fixture.y
+                    or box.y0 >= fixture.y + fixture.h
+                )
+                assert apart, f"{venue.slug} {table.label} touches {fixture.label or fixture.kind}"

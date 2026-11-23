@@ -704,3 +704,30 @@
 .owner-card .ow-rule legend { padding-inline: var(--space-2); font-weight: 700; color: var(--c-primary); }
 .owner-card .ow-rule > .btn { justify-self: start; grid-column: 1 / -1; }
 @media (max-width: 40rem) { .owner-card .ow-rule { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- One rhythm for the owner pages made of stacked boxes (Terms, Offers) ---------- */
+/* Every box is as wide as the page, with the same space between them; nothing floats in a narrow column. */
+.ow-stack { display: grid; gap: var(--space-4); }
+.ow-stack > * { margin: 0; max-width: none; }
+.ow-stack .rb-notice { max-width: none; }
+.ow-stack > .ow-ready, .ow-stack > .ow-ready + * { margin: 0; }
+.ow-stack > .ow-offers-title { margin: var(--space-2) 0 calc(var(--space-2) * -1); }
+.ow-ready { margin-block-end: 0; }
+.ow-ready p, .ow-ready h2 { max-width: none; }
+
+/* The ready-made offers: whole rows only (eight offers sit in rows of four or two), every card the same height, every button on one line. */
+.ow-ready-grid { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 40rem) { .ow-ready-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 78rem) { .ow-ready-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ow-ready-grid { align-items: stretch; }
+.ow-ready-card .owner-card-body { padding: var(--space-4); }
+.ow-ready-card .btn { width: 100%; justify-content: center; }
+
+/* What guests read: the text fills the card in two even columns on a wide screen, in full width on a small one. */
+.ow-terms-read .rb-terms p { max-width: none; }
+.ow-terms-read .rb-terms h3:first-child, .ow-terms-read .rb-terms section:first-child h3 { margin-top: 0; }
+@media (min-width: 64rem) {
+  .ow-terms-read .rb-terms { columns: 2; column-gap: var(--space-8, 3rem); }
+  .ow-terms-read .rb-terms section { break-inside: avoid; margin-bottom: var(--space-4); }
+}
+.ow-terms-read .ow-subtitle { margin: 0 0 var(--space-3); }

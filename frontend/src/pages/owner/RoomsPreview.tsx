@@ -7,7 +7,18 @@ import { useLoad } from "../restaurant/useLoad";
 import "../restaurant/floor-plan.css";
 import "./rooms-preview.css";
 
-const MARGIN = 40;
+const MARGIN = 24;
+
+/** A chair seen from above, turned away from its table, as on the guests' plan. */
+function Chair({ seat, centre }: { seat: { x: number; y: number }; centre: { x: number; y: number } }) {
+  const angle = (Math.atan2(-(seat.x - centre.x), seat.y - centre.y) * 180) / Math.PI;
+  return (
+    <g transform={`translate(${seat.x} ${seat.y}) rotate(${angle})`}>
+      <rect className="fp-seat" x={-11} y={-9} width={22} height={17} rx={7} />
+      <rect className="fp-back" x={-11} y={9.5} width={22} height={5} rx={2.5} />
+    </g>
+  );
+}
 
 /** One room drawn from above, read-only: the walls, the zones, the fixtures and every table with its name and size. */
 function RoomDrawing({ room }: { room: Room }) {
@@ -36,11 +47,14 @@ function RoomDrawing({ room }: { room: Room }) {
       ))}
       <polygon points={shape} className="rp-wall" />
       {room.tables.filter((table) => table.is_active).map((table) => (
-        <g key={table.key} transform={`rotate(${table.rotation} ${table.x + table.w / 2} ${table.y + table.h / 2})`}>
+        <g key={table.key}>
+          {table.seats.map((seat) => <Chair key={seat.key} seat={seat} centre={{ x: table.x + table.w / 2, y: table.y + table.h / 2 }} />)}
+          <g transform={`rotate(${table.rotation} ${table.x + table.w / 2} ${table.y + table.h / 2})`}>
           {table.shape === "round"
             ? <ellipse cx={table.x + table.w / 2} cy={table.y + table.h / 2} rx={table.w / 2} ry={table.h / 2} className="rp-table" />
             : <rect x={table.x} y={table.y} width={table.w} height={table.h} rx="10" className="rp-table" />}
           <text x={table.x + table.w / 2} y={table.y + table.h / 2 + 5} className="rp-table-name" textAnchor="middle" transform={`rotate(${-table.rotation} ${table.x + table.w / 2} ${table.y + table.h / 2})`}>{table.label}</text>
+          </g>
         </g>
       ))}
     </svg>
@@ -57,7 +71,6 @@ export function RoomsPreview({ venueId }: { venueId: string }) {
   const rooms = state.data.rooms;
   if (rooms.length === 0) return <p className="rb-muted">{t("No rooms yet. Draw your floor plan to see it here.")}</p>;
   const room = rooms[Math.min(current, rooms.length - 1)];
-  const seats = room.tables.filter((table) => table.is_active).reduce((sum, table) => sum + table.max_party, 0);
   return (
     <section className="rp-preview" aria-label={t("Floor plan")}>
       <div className="rp-head">
@@ -71,7 +84,6 @@ export function RoomsPreview({ venueId }: { venueId: string }) {
         )}
       </div>
       <RoomDrawing room={room} />
-      <p className="rb-muted">{t("{tables} tables, up to {seats} guests in this room.", { tables: room.tables.filter((table) => table.is_active).length, seats })}</p>
     </section>
   );
 }

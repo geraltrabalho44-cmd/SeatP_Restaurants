@@ -1221,3 +1221,27 @@
   .rb5-confirm .rb5-actions > .btn, .rb5-card-actions > .btn, .rb5-card-actions > a, .rb5-change .rb-manage-actions > .btn { width: 100%; justify-content: center; }
   .rb5-change .rb-manage-actions > .rb-danger-link { align-self: center; width: auto; margin-top: var(--space-1); }
 }
+
+/* ---------- Even edges and spaces on the details step ---------- */
+/* The summary band, the fields, the offer code and the terms box all run the full width of the form, with the same space between them. */
+.rb-details-panel .rb5-summary-band { max-width: none; }
+.rb-details-panel .rb-offer { align-items: stretch; }
+.rb-details-panel .rb-offer .btn { align-self: flex-start; }
+.rb-consent { gap: var(--space-3); }
+.rb-consent-read { margin-block: calc(var(--space-3) * -1) calc(var(--space-1) * -1); }
+.rb-consent .rb-notice { margin: 0; }
+
+/* "Choose a different table" and "Change date or time" are quiet links on the same left edge as the table's name above them. */
+.rb5-your-table-actions { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+.rb5-your-table-actions .btn {
+  justify-content: flex-start;
+  min-height: 2.75rem;
+  padding-inline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--c-primary);
+  font-weight: var(--fw-semibold, 600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rb5-your-table-actions .btn:hover:not(:disabled) { background: transparent; text-decoration-thickness: 2px; }

@@ -48,7 +48,7 @@ from app.security import hash_password
 from app.seed.demo_restaurant import DEMO_ORGANISER_EMAIL, SERVICES, _seed_service, _table_size
 from app.seed.demo_showcase import Fixture, Opening, ShowRoom, Table, _add_room, _rect
 from app.seed.run import ensure_demo_users
-from app.seed.tidy_layouts import tidy_all
+from app.seed.tidy_layouts import footprint, tidy_all
 
 KEEP = ("cervejaria-ramiro", "cafe-majestic", "escondidinho")
 CATALOGUE_EMAIL = "catalogue@example.com"
@@ -76,7 +76,6 @@ def rich_rooms(slug: str) -> tuple[ShowRoom, ...]:
         Fixture("bar", 700, 75, 200, 50, "Bar"),
         Fixture("kitchen", 80, 75, 150, 50, "Kitchen"),
         Fixture("wc", 860, 500, 70, 80, "Toilets"),
-        Fixture("column", 470, 330, 40, 40, ""),
         Fixture("plant", 520, 75, 40, 40, ""),
     )
     tables = []
@@ -178,7 +177,7 @@ def _zones(session: Session, venue: Venue) -> None:
                 Zone(
                     venue_id=venue.id,
                     room_id=room.id,
-                    name="Bar",
+                    name="Bar area",
                     kind="bar",
                     x=640,
                     y=60,
@@ -186,6 +185,80 @@ def _zones(session: Session, venue: Venue) -> None:
                     h=110,
                 )
             )
+    session.flush()
+
+
+def fit_zones(session: Session) -> None:
+    """Draw the Window and Bar areas around the tables that stand in them, on the plan as it is now.
+
+    The tables are spread evenly by `tidy_all` (after the zones were made), so a fixed zone could cut across a table
+    and its chairs. The Window zone starts halfway between the last two rows and runs to the glass wall; the Bar zone
+    stops short of the first table under it.
+    """
+    for slug in KEEP:
+        venue = session.scalar(select(Venue).where(Venue.slug == slug))
+        if venue is None:
+            continue
+        seats: dict[int, list[Seat]] = {}
+        for seat in session.scalars(select(Seat).where(Seat.venue_id == venue.id)):
+            seats.setdefault(seat.table_id, []).append(seat)
+        for room in session.scalars(select(Room).where(Room.venue_id == venue.id)):
+            points = (room.outline or {}).get("points", [])
+            if room.is_outdoor or len(points) != 4:
+                continue
+            left, right = min(p["x"] for p in points), max(p["x"] for p in points)
+            top, bottom = min(p["y"] for p in points), max(p["y"] for p in points)
+            boxes = sorted(
+                (
+                    footprint(table, seats.get(table.id, []))
+                    for table in session.scalars(
+                        select(VenueTable).where(VenueTable.room_id == room.id)
+                    )
+                ),
+                key=lambda box: box.y0,
+            )
+            zones = {
+                z.name: z for z in session.scalars(select(Zone).where(Zone.room_id == room.id))
+            }
+            rows: list[list] = []
+            for box in boxes:
+                if rows and box.y0 < max(b.y1 for b in rows[-1]) - 4:
+                    rows[-1].append(box)
+                else:
+                    rows.append([box])
+            # A pillar in the middle of the room would stand on a table's chairs once the tables are spread out.
+            session.execute(
+                delete(RoomFixture).where(
+                    RoomFixture.room_id == room.id, RoomFixture.kind == "column"
+                )
+            )
+            # The room may have grown when the tables were spread out: the fireplace goes back to the middle of the far wall.
+            for fireplace in session.scalars(
+                select(RoomFixture).where(
+                    RoomFixture.room_id == room.id, RoomFixture.kind == "fireplace"
+                )
+            ):
+                fireplace.x = round(left + (right - left - fireplace.w) / 2)
+                fireplace.y = round(bottom - fireplace.h - 10)
+            window = zones.get("Window")
+            if window is not None and len(rows) >= 2:
+                above = max(b.y1 for row in rows[:-1] for b in row)
+                below = min(b.y0 for b in rows[-1])
+                edge = round((above + below) / 2)
+                window.x, window.w = left, right - left
+                window.y, window.h = edge, bottom - edge
+            bar = zones.get("Bar area") or zones.get("Bar")
+            bar_fixture = session.scalar(
+                select(RoomFixture).where(RoomFixture.room_id == room.id, RoomFixture.kind == "bar")
+            )
+            if bar is not None and bar_fixture is not None and rows:
+                x0, x1 = bar_fixture.x - 130, right  # room for the name before the bar
+                under = [b.y0 for b in boxes if b.x1 > x0 and b.x0 < x1]
+                limit = min(under) - 8 if under else bar_fixture.y + bar_fixture.h + 40
+                edge = round(min(limit, bar_fixture.y + bar_fixture.h + 40))
+                bar.name = "Bar area"
+                bar.x, bar.w = round(x0), round(x1 - x0)
+                bar.y, bar.h = top, max(edge - top, 40)
     session.flush()
 
 
@@ -412,6 +485,7 @@ def main() -> None:
         report = run(session)
         session.commit()
         tidy_all(session)
+        fit_zones(session)
         session.commit()
     for slug, text in report.items():
         print(f"{slug}: {text}")
