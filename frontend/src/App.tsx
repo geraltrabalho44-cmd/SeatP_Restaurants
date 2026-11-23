@@ -2,59 +2,55 @@
 // so feature owners fill in their page file and never need to touch this one.
 import { Route, Routes } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { Skeleton } from "./design/components";
+import EditorPage from "./pages/editor/EditorPage";
+import AttendeePage from "./pages/events/AttendeePage";
+import OrganiserPage from "./pages/events/OrganiserPage";
+import AccountPage from "./pages/account/AccountPage";
+import ForgotPage from "./pages/account/ForgotPage";
+import GuestSignInPage from "./pages/account/GuestSignInPage";
+import MyEventsPage from "./pages/account/MyEventsPage";
+import MySeatPage from "./pages/account/MySeatPage";
+import ResetPage from "./pages/account/ResetPage";
 import DinerAccountPage from "./pages/discover/DinerAccountPage";
 import DinerSignUpPage from "./pages/discover/DinerSignUpPage";
 import DinerSocialCallbackPage from "./pages/discover/DinerSocialCallbackPage";
 import DiscoverPage from "./pages/discover/DiscoverPage";
+import Home from "./pages/Home";
+import JoinPage from "./pages/join/JoinPage";
+import JoinSignInPage from "./pages/join/JoinSignInPage";
+import RegisterPage from "./pages/join/RegisterPage";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import OwnerHomePage from "./pages/owner/OwnerHomePage";
+import OwnerSignUpPage from "./pages/owner/OwnerSignUpPage";
+import NewRestaurantWizard from "./pages/owner/NewRestaurantWizard";
+import ProfilePage from "./pages/owner/ProfilePage";
+import PhotoEditorPage from "./pages/owner/PhotoEditor";
 import BookingPage from "./pages/restaurant/BookingPage";
 import RestaurantPage from "./pages/restaurant-public/RestaurantPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
-// Only what the first screen needs is in the first download. Every other page is fetched when its
-// route is opened, so a diner looking for a table does not also download the owner and event tools.
-const EditorPage = lazy(() => import("./pages/editor/EditorPage"));
-const AttendeePage = lazy(() => import("./pages/events/AttendeePage"));
-const OrganiserPage = lazy(() => import("./pages/events/OrganiserPage"));
-const AccountPage = lazy(() => import("./pages/account/AccountPage"));
-const ForgotPage = lazy(() => import("./pages/account/ForgotPage"));
-const GuestSignInPage = lazy(() => import("./pages/account/GuestSignInPage"));
-const MyEventsPage = lazy(() => import("./pages/account/MyEventsPage"));
-const MySeatPage = lazy(() => import("./pages/account/MySeatPage"));
-const ResetPage = lazy(() => import("./pages/account/ResetPage"));
-const Home = lazy(() => import("./pages/Home"));
-const JoinPage = lazy(() => import("./pages/join/JoinPage"));
-const JoinSignInPage = lazy(() => import("./pages/join/JoinSignInPage"));
-const RegisterPage = lazy(() => import("./pages/join/RegisterPage"));
-const OwnerHomePage = lazy(() => import("./pages/owner/OwnerHomePage"));
-const OwnerSignUpPage = lazy(() => import("./pages/owner/OwnerSignUpPage"));
-const NewRestaurantWizard = lazy(() => import("./pages/owner/NewRestaurantWizard"));
-const ProfilePage = lazy(() => import("./pages/owner/ProfilePage"));
-const PhotoEditorPage = lazy(() => import("./pages/owner/PhotoEditor"));
 import WeatherRainOffer from "./pages/restaurant/WeatherRainOffer";
-const StaffPage = lazy(() => import("./pages/restaurant/StaffPage"));
-const HoursPage = lazy(() => import("./pages/owner/HoursPage"));
-const MenuPage = lazy(() => import("./pages/owner/MenuPage"));
-const PublishReview = lazy(() => import("./pages/owner/PublishReview"));
-const UnsubscribePage = lazy(() => import("./pages/legal/UnsubscribePage"));
-const InsightsPage = lazy(() => import("./pages/owner/InsightsPage"));
-const ForgotPasswordPage = lazy(() => import("./pages/owner/ForgotPasswordPage"));
-const MessagesPage = lazy(() => import("./pages/owner/MessagesPage"));
-const OffersPage = lazy(() => import("./pages/owner/OffersPage"));
-const PaymentsPage = lazy(() => import("./pages/owner/PaymentsPage"));
-const ResetPasswordPage = lazy(() => import("./pages/owner/ResetPasswordPage"));
-const SecurityPage = lazy(() => import("./pages/owner/SecurityPage"));
-const SocialCallbackPage = lazy(() => import("./pages/owner/SocialCallbackPage"));
-const TermsPage = lazy(() => import("./pages/owner/TermsPage"));
-const DemoCheckoutPage = lazy(() => import("./pages/pay/DemoCheckoutPage"));
-const MessageActionPage = lazy(() => import("./pages/messages/MessageActionPage"));
-const PaymentReturnPage = lazy(() => import("./pages/pay/PaymentReturnPage"));
+import StaffPage from "./pages/restaurant/StaffPage";
+import HoursPage from "./pages/owner/HoursPage";
+import MenuPage from "./pages/owner/MenuPage";
+import PublishReview from "./pages/owner/PublishReview";
+import UnsubscribePage from "./pages/legal/UnsubscribePage";
+import InsightsPage from "./pages/owner/InsightsPage";
+import ForgotPasswordPage from "./pages/owner/ForgotPasswordPage";
+import MessagesPage from "./pages/owner/MessagesPage";
+import OffersPage from "./pages/owner/OffersPage";
+import PaymentsPage from "./pages/owner/PaymentsPage";
+import ResetPasswordPage from "./pages/owner/ResetPasswordPage";
+import SecurityPage from "./pages/owner/SecurityPage";
+import SocialCallbackPage from "./pages/owner/SocialCallbackPage";
+import TermsPage from "./pages/owner/TermsPage";
+import DemoCheckoutPage from "./pages/pay/DemoCheckoutPage";
+import MessageActionPage from "./pages/messages/MessageActionPage";
+import PaymentReturnPage from "./pages/pay/PaymentReturnPage";
 const RoomEditorPage = lazy(() => import("./pages/room-editor/RoomEditorPage"));
 
 export default function App() {
   return (
-    <Suspense fallback={<Skeleton lines={4} label="Loading" />}>
     <Routes>
       <Route path="/" element={<DiscoverPage />} />
       {/* The original SeatPlan home page, with the demo links, moved here (spec 4.1). */}
@@ -82,7 +78,7 @@ export default function App() {
       <Route path="/owner/:venueId/review" element={<PublishReview />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />
       <Route path="/owner/:venueId/dashboard" element={<StaffPage />} />
-      <Route path="/owner/:venueId/rooms" element={<RoomEditorPage />} />
+      <Route path="/owner/:venueId/rooms" element={<Suspense fallback={<p role="status">Loading room editor…</p>}><RoomEditorPage /></Suspense>} />
       {/* Events: personal attendee link, organiser workspace */}
       <Route path="/e/:token" element={<AttendeePage />} />
       <Route path="/organiser/:eventId" element={<OrganiserPage />} />
@@ -113,6 +109,5 @@ export default function App() {
       <Route path="/editor/:venueId" element={<EditorPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
-    </Suspense>
   );
 }
