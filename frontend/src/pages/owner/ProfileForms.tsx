@@ -8,6 +8,7 @@ import { tr } from "../../i18n/locale";
 import { phoneError } from "../restaurant/validation";
 import { reverseGeocode } from "../../maps/reverseGeocode";
 import type { GeoPoint } from "../../maps/reverseGeocode";
+import "./owner-v5.css"; // the cuisine pills and the price buttons are styled there, and the "Add a restaurant" page has no owner menu to load it
 const LeafletMap = lazy(() => import("../../maps/LeafletMap"));
 
 export const EMPTY_PROFILE: OwnerProfile = { public_id: "", status: "draft", slug: "", name: "", description: "", cuisines: [], price_level: 2, phone: null, website: null, instagram: null, google_maps_url: null, address: "", lat: null, lng: null, timezone: "Europe/Lisbon" };
