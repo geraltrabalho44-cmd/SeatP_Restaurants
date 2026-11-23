@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe("Booking page", () => {
-  it("books from date to confirmation and always shows a copyable manage link", async () => {
+  it("books from date to confirmation and ends on a summary with the Manage booking button, and nothing under it", async () => {
     const calls = mockApi({
       [`GET ${API}`]: () => INFO,
       [`GET ${API}/slots`]: () => SLOTS,
@@ -46,8 +46,8 @@ describe("Booking page", () => {
 
     // Slots are grouped by service and show the status in words.
     expect(callsTo(calls, "GET", `${API}/slots`)[0]?.query.get("party")).toBe("2");
-    // The suggestion card explains why, then holds the table with a visible countdown.
-    expect(screen.getByText("By the window")).toBeTruthy();
+    // The suggestion card holds the table with a visible countdown; it no longer lists why it was suggested.
+    expect(screen.queryByText("By the window")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7, time: "19:30", party: 2 });
@@ -65,14 +65,13 @@ describe("Booking page", () => {
     // Step 5: summary, manage link, email note.
     expect(await screen.findByRole("heading", { name: "Booking confirmed." })).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).toMatchObject({ hold_id: "hold-token-41", name: "Ana Pereira", email: "ana@example.com", party: 2 });
-    const link = screen.getByLabelText("Your manage link") as HTMLInputElement;
-    expect(link.value).toBe(`${window.location.origin}/b/tok123`);
-    expect(screen.getByText(/Confirmation email/)).toBeTruthy();
+    // Nothing under the buttons: no email preview, no note about the email, no copy-link field.
+    expect(screen.queryByLabelText("Your manage link")).toBeNull();
+    expect(screen.queryByText(/Confirmation email/)).toBeNull();
+    expect(screen.queryByText(/does not send emails yet/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Copy private link" })).toBeNull();
     expect(screen.getByText(/Your table at .* is reserved/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Manage booking" }).getAttribute("href")).toBe(`${window.location.origin}/b/tok123`);
-    fireEvent.click(screen.getByRole("button", { name: "Copy private link" }));
-    expect(await screen.findByText(/Link copied/)).toBeTruthy();
-    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/b/tok123`);
   });
 
   it("sends a full slot to the waitlist and shows position and wait", async () => {
@@ -251,12 +250,13 @@ describe("Booking page", () => {
     expect(screen.getByRole("heading", { name: "Your details" })).toBeTruthy();
   });
 
-  it("offers party sizes only up to the restaurant's real limit", async () => {
+  it("always offers 1 to 10 people, whatever the restaurant's tables, with no hint under the list", async () => {
     mockApi({ [`GET ${API}`]: () => ({ ...INFO, max_party: 5 }) });
     renderBooking();
     const select = (await screen.findByLabelText("Party size")) as HTMLSelectElement;
-    expect(select.options).toHaveLength(5);
-    expect(screen.getByText(/For more than 5, please call/)).toBeTruthy();
+    expect(Array.from(select.options).map(o => o.value)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+    expect(screen.queryByText(/Including children/)).toBeNull();
+    expect(screen.queryByText(/please call the restaurant/)).toBeNull();
   });
 
   it("explains that online booking is closed when no party size can be booked", async () => {

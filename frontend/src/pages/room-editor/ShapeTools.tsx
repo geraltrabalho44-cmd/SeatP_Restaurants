@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import { useEffect, useState } from "react";
 import { Field } from "../../design/components";
 
@@ -16,8 +17,8 @@ export function RoomNumberField({ label, value, onCommit, decimals = 0, min, max
     onBlur={() => {
       if (text === format(value)) return;
       const number = Number(text.replace(",", "."));
-      if (!text.trim() || !Number.isFinite(number) || (min !== undefined && number < min) || (max !== undefined && number > max)) { setError("Use a number within the allowed range."); return; }
-      try { onCommit(number); } catch (caught) { setError(caught instanceof Error ? caught.message : "Check this value."); }
+      if (!text.trim() || !Number.isFinite(number) || (min !== undefined && number < min) || (max !== undefined && number > max)) { setError(tr("Use a number within the allowed range.")); return; }
+      try { onCommit(number); } catch (caught) { setError(caught instanceof Error ? caught.message : tr("Check this value.")); }
     }} />;
 }
 

@@ -115,6 +115,10 @@ class Venue(Base):
     )
     layout_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
     published_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    # Off by default: a party of 2 is not given a table for 4. The owner can switch it on (Schedule > Tables).
+    allow_larger_tables: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("FALSE")
+    )
 
 
 class Zone(Base):

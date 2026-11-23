@@ -104,6 +104,8 @@ class ScheduleIn(Strict):
     service_periods: list[PeriodIn] = Field(max_length=100)
     turn_times: list[TurnIn] = Field(max_length=30)
     blackout_dates: list[BlackoutIn] = Field(default_factory=list, max_length=400)
+    # Whether a smaller party may be given a bigger table. Left out = unchanged (off for every restaurant until switched on).
+    allow_larger_tables: bool | None = None
 
 
 class OptimiseServiceIn(Strict):
@@ -262,6 +264,8 @@ def put_schedule(
         [TurnRow(**turn.model_dump()) for turn in body.turn_times],
         [BlackoutRow(**blackout.model_dump()) for blackout in body.blackout_dates],
     )
+    if body.allow_larger_tables is not None:
+        venue.allow_larger_tables = body.allow_larger_tables
     # The schedule is not tied to one date, so there is no live scope to bump.
     record_change(
         session,

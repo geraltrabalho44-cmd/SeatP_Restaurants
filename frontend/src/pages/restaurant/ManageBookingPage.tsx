@@ -15,7 +15,6 @@ import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 import { useLoad } from "./useLoad";
 import { ArrivalNotice } from "./ArrivalNotice";
 import { useT } from "../../i18n/I18nProvider";
-import { OffersChoice } from "./OffersChoice";
 import { RainCard } from "./WeatherRainOffer";
 import { AddToCalendar } from "./AddToCalendar";
 import { cancelNote, depositStatus } from "./money";
@@ -91,29 +90,32 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
         </p>
       )}
       <div className="rb5-two rb5-manage">
-        <section className="rb-card rb5-details-card" aria-label={t("Reservation details")}>
-          <h2 className="rb5-card-title">{t("Reservation details")}</h2>
-          <BookingRows booking={booking} />
-          {booking.offer && (
-            <p className="rb-muted" data-testid="offer-line">
-              {t("Offer: {name}, {what}. The restaurant takes it off your bill.", { name: booking.offer.name, what: booking.offer.what })}
-            </p>
-          )}
-          {booking.payment && booking.status !== "pending" && booking.payment.status !== "expired" && (
-            <p className="rb-muted" data-testid="deposit-line">
-              {depositStatus(booking.payment)}. {booking.payment.policy_text}
-            </p>
-          )}
-          <div className="rb5-reference">
-            <span className="rb-muted">{t("Reference {id}", { id: booking.public_id.slice(0, 8).toUpperCase() })}</span>
-            {(booking.status === "confirmed" || booking.status === "pending") && <AddToCalendar token={token} />}
-            <DirectionsLink venue={venue} />
-          </div>
-        </section>
+        <div className="rb5-manage-main">
+          <section className="rb-card rb5-details-card" aria-label={t("Reservation details")}>
+            <header className="rb5-card-head">
+              <h2 className="rb5-card-title">{t("Reservation details")}</h2>
+              <span className="rb-muted">{t("Reference {id}", { id: booking.public_id.slice(0, 8).toUpperCase() })}</span>
+            </header>
+            <BookingRows booking={booking} />
+            {booking.offer && (
+              <p className="rb-muted" data-testid="offer-line">
+                {t("Offer: {name}, {what}. The restaurant takes it off your bill.", { name: booking.offer.name, what: booking.offer.what })}
+              </p>
+            )}
+            {booking.payment && booking.status !== "pending" && booking.payment.status !== "expired" && (
+              <p className="rb-muted" data-testid="deposit-line">
+                {depositStatus(booking.payment)}. {booking.payment.policy_text}
+              </p>
+            )}
+            <div className="rb5-card-actions">
+              {(booking.status === "confirmed" || booking.status === "pending") && <AddToCalendar booking={booking} address={venue?.address ?? ""} manageLink={`${window.location.origin}/b/${token}`} />}
+              <DirectionsLink venue={venue} />
+            </div>
+          </section>
+          {renderActions()}
+        </div>
         <div className="rb5-manage-side">
           <VenueCard booking={booking} venue={venue} />
-          {renderActions()}
-          {booking.offers !== undefined && booking.status !== "cancelled" && <OffersChoice token={token} restaurant={booking.venue_name} initial={booking.offers} />}
           {booking.status === "confirmed" && <ArrivalNotice token={token} booking={booking} onUpdate={update} />}
         </div>
       </div>

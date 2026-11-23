@@ -10,10 +10,13 @@
 .rb5-stagebar {
   scroll-margin-top: 4.5rem;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-3);
   flex-wrap: wrap;
+  /* A grey line under the steps: the current step has a purple line that sits exactly on it. */
+  border-bottom: var(--border-width) solid var(--c-border);
+  margin-bottom: var(--space-3);
 }
 
 .rb5-stage-meta {
@@ -28,7 +31,7 @@
 
 .rb5-stage-nav .stepper {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-1);
   margin: 0;
   padding: 0;
@@ -39,8 +42,10 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: calc(var(--border-width) * -1);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
   color: var(--c-text-muted);
@@ -54,7 +59,7 @@
 }
 
 .rb5-stage-nav .stepper-current {
-  background: var(--c-primary-soft);
+  border-bottom-color: var(--c-primary);
   color: var(--c-primary);
   font-weight: var(--fw-semibold, 600);
 }
@@ -87,6 +92,7 @@
 .rb5-stage-count {
   display: none;
   margin: 0;
+  padding-bottom: var(--space-2);
   font-size: var(--fs-sm);
   color: var(--c-text-muted);
 }
@@ -1173,3 +1179,37 @@
 .rb5-email-head dt { color: var(--c-text-muted); }
 .rb5-email-head dd { margin: 0; overflow-wrap: anywhere; }
 .rb5-email-body { margin: 0; padding: var(--space-3); border-top: 1px solid var(--c-border); white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: var(--fs-sm); line-height: 1.5; }
+
+/* ---------- Manage booking: the booking and what can be done to it on the left, the restaurant and its offers on the right ---------- */
+.rb5-manage { align-items: start; gap: var(--space-5); }
+.rb5-manage-main { display: grid; gap: var(--space-4); min-width: 0; }
+.rb5-page-title { font-size: clamp(2rem, 4vw, 2.75rem); margin-bottom: var(--space-2); }
+.rb5-manage-sub { margin-bottom: var(--space-5); }
+.rb5-manage .rb5-card-title { font-size: 1.5rem; margin: 0; }
+.rb5-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.rb5-card-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--c-border); }
+.rb5-change .rb-manage-actions { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.rb5-change .rb-manage-actions .btn { width: auto; justify-content: center; }
+.rb5-change .rb-danger-link { margin: 0 0 0 auto; padding-top: 0; border-top: 0; border-radius: var(--radius-md); }
+.rb5-manage-side .rb5-card-title { font-size: 1.25rem; }
+/* Wider than the booking steps: two columns of cards need room. Every card on the right has a heading of the same size. */
+.rb-page:has(.rb5-manage) { max-width: 62rem; }
+.rb5-manage-side h2, .rb5-manage-side h3 { font-size: 1.25rem; line-height: 1.2; margin: 0 0 var(--space-3); }
+.rb5-card-head { margin-bottom: var(--space-2); }
+.rb5-card-actions { border-top: 0; padding-top: 0; margin-top: var(--space-4); }
+.rb5-change .rb-danger-link { margin: 0; }
+/* Both columns are as tall as each other and their last cards fill what is left, so the bottom edges line up; cards start on the same line. */
+.rb5-manage { align-items: start; }
+.rb5-manage-main, .rb5-manage-side { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.rb5-manage .rb-card { margin: 0; }
+.rb5-manage .rb5-details-card, .rb5-manage .rb5-change { padding: var(--space-5); }
+/* One padding in every card, the "Cancel booking" link starting where the buttons start, and room under the cards. */
+.rb5-manage-side .rb-card:not(.rb5-venue) { padding: var(--space-5); }
+.rb5-change .rb-danger-link { padding-inline: 0; min-height: 2.5rem; }
+.rb5-manage + p { margin-top: var(--space-5); }
+
+/* The three actions of the confirmation (Manage booking, Add to Google Calendar, Get directions) sit on one line. */
+@media (min-width: 720px) {
+  .rb5-confirm .rb5-actions { flex-wrap: nowrap; align-items: stretch; gap: var(--space-2); }
+  .rb5-confirm .rb5-actions .btn { flex: 0 1 auto; white-space: nowrap; padding-inline: var(--space-3); min-width: 0; justify-content: center; }
+}

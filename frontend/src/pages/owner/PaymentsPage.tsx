@@ -87,7 +87,7 @@ function ModeNotice({ settings }: { settings: PaymentSettings }) {
 }
 
 function DepositForm({ venueId, settings, onSaved }: { venueId: string; settings: PaymentSettings; onSaved: (settings: PaymentSettings) => void }) {
-  const { t } = useT();
+  const { t, label } = useT();
   const toast = useToast();
   const [rows, setRows] = useState<Row[]>(() => rowsOf(settings.policies));
   const [next, setNext] = useState(settings.policies.length);
@@ -124,7 +124,7 @@ function DepositForm({ venueId, settings, onSaved }: { venueId: string; settings
   };
   const serviceOptions = (current: string) => [
     { value: "", label: t("All other services") },
-    ...settings.services.map((name) => ({ value: name, label: name })),
+    ...settings.services.map((name) => ({ value: name, label: label(name) })),
   ].filter((option) => option.value === current || !taken.has(option.value));
   const canAdd = ["", ...settings.services].some((name) => !taken.has(name));
   return (

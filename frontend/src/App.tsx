@@ -13,6 +13,7 @@ import MySeatPage from "./pages/account/MySeatPage";
 import ResetPage from "./pages/account/ResetPage";
 import DinerAccountPage from "./pages/discover/DinerAccountPage";
 import DinerSignUpPage from "./pages/discover/DinerSignUpPage";
+import DinerSocialCallbackPage from "./pages/discover/DinerSocialCallbackPage";
 import DiscoverPage from "./pages/discover/DiscoverPage";
 import Home from "./pages/Home";
 import JoinPage from "./pages/join/JoinPage";
@@ -95,6 +96,7 @@ export default function App() {
       {/* Restaurants: public booking, manage-or-cancel link, staff floor */}
       <Route path="/restaurants/account" element={<DinerAccountPage />} />
       <Route path="/restaurants/account/sign-up" element={<DinerSignUpPage />} />
+      <Route path="/restaurants/account/callback" element={<DinerSocialCallbackPage />} />
       <Route path="/restaurants/:slug" element={<RestaurantPage />} />
       <Route path="/r/:venueId" element={<BookingPage />} />
       <Route path="/b/:token" element={<ManageBookingPage />} />

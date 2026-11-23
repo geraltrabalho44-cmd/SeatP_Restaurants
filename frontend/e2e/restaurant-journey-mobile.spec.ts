@@ -53,6 +53,7 @@ test("on a phone, from a discovery time to a confirmed booking without a chair",
 test("on a phone, from a discovery time to a confirmed booking with a chair request", async ({ page }) => {
   await fromDiscoveryToTable(page, 9);
   await page.getByRole("button", { name: /^Hold .+ & continue$/ }).click();
+  await page.getByText("Occasion, dietary preferences, allergies and a chair").click(); // the chair waits in the closed sub menu
   await page.getByRole("button", { name: "Choose a chair" }).click();
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();
   await page.getByRole("radio").first().check();

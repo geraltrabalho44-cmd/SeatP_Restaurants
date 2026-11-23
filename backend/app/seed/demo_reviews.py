@@ -99,6 +99,37 @@ DETAILS = (
 )
 
 
+# The average these restaurants are meant to show (the scale is 0 to 10). Their reviews are shifted to match it.
+TARGET_AVERAGES = {"casa-da-india": 4.9}
+
+
+def apply_target_averages(session: Session) -> int:
+    """Give each restaurant in TARGET_AVERAGES the average it should show, by moving its review scores by at most a point
+    or two: the lowest scores stay the lowest. Returns how many restaurants were changed. Repeatable."""
+    changed = 0
+    for slug, target in TARGET_AVERAGES.items():
+        venue = session.scalar(select(Venue).where(Venue.slug == slug, Venue.kind == "restaurant"))
+        if venue is None:
+            continue
+        reviews = list(
+            session.scalars(
+                select(RestaurantReview)
+                .where(RestaurantReview.venue_id == venue.id)
+                .order_by(RestaurantReview.score, RestaurantReview.public_id)
+            )
+        )
+        if not reviews:
+            continue
+        total = round(target * len(reviews))
+        base, extra = divmod(total, len(reviews))
+        for index, review in enumerate(reviews):
+            score = base + (1 if index >= len(reviews) - extra else 0)
+            if review.score != score:
+                review.score = score
+                changed += 1
+    return changed
+
+
 def seed(session: Session, plain: bool = False) -> tuple[int, int]:
     """Add reviews. `plain` drops the per-review "Demo review" label."""
     venues = session.scalars(
@@ -180,6 +211,7 @@ def seed(session: Session, plain: bool = False) -> tuple[int, int]:
             )
         ):
             review.comment = review.comment[len(LABEL) :]
+    apply_target_averages(session)
     return len(venues), added
 
 

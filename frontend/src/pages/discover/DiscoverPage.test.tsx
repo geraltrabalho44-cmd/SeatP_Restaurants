@@ -79,11 +79,12 @@ describe("DiscoverPage: the command bar", () => {
     expect(screen.getByText("See the room and choose where you’ll sit.")).toBeTruthy();
     const bar = screen.getByRole("search");
     expect(within(bar).getByLabelText("Restaurant or cuisine")).toBeTruthy();
-    // On a wide screen the bar holds where and when, near me, the three quick filters and the drawer button.
+    // On a wide screen the bar holds where and when, near me, the five kinds of food and the drawer button.
     expect(within(bar).getByLabelText("Choose a city")).toBeTruthy();
     expect(within(bar).getByLabelText("Date")).toBeTruthy();
     expect(within(bar).getByRole("button", { name: "Near me" })).toBeTruthy();
-    for (const name of ["Has sunny tables", "Tables with a view", "Terrace"]) expect(within(bar).getByRole("button", { name })).toBeTruthy();
+    for (const name of ["Portuguese", "Seafood", "Japanese", "Italian", "Pizza"]) expect(within(bar).getByRole("button", { name })).toBeTruthy();
+    for (const name of ["Has sunny tables", "Tables with a view"]) expect(within(bar).queryByRole("button", { name })).toBeNull();
     const first = (await screen.findByRole("heading", { name: "Casa 1" })).closest("article") as HTMLElement;
     expect(within(first).getByText("Portuguese, Seafood", { exact: false })).toBeTruthy();
     // One line about the room, from the three facts the restaurant has. Wheelchair access is a filter, not card clutter.
@@ -95,11 +96,11 @@ describe("DiscoverPage: the command bar", () => {
     expect(photo?.getAttribute("alt")).toBe("The room of Casa 1");
     expect(screen.getByText("2 restaurants")).toBeTruthy();
   });
-  it("links the header to the owners page and to the demo", async () => {
+  it("links the header to the owners page and offers no event planning", async () => {
     server(() => ({ items: [], total: 0 }));
     renderPage();
     expect(screen.getByRole("link", { name: "For restaurant owners" }).getAttribute("href")).toBe("/owner/sign-in");
-    expect(screen.getByRole("link", { name: "Plan an event" }).getAttribute("href")).toBe("/demo");
+    expect(screen.queryByRole("link", { name: "Plan an event" })).toBeNull();
     await screen.findByText("No restaurants match");
   });
   it("moves the only card and pin highlight to the hovered result without restoring a prior selection", async () => {
@@ -147,11 +148,11 @@ describe("DiscoverPage: the command bar", () => {
     const asked = server(() => ({ items: [card(1)], total: 1 }));
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
-    fireEvent.click(screen.getByRole("button", { name: "Has sunny tables" }));
-    fireEvent.click(screen.getByRole("button", { name: "Terrace" }));
-    await waitFor(() => expect(asked.at(-1)?.getAll("features")).toEqual(["sun", "terrace"]));
-    expect(screen.getByRole("button", { name: "Terrace" }).getAttribute("aria-pressed")).toBe("true");
-    // The drawer button counts only what is inside the drawer, so quick chips do not inflate it.
+    fireEvent.click(screen.getByRole("button", { name: "Portuguese" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pizza" }));
+    await waitFor(() => expect(asked.at(-1)?.getAll("cuisine")).toEqual(["portuguese", "pizza"]));
+    expect(screen.getByRole("button", { name: "Pizza" }).getAttribute("aria-pressed")).toBe("true");
+    // The drawer button counts only what is inside the drawer, so the food chips in the bar do not inflate it.
     expect(screen.getByRole("button", { name: "Filters" })).toBeTruthy();
   });
   it("falls back to a city when the browser refuses the location, and remembers the city", async () => {
@@ -199,6 +200,14 @@ describe("DiscoverPage: when", () => {
     fireEvent.click(within(drawer).getByRole("button", { name: /^Apply/ }));
     await waitFor(() => expect(asked.at(-1)?.has("available")).toBe(false));
   });
+  it("says plainly that no table is free when a day and time were asked for and nothing matches", async () => {
+    server(() => ({ items: [], total: 0 }));
+    renderPage();
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2030-05-01" } });
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "14:30" } });
+    expect(await screen.findByText("No tables available around 14:30")).toBeTruthy();
+    expect(screen.getByText(/No restaurant has a free table for 2 people on .* around that time\. Try another time or another day\./)).toBeTruthy();
+  });
   it("clears the date and time with the cross", async () => {
     const asked = server(() => ({ items: [card(1)], total: 1 }));
     renderPage();
@@ -223,9 +232,9 @@ describe("DiscoverPage: the filters drawer", () => {
     expect(asked.at(-1)?.getAll("price")).toEqual(["2"]);
     expect(asked.at(-1)?.getAll("features")).toEqual(["accessible"]);
     expect(within(drawer).getByRole("button", { name: "Sushi" }).getAttribute("aria-pressed")).toBe("true");
-    // The button on the bar counts what is inside the drawer: two cuisines, one price, wheelchair.
+    // The bar shows Pizza itself, so the button counts the rest: one cuisine, one price, wheelchair.
     fireEvent.click(within(drawer).getByRole("button", { name: /^Apply/ }));
-    expect(screen.getByRole("button", { name: "Filters (4)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Filters (3)" })).toBeTruthy();
   });
   it("shows the common cuisines first, the rest on More cuisines, and keeps a chosen one visible", async () => {
     server(() => ({ items: [card(1)], total: 1 }));
@@ -329,10 +338,10 @@ describe("DiscoverPage: results", () => {
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
     expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Tables with a view" }));
+    fireEvent.click(screen.getByRole("button", { name: "Japanese" }));
     const clear = await screen.findByRole("button", { name: "Clear filters" });
     fireEvent.click(clear);
-    await waitFor(() => expect(asked.at(-1)?.has("features")).toBe(false));
+    await waitFor(() => expect(asked.at(-1)?.has("cuisine")).toBe(false));
   });
   it("shows an error with a working retry", async () => {
     let fail = true;
@@ -379,14 +388,14 @@ it("keeps restaurant search criteria when the diner returns from a restaurant", 
   fireEvent.change(screen.getByLabelText("Restaurant or cuisine"), {target:{value:"patio"}});
   fireEvent.change(screen.getByLabelText("Date"), {target:{value:"2030-05-01"}});
   fireEvent.change(screen.getByLabelText("People"), {target:{value:"4"}});
-  fireEvent.click(screen.getByRole("button", {name:"Terrace"}));
+  fireEvent.click(screen.getByRole("button", {name:"Seafood"}));
   await waitFor(() => expect(screen.getByLabelText("Restaurant or cuisine")).toBeTruthy());
   first.unmount();
   renderPage();
   expect((screen.getByLabelText("Restaurant or cuisine") as HTMLInputElement).value).toBe("patio");
   expect((screen.getByLabelText("Date") as HTMLInputElement).value).toBe("2030-05-01");
   expect((screen.getByLabelText("People") as HTMLSelectElement).value).toBe("4");
-  expect(screen.getByRole("button", {name:"Terrace"}).getAttribute("aria-pressed")).toBe("true");
+  expect(screen.getByRole("button", {name:"Seafood"}).getAttribute("aria-pressed")).toBe("true");
   await screen.findByRole("heading", {name:"Casa 1"});
 });
 it("removes one advanced filter without losing another or the booking context", async () => {

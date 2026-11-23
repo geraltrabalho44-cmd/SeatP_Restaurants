@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 // Shows where the person is in a multi-step flow, such as
 // "Date and party > Time > Table > Details". The current step is announced
 // with aria-current; finished steps get a tick, not just a colour.
@@ -35,7 +36,7 @@ export function Stepper({ steps, current, label = "Progress" }: StepperProps) {
               </span>
               <span className="stepper-label">
                 {step}
-                {status === "done" && <span className="visually-hidden"> (done)</span>}
+                {status === "done" && <span className="visually-hidden"> {tr("(done)")}</span>}
               </span>
             </li>
           );

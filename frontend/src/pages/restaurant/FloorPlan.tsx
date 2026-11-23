@@ -15,6 +15,7 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, RefObject } from "react";
 import type { MapRoom, MapSeat, MapTable, MapZone } from "../../api/types";
+import { useT } from "../../i18n/I18nProvider";
 import { describeItem } from "../../seatmap/describe";
 import type { DescribeItem } from "../../seatmap/describe";
 import { tableCentre } from "../../seatmap/geometry";
@@ -86,6 +87,7 @@ function Chair({ seat, centre }: { seat: MapSeat; centre: { x: number; y: number
 }
 
 export function FloorPlan(props: FloorPlanProps) {
+  const { t, label: say } = useT();
   const { label, tables, seats, rooms, zones = [], activeRoomId, selectable, selectedId, highlight = NONE, describe, onSelect, onActiveChange, narrow = false } = props;
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
@@ -154,6 +156,7 @@ export function FloorPlan(props: FloorPlanProps) {
             <path d={outlinePath(room.outline)} />
           </clipPath>
           <path className="fp-floor" d={outlinePath(room.outline)} />
+          {!room.is_outdoor && <path d={outlinePath(room.outline)} fill={`url(#${id}-boards)`} />}
           {!room.night &&
             room.sun_patches.map((patch, i) => <path key={i} className="room-sun fp-sun" d={polygonPath(patch)} clipPath={`url(#${id}-clip-${room.id ?? "x"})`} />)}
           <path className="fp-wall" d={outlinePath(room.outline)} />
@@ -177,6 +180,9 @@ export function FloorPlan(props: FloorPlanProps) {
             ),
           )}
         </g>
+      ))}
+      {shownZones.map((zone) => (
+        <rect key={`z${zone.id}`} className="fp-zone" x={zone.x} y={zone.y} width={zone.w} height={zone.h} rx={14} />
       ))}
       {night && (
         <g className="room-night fp-night">
@@ -254,6 +260,14 @@ export function FloorPlan(props: FloorPlanProps) {
           </g>
         );
       })}
+      {shownZones.map((zone) => {
+        const p = at(zone.x, zone.y);
+        return (
+          <text key={`zt${zone.id}`} className="fp-zone-text" x={p.x + px(10)} y={p.y + px(8)} fontSize={px(10.5)}>
+            {say(zone.name)}
+          </text>
+        );
+      })}
       {shownRooms.length > 1 &&
         shownRooms.map((room) => {
           const xs = room.outline.points.map((p) => p.x);
@@ -314,7 +328,7 @@ export function FloorPlan(props: FloorPlanProps) {
         tabIndex={0}
         role="listbox"
         aria-label={label}
-        aria-roledescription="table map"
+        aria-roledescription={t("table map")}
         aria-describedby={`${id}-help`}
         aria-activedescendant={activeId === null ? undefined : domId(activeId)}
         onKeyDown={onKeyDown}
@@ -328,6 +342,9 @@ export function FloorPlan(props: FloorPlanProps) {
       >
         <svg ref={svgRef} className="fp-svg" viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`}>
           <defs>
+            <pattern id={`${id}-boards`} width="60" height="46" patternUnits="userSpaceOnUse">
+              <path className="fp-boards" d="M0 .75H60" fill="none" />
+            </pattern>
             <radialGradient id={`${id}-glow`}>
               <stop offset="0" className="fp-glow-in" />
               <stop offset="1" className="fp-glow-out" />
@@ -341,7 +358,7 @@ export function FloorPlan(props: FloorPlanProps) {
         </svg>
       </div>
       <p id={`${id}-help`} className="visually-hidden">
-        Use the arrow keys to move between tables, Enter or Space to choose one, and Escape to leave the plan.
+        {t("Use the arrow keys to move between tables, Enter or Space to choose one, and Escape to leave the plan.")}
       </p>
     </div>
   );

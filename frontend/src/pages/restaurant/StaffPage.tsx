@@ -13,6 +13,7 @@ import { Wordmark } from "../../design/components/PageShell";
 import { PageShell } from "../../design/components";
 import type { Message } from "../../i18n/catalogue";
 import { useT } from "../../i18n/I18nProvider";
+import { LanguagePicker } from "../../i18n/LanguagePicker";
 import { formatDate, todayIso } from "./format";
 import { StaffDashboard } from "./StaffDashboard";
 import { StaffFloor } from "./StaffFloor";
@@ -49,7 +50,7 @@ export default function StaffPage() {
   return (
     <PageShell title={t("Service floor")} width="wide">
       <div className="st-page">
-        <aside className="st-sidebar"><Wordmark/><p className="st-workspace-label">{t("Staff workspace")}</p><TabList current={tab} onChange={changeTab} /><Link className="st-home-link" to={ownerEntry ? "/owner" : "/"}>{ownerEntry ? t("My restaurants") : t("Find restaurants")}</Link></aside>
+        <aside className="st-sidebar"><Wordmark/><LanguagePicker /><p className="st-workspace-label">{t("Staff workspace")}</p><TabList current={tab} onChange={changeTab} /><Link className="st-home-link" to={ownerEntry ? "/owner" : "/"}>{ownerEntry ? t("My restaurants") : t("Find restaurants")}</Link></aside>
         <div className="st-content">
         <div className="st-top">
           <div>

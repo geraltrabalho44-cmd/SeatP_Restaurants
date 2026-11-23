@@ -5,6 +5,7 @@
 // If another tab or device saved first the server answers 409 and changes
 // nothing; the owner's work stays on screen and on this device, and they choose:
 // load the latest, or save theirs over it.
+import { tr } from "../../i18n/locale";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../../api/client";
 import { blockedTables, getRooms, layoutOf, putRooms } from "../../api/rooms";
@@ -119,7 +120,7 @@ export function useRoomDraft(venueId: string, server: RoomsAnswer) {
         const wasPublished = publication.current === "published";
         const answer = await putRooms(venueId, layout);
         adopt(answer);
-        if (wasPublished && answer.status === "draft") setNotice("Rooms saved as a draft. New bookings are closed until you fix the problems and publish again. Existing bookings are kept.");
+        if (wasPublished && answer.status === "draft") setNotice(tr("Rooms saved as a draft. New bookings are closed until you fix the problems and publish again. Existing bookings are kept."));
         clearDraft(venueId);
         setState("idle");
       } catch (error) {
@@ -132,8 +133,8 @@ export function useRoomDraft(venueId: string, server: RoomsAnswer) {
         const blocked = blockedTables(error);
         if (blocked.length > 0) setNotice(blockedMessage(blocked));
         else if (error instanceof ApiError && error.status === 404) {
-          setNotice("Something in your changes was deleted from another device, so it could not be saved. Load the latest layout, then redo what you need.");
-        } else setNotice(error instanceof Error ? error.message : "We could not save the rooms. Your changes are still here.");
+          setNotice(tr("Something in your changes was deleted from another device, so it could not be saved. Load the latest layout, then redo what you need."));
+        } else setNotice(error instanceof Error ? error.message : tr("We could not save the rooms. Your changes are still here."));
       }
     },
     [venueId, adopt],
@@ -149,7 +150,7 @@ export function useRoomDraft(venueId: string, server: RoomsAnswer) {
       setState("idle");
       setNotice("");
     } catch {
-      setNotice("We could not load the latest layout. Your changes are still here.");
+      setNotice(tr("We could not load the latest layout. Your changes are still here."));
     }
   }, [venueId, adopt]);
 
@@ -159,7 +160,7 @@ export function useRoomDraft(venueId: string, server: RoomsAnswer) {
       const newest = await getRooms(venueId);
       await attempt({ ...latest.current, base_version: newest.version });
     } catch {
-      setNotice("We could not reach the server. Your changes are still here.");
+      setNotice(tr("We could not reach the server. Your changes are still here."));
     }
   }, [venueId, attempt]);
 

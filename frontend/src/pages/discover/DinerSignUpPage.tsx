@@ -11,6 +11,7 @@ import { dinerSignUp } from "../../api/diner";
 import { verifyCode } from "../../api/guest";
 import type { CodeSent } from "../../api/guest";
 import { Button, Checkbox, Field, PageShell, useToast } from "../../design/components";
+import { SocialSignIn } from "./SocialSignIn";
 import { useT } from "../../i18n/I18nProvider";
 import { ProblemBox, asApiError, listErrors, looksLikeEmail } from "../account/FormProblem";
 import type { FieldErrors } from "../account/FormProblem";
@@ -127,6 +128,7 @@ export default function DinerSignUpPage() {
             </div>
           </form>
         )}
+        {!sent && <SocialSignIn />}
       </div>
     </PageShell>
   );

@@ -7,6 +7,7 @@ import { useT } from "../../i18n/I18nProvider";
 import { SignInForm } from "../account/SignInForm";
 import "../account/account.css";
 import { DinerDashboard } from "./DinerDashboard";
+import { SocialSignIn } from "./SocialSignIn";
 
 export default function DinerAccountPage() {
   const { t } = useT();
@@ -40,6 +41,7 @@ export default function DinerAccountPage() {
           <Button variant="secondary" busy={busy} onClick={() => void signOut()}>{t("Sign out")}</Button>
           </>
         ) : (
+          <>
           <SignInForm
             onSignedIn={({ account }) => {
               toast.show(t("Welcome back, {name}.", { name: account.name }), "success");
@@ -49,6 +51,8 @@ export default function DinerAccountPage() {
             }}
             links={<><Link to="/my/forgot">{t("Forgot your password?")}</Link><Link to="/restaurants/account/sign-up">{t("Create an account")}</Link></>}
           />
+          <SocialSignIn />
+          </>
         )}
       </div>
     </PageShell>

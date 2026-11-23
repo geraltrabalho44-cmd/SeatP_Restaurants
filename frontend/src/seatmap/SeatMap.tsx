@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, RefObject } from "react";
 import type { MapRoom, MapSeat, MapTable, MapZone } from "../api/types";
+import { tr } from "../i18n/locale";
 import { describeItem, tableName } from "./describe";
 import type { DescribeItem } from "./describe";
 import { COMFORT_TARGET_PX, MIN_TARGET_PX, MIN_ZOOM, contentBounds, roomAround, seatHitRadius, tableCentre, tableHitRadius, zoomForTarget } from "./geometry";
@@ -156,12 +157,12 @@ function useMapInput({ props, model, panZoom, changes, isSelectable, leaveRef, a
     if (!target) return;
     setActiveId(id);
     if (!isSelectable(id)) {
-      changes.announce(`${target.name} is not available.`);
+      changes.announce(tr("{name} is not available.", { name: target.name }));
       return;
     }
     changes.notePick(id);
     props.onSelect?.(id);
-    changes.announce(`Selected ${target.name}.`);
+    changes.announce(tr("Selected {name}.", { name: target.name }));
   };
   const pick = useCallback((id: number) => pickRef.current(id), []);
 
@@ -242,7 +243,7 @@ export function SeatMap(props: SeatMapProps) {
   const input = useMapInput({ props, model, panZoom, changes, isSelectable, leaveRef, activeId, setActiveId });
 
   const recommended = model.targets.find((t) => highlight.has(t.id));
-  const focusControl = recommended ? { label: `Zoom to the recommended ${noun}`, onClick: () => zoomTo(panZoom, recommended) } : null;
+  const focusControl = recommended ? { label: noun === "table" ? tr("Zoom to the recommended table") : `Zoom to the recommended ${noun}`, onClick: () => zoomTo(panZoom, recommended) } : null;
   const captionId = hoverId ?? activeId;
   const reportActive = props.onActiveChange;
   useEffect(() => {
@@ -262,7 +263,7 @@ export function SeatMap(props: SeatMapProps) {
         tabIndex={0}
         role="listbox"
         aria-label={label}
-        aria-roledescription={`${noun} map`}
+        aria-roledescription={noun === "table" ? tr("table map") : `${noun} map`}
         aria-describedby={`${mapId}-help`}
         aria-activedescendant={activeId === null ? undefined : targetDomId(mapId, activeId)}
         onKeyDown={input.onKeyDown}
@@ -311,11 +312,12 @@ export function SeatMap(props: SeatMapProps) {
       </div>
       <MapControls leaveRef={leaveRef} onZoomIn={() => panZoom.zoomBy(1.25)} onZoomOut={() => panZoom.zoomBy(0.8)} onFit={panZoom.fit} focus={focusControl} />
       <p className="seatmap-caption" aria-hidden="true">
-        {caption ?? `Drag to move, pinch or scroll to zoom. Select a ${noun} to see its details.`}
+        {caption ?? (noun === "table" ? tr("Drag to move, pinch or scroll to zoom. Select a table to see its details.") : `Drag to move, pinch or scroll to zoom. Select a ${noun} to see its details.`)}
       </p>
       <p id={`${mapId}-help`} className="visually-hidden">
-        Use the arrow keys to move between {noun}s, Enter or Space to choose, plus and minus to zoom, zero to show the whole map, and Escape to
-        leave the map.
+        {noun === "table"
+          ? tr("Use the arrow keys to move between tables, Enter or Space to choose, plus and minus to zoom, zero to show the whole map, and Escape to leave the map.")
+          : `Use the arrow keys to move between ${noun}s, Enter or Space to choose, plus and minus to zoom, zero to show the whole map, and Escape to leave the map.`}
       </p>
       <div className="visually-hidden" role="status" aria-live="polite">
         {changes.announcement}

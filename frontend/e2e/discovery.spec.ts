@@ -30,10 +30,10 @@ test("search ignores accents, chips filter, and the city sorts by distance", asy
   await expect(page.getByRole("heading", { level: 3, name: "Pátio das Laranjeiras" })).toBeVisible();
   await page.getByLabel("Restaurant or cuisine").fill("");
   await expect(page.getByRole("article")).toHaveCount(5);
-  // The quick filters sit in the command bar; two of the five demo restaurants have a terrace.
-  await page.getByRole("button", { name: "Terrace", exact: true }).click();
-  await expect(page.getByRole("article")).toHaveCount(2);
-  await page.getByRole("button", { name: "Terrace", exact: true }).click();
+  // The kinds of food sit in the command bar; one of the five demo restaurants serves seafood.
+  await page.getByRole("button", { name: "Seafood", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await page.getByRole("button", { name: "Seafood", exact: true }).click();
   await expect(page.getByRole("article")).toHaveCount(5);
   // The rest of the filters are in the drawer, which opens from the right and closes with Escape.
   await page.getByRole("button", { name: /^Filters/ }).click();

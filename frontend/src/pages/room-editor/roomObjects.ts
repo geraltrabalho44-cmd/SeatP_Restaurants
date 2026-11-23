@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import type { Point } from "./geometry";
 import { normaliseNorth } from "./northModel";
 import { newRoomKey } from "./roomModel";
@@ -31,22 +32,22 @@ function nearestFit(room: Room, fixture: RoomFixture, want: Point): Point | null
 
 /** Adds a fixed element with its top-left corner at `at`. Dropped outside the room, it lands on the nearest spot inside. */
 export function addFixture(room: Room, kind: FixtureKind, at: Point): Room {
-  if (!FIXTURE_KINDS.includes(kind)) throw new Error("Choose a fixed element from the palette.");
+  if (!FIXTURE_KINDS.includes(kind)) throw new Error(tr("Choose a fixed element from the palette."));
   const { w, h } = fixtureSize(kind);
   const fixture: RoomFixture = { id: null, key: newRoomKey("f"), kind, shape: kind === "plant" || kind === "column" ? "circle" : "rect", x: at.x, y: at.y, w, h, rotation: 0, label: "" };
   checkFixture(fixture);
   if (!fitsInRoom(room, fixture)) {
     const spot = nearestFit(room, fixture, at);
-    if (!spot) throw new Error("There is no room for this element.");
+    if (!spot) throw new Error(tr("There is no room for this element."));
     fixture.x = spot.x; fixture.y = spot.y;
   }
   return { ...room, fixtures: [...room.fixtures, fixture] };
 }
 
 function checkFixture(f: RoomFixture): void {
-  if (![f.x, f.y, f.w, f.h, f.rotation].every(Number.isFinite) || f.w <= 0 || f.h <= 0 || f.w > 10000 || f.h > 10000) throw new Error("Use finite positions and positive sizes up to 10000 cm.");
-  if (f.label.length > 40) throw new Error("Use a label of up to 40 characters.");
-  if (f.shape === "circle" && f.w !== f.h) throw new Error("A circle needs equal width and height.");
+  if (![f.x, f.y, f.w, f.h, f.rotation].every(Number.isFinite) || f.w <= 0 || f.h <= 0 || f.w > 10000 || f.h > 10000) throw new Error(tr("Use finite positions and positive sizes up to 10000 cm."));
+  if (f.label.length > 40) throw new Error(tr("Use a label of up to 40 characters."));
+  if (f.shape === "circle" && f.w !== f.h) throw new Error(tr("A circle needs equal width and height."));
 }
 
 export function editFixture(room: Room, key: string, patch: Partial<RoomFixture>): Room {
@@ -58,7 +59,7 @@ export function editFixture(room: Room, key: string, patch: Partial<RoomFixture>
     checkFixture(next);
     // Moving, resizing or turning may not take an element out of the room (one already outside, from an older plan, is left alone).
     const geometry = ["x", "y", "w", "h", "rotation", "shape"].some(k => k in patch);
-    if (geometry && fitsInRoom(room, f) && !fitsInRoom(room, next)) throw new Error("Keep the element inside the room.");
+    if (geometry && fitsInRoom(room, f) && !fitsInRoom(room, next)) throw new Error(tr("Keep the element inside the room."));
     return next;
   }) };
 }
@@ -67,7 +68,7 @@ export function editFixture(room: Room, key: string, patch: Partial<RoomFixture>
 export const ZONE_SIZE = { w: 200, h: 150 };
 
 export function addZone(room: Room, kind: ZoneKind, at: Point): Room {
-  if (!ZONE_KINDS.includes(kind)) throw new Error("Choose a zone type from the palette.");
+  if (!ZONE_KINDS.includes(kind)) throw new Error(tr("Choose a zone type from the palette."));
   // "Terrace", then "Terrace 2"...; other kinds keep the old "Zone 1".
   const base = ZONE_NAMES[kind] ?? "Zone";
   let number = 1;
@@ -82,8 +83,8 @@ export function editZone(room: Room, key: string, patch: Partial<RoomZone>): Roo
   return { ...room, zones: room.zones.map(z => {
     if (z.key !== key) return z;
     const next = { ...z, ...patch, key: z.key, id: z.id };
-    if (![next.x, next.y, next.w, next.h].every(Number.isFinite) || next.w <= 0 || next.h <= 0 || next.w > 10000 || next.h > 10000) throw new Error("Use finite positions and positive sizes up to 10000 cm.");
-    if (!next.name.trim() || next.name.length > 80) throw new Error("Use a zone name of 1 to 80 characters.");
+    if (![next.x, next.y, next.w, next.h].every(Number.isFinite) || next.w <= 0 || next.h <= 0 || next.w > 10000 || next.h > 10000) throw new Error(tr("Use finite positions and positive sizes up to 10000 cm."));
+    if (!next.name.trim() || next.name.length > 80) throw new Error(tr("Use a zone name of 1 to 80 characters."));
     return next;
   }) };
 }

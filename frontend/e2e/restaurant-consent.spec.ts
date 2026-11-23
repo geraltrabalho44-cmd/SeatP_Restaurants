@@ -5,7 +5,7 @@
 import { expect, test } from "./fixtures";
 import { dinerMap, holdTable, preparedRestaurant, publishRestaurant } from "./restaurant-fixture";
 
-test("terms are required, offers are optional, and the diner can take offers back", async ({ page, request }) => {
+test("terms are required, offers are optional and the owner sees who accepted", async ({ page, request }) => {
   const venue = await preparedRestaurant(request, "Consent journey");
   await publishRestaurant(request, venue);
   await dinerMap(page, venue.id, venue.day);
@@ -41,16 +41,10 @@ test("terms are required, offers are optional, and the diner can take offers bac
   const book = (await guests.json()) as { guests: { email: string; offers: boolean }[] };
   expect(book.guests.map((guest) => guest.email)).toEqual(["consent.diner@example.com"]);
 
-  // The diner changes their mind on the booking page.
+  // The booking page no longer carries the offers choice: it is made once, on the form.
   await page.getByRole("link", { name: "Manage booking" }).click();
-  const choice = page.getByRole("region", { name: "Offers" }).getByRole("checkbox");
-  await expect(choice).toBeChecked();
-  await choice.uncheck();
-  await expect(choice).not.toBeChecked();
-  await expect.poll(async () => {
-    const after = await request.get(`/api/owner/restaurants/${venue.id}/guests?segment=offers`, { headers: venue.headers });
-    return ((await after.json()) as { guests: unknown[] }).guests.length;
-  }).toBe(0);
+  await expect(page.getByRole("heading", { name: /Manage your booking|Your booking/ }).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Offers" })).toHaveCount(0);
 });
 
 test("going to pick a chair and coming back keeps what was ticked", async ({ page, request }) => {
@@ -61,6 +55,7 @@ test("going to pick a chair and coming back keeps what was ticked", async ({ pag
   const panel = page.getByRole("form", { name: "Your details" });
   await panel.getByRole("checkbox", { name: /accept the terms/ }).check();
   await panel.getByRole("checkbox", { name: /offers and news/ }).check();
+  await panel.getByText("Occasion, dietary preferences, allergies and a chair").click(); // the chair waits in the closed sub menu
   await panel.getByRole("button", { name: "Choose a chair" }).click();
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: "Continue without a request" }).click();

@@ -1,3 +1,4 @@
+import { tr } from "../../i18n/locale";
 import { useRef } from "react";
 import type { PointerEvent } from "react";
 import { sideLength, sideNormal, sidePoint } from "./geometry";
@@ -53,6 +54,6 @@ function MainEntranceTag({ at, normal, zoom }: { at: Point; normal: Point; zoom:
   const x = at.x + normal.x * gap, y = at.y + normal.y * gap;
   return <g className="room-main-entrance" pointerEvents="none" data-main-entrance>
     <rect x={x - width / 2} y={y - height / 2} width={width} height={height} rx={height / 2} />
-    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={12 / zoom}>Main entrance</text>
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={12 / zoom}>{tr("Main entrance")}</text>
   </g>;
 }

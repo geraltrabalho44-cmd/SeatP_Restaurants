@@ -72,7 +72,19 @@ function PlanSwatch({ state, id }: { state: SeatState; id: string }) {
   );
 }
 
-export function MapKey({ entries, scenes = [], label = "Map key", look = "glyph" }: { entries: KeyEntry[]; scenes?: SceneEntry[]; label?: string; look?: "glyph" | "plan" }) {
+/** The star on the plan: our suggestion. Drawn like the one on the plan, in its own colours (the key sits outside the plan). */
+function StarSwatch() {
+  return (
+    <svg className="legend-swatch fp" viewBox="-15 -12 30 24" aria-hidden="true">
+      <g className="fp-pick">
+        <circle r="9.5" />
+        <path d="M0-6.2l1.8 3.8 4.1.5-3 2.9.8 4.1L0 3.1-3.7 5.1l.8-4.1-3-2.9 4.1-.5z" />
+      </g>
+    </svg>
+  );
+}
+
+export function MapKey({ entries, scenes = [], label = "Map key", look = "glyph", withStar = false }: { entries: KeyEntry[]; scenes?: SceneEntry[]; label?: string; look?: "glyph" | "plan"; withStar?: boolean }) {
   const { t } = useT();
   // The names and hints are written once, in English, by the page that asks for the key; the words are put in the language in use here.
   const say = (text: string): string => t(text as Message);
@@ -100,6 +112,15 @@ export function MapKey({ entries, scenes = [], label = "Map key", look = "glyph"
           </li>
         );
       })}
+      {withStar && (
+        <li className="legend-item">
+          <StarSwatch />
+          <span>
+            <strong className="legend-name">{t("Recommended")}</strong>
+            <span className="legend-hint">{t("The star marks the table we suggest for your party")}</span>
+          </span>
+        </li>
+      )}
       {scenes.map((entry) => {
         const id = `${prefix}-scene-${entry.scene}`;
         return (

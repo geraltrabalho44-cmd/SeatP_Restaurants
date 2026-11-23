@@ -4,6 +4,7 @@
 //   2. a short motion cue on the seats that changed (hold, confirm, conflict).
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SeatState } from "../api/types";
+import { tr } from "../i18n/locale";
 import { STATE_TEXT } from "./describe";
 
 export type MotionKind = "hold" | "confirm" | "conflict";
@@ -51,16 +52,18 @@ export function diffStates(previous: Map<number, SeatState>, next: TrackedTarget
     } else if (myTarget && (target.state === "taken" || target.state === "held")) {
       motion.set(target.id, "conflict");
       const what = target.state === "taken" ? "taken" : "put on hold";
-      urgent.push(`${target.name} was just ${what} by someone else. Please choose another ${context.noun}.`);
+      urgent.push(context.noun === "table"
+        ? tr(target.state === "taken" ? "{name} was just taken by someone else. Please choose another table." : "{name} was just put on hold by someone else. Please choose another table.", { name: target.name })
+        : `${target.name} was just ${what} by someone else. Please choose another ${context.noun}.`);
     } else if (target.state === "mine") {
       motion.set(target.id, "confirm");
-      urgent.push(`${target.name} is now your ${context.noun}.`);
+      urgent.push(context.noun === "table" ? tr("{name} is now your table.", { name: target.name }) : `${target.name} is now your ${context.noun}.`);
     } else {
       if (target.state === "held") motion.set(target.id, "hold");
       ordinary.push(sentenceFor(target));
     }
   }
-  const spoken = ordinary.length > MAX_SPOKEN_CHANGES ? [`${ordinary.length} ${context.noun}s changed on the map.`] : ordinary;
+  const spoken = ordinary.length > MAX_SPOKEN_CHANGES ? [context.noun === "table" ? tr("{count} tables changed on the map.", { count: ordinary.length }) : `${ordinary.length} ${context.noun}s changed on the map.`] : ordinary;
   return { messages: [...urgent, ...spoken], motion };
 }
 
@@ -76,8 +79,8 @@ function isOwnResult(target: TrackedTarget, context: DiffContext): boolean {
 }
 
 function sentenceFor(target: TrackedTarget): string {
-  if (target.state === "taken") return `${target.name} was just taken.`;
-  if (target.state === "free") return `${target.name} is free again.`;
+  if (target.state === "taken") return tr("{name} was just taken.", { name: target.name });
+  if (target.state === "free") return tr("{name} is free again.", { name: target.name });
   return `${target.name} is now ${STATE_TEXT[target.state]}.`;
 }
 

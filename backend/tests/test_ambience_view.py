@@ -208,11 +208,13 @@ def test_the_stay_length_comes_from_the_turn_times(session: Session, sunny_venue
     assert payload(session, venue, party=6)["stay_end"] == "13:45"
 
 
-def test_without_turn_times_the_stay_is_two_hours(session: Session, sunny_venue) -> None:
+def test_without_turn_times_the_stay_is_ninety_minutes(session: Session, sunny_venue) -> None:
     venue, _, front, _ = sunny_venue
     answer = payload(session, venue)
-    assert answer["stay_end"] == "15:00"
-    assert by_id(payload(session, venue, detail=True)["tables"])[front.id]["sun_minutes"] == 120
+    assert (
+        answer["stay_end"] == "14:30"
+    )  # 90 minutes is the default stay, as in the opening-hours template
+    assert by_id(payload(session, venue, detail=True)["tables"])[front.id]["sun_minutes"] == 90
 
 
 def test_the_cursor_moment_moves_the_sun_but_not_the_stay(session: Session, sunny_venue) -> None:

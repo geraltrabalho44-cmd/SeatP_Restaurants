@@ -47,6 +47,7 @@ test("a diner picks a chair and sees it on the confirmation", async ({ page, req
   await page.getByRole("button", { name:/^Choose a table at/ }).click();
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   await page.getByRole("button", { name: "Choose for me" }).click();
+  await page.getByText("Occasion, dietary preferences, allergies and a chair").click(); // the chair waits in the closed sub menu
   await page.getByRole("button", { name: "Choose a chair" }).click();
 
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();

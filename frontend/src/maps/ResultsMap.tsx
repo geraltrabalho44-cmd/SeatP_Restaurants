@@ -4,10 +4,12 @@
 // (Leaflet keyboard support), and the list next to the map is the accessible
 // way to reach every restaurant, so the map itself adds nothing a keyboard needs.
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../i18n/I18nProvider";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { DiscoveryBasemap } from "./discoveryBasemap";
 import { DiscoveryLabels } from "./discoveryLabels";
+import { smoothWheelZoom } from "./smoothWheelZoom";
 import { SchematicMap } from "./SchematicMap";
 import { spreadPoints } from "./spreadPins";
 import "./maps.css";
@@ -58,6 +60,7 @@ function locationIcon(name: string) {
 }
 
 export default function ResultsMap({ pins, highlightedId = null, selectedId = null, centerRequest, onSelect, center, onFallback, showNames = false }: Props) {
+  const { t } = useT();
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef(new Map<string, L.Marker>());
@@ -78,9 +81,8 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
   useEffect(() => {
     if (!host.current) return;
     const view = L.map(host.current, {
-      scrollWheelZoom: true,
+      scrollWheelZoom: false, // the wheel and the trackpad are handled by smoothWheelZoom, which moves on every frame
       zoomSnap: 0, // the zoom follows how far the wheel or trackpad is moved, instead of jumping whole levels
-      wheelPxPerZoomLevel: 28,
       attributionControl: false,
       zoomControl: false,
       minZoom: MIN_ZOOM,
@@ -89,8 +91,7 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
     view.on("zoomend", () => setZoom(view.getZoom()));
     view.on("dragstart", () => { userMoved.current = true; });
     const element = host.current;
-    const wheel = () => { userMoved.current = true; };
-    element.addEventListener("wheel", wheel, { passive: true });
+    const stopWheel = smoothWheelZoom(view, element, () => { userMoved.current = true; });
     const watch = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => {
       view.invalidateSize({ pan: false });
       if (!userMoved.current) refit.current?.();
@@ -118,7 +119,7 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
       window.clearTimeout(patience);
       window.removeEventListener("online", retryTiles);
       watch?.disconnect();
-      element.removeEventListener("wheel", wheel);
+      stopWheel();
       // A pan or zoom still animating when the map is removed throws inside Leaflet.
       view.stop();
       view.remove();
@@ -203,15 +204,15 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
   return (
     <>
       {/* The Leaflet map stays mounted (hidden) while the diagram is shown, so it can recover if tiles arrive. */}
-      <div className="discover-map-panel" role="region" aria-label="Map of the restaurants found" hidden={fallback}>
+      <div className="discover-map-panel" role="region" aria-label={t("Map of the restaurants found")} hidden={fallback}>
         <div ref={host} className="discover-map" />
-        <div className="discover-map-zoom" role="group" aria-label="Map zoom">
-          <button type="button" aria-label="Zoom in" disabled={zoom >= MAX_ZOOM} onClick={() => changeZoom(1)}>+</button>
-          <button type="button" aria-label="Zoom out" disabled={zoom <= MIN_ZOOM} onClick={() => changeZoom(-1)}>−</button>
+        <div className="discover-map-zoom" role="group" aria-label={t("Map zoom")}>
+          <button type="button" aria-label={t("Zoom in")} disabled={zoom >= MAX_ZOOM} onClick={() => changeZoom(1)}>+</button>
+          <button type="button" aria-label={t("Zoom out")} disabled={zoom <= MIN_ZOOM} onClick={() => changeZoom(-1)}>−</button>
         </div>
       </div>
       {fallback && <SchematicMap pins={pins} highlightedId={highlightedId} selectedId={selectedId} onSelect={onSelect} centre={center} showNames={showNames} />}
-      {failed && !fallback && <p role="status">Map tiles are loading slowly. The list shows every restaurant.</p>}
+      {failed && !fallback && <p role="status">{t("Map tiles are loading slowly. The list shows every restaurant.")}</p>}
     </>
   );
 }

@@ -5,6 +5,7 @@
 //   const toast = useToast();  toast.show("Layout saved", "success");
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { tr } from "../../i18n/locale";
 
 export type ToastTone = "info" | "success" | "warning" | "danger";
 
@@ -63,7 +64,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div key={item.id} className={`toast toast-${item.tone}`}>
             <span className="toast-tone">{TONE_LABEL[item.tone]}</span>
             <span className="toast-message">{item.message}</span>
-            <button type="button" className="toast-close" onClick={() => dismiss(item.id)} aria-label="Dismiss message">
+            <button type="button" className="toast-close" onClick={() => dismiss(item.id)} aria-label={tr("Dismiss message")}>
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M4 4l8 8M12 4l-8 8" />
               </svg>

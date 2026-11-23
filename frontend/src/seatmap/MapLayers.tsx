@@ -1,6 +1,7 @@
 // The parts of the map that are scenery: zones on the floor and table shapes.
 // They are memoised so panning (which re-renders the parent every frame)
 // does not redraw them.
+import { useT } from "../i18n/I18nProvider";
 import { memo } from "react";
 import type { MapSeat, MapTable, MapZone } from "../api/types";
 import { SEAT_RADIUS, rotateOffset, tableCentre } from "./geometry";
@@ -56,6 +57,7 @@ export const TablesLayer = memo(function TablesLayer({ tables }: { tables: MapTa
 });
 
 export const ZonesLayer = memo(function ZonesLayer({ zones }: { zones: MapZone[] }) {
+  const { label } = useT();
   return (
     <g aria-hidden="true">
       {zones.map((zone) => (
@@ -63,7 +65,7 @@ export const ZonesLayer = memo(function ZonesLayer({ zones }: { zones: MapZone[]
           <rect x={zone.x} y={zone.y} width={zone.w} height={zone.h} rx="14" className="zone-area" />
           {/* "hanging": the text grows downwards into the zone when it is enlarged for small zooms. */}
           <text x={zone.x + 12} y={zone.y + 8} className="zone-label" dominantBaseline="hanging">
-            {zone.name}
+            {label(zone.name)}
           </text>
         </g>
       ))}

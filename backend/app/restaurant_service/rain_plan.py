@@ -115,7 +115,7 @@ def process(session):
                 row
                 for row in tables
                 if row.id not in outside_ids
-                and not fit_problem(row, needs)
+                and not fit_problem(row, needs, venue.allow_larger_tables)
                 and occupancy.is_free((row.id,), busy, window)
             ),
             key=lambda r: (r.max_party - booking.party_size, r.id),
@@ -242,7 +242,11 @@ def decide(session, row, accept):
         if (
             not table
             or not table.is_active
-            or fit_problem(table, manage_flow.needs_of(booking, booking.party_size))
+            or fit_problem(
+                table,
+                manage_flow.needs_of(booking, booking.party_size),
+                venue.allow_larger_tables,
+            )
         ):
             raise ApiError(409, "conflict", "The indoor table is no longer suitable.")
         for index in range(*data["window"]):

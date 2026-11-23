@@ -93,10 +93,10 @@ describe("The key follows the hold", () => {
     mockApi(routes());
     await reachTableStep();
     const names = () => within(screen.getByRole("list", { name: "Map key" })).getAllByRole("listitem").map((li) => li.querySelector("strong")?.textContent);
-    expect(names()).toEqual(["Available", "Selected", "Unavailable"]);
+    expect(names()).toEqual(["Available", "Selected", "Unavailable", "Recommended"]);
     fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("timer");
-    expect(names()).toEqual(["Available", "Held for you", "Unavailable"]);
+    expect(names()).toEqual(["Available", "Held for you", "Unavailable", "Recommended"]);
   });
 });
 
@@ -110,7 +110,10 @@ describe("The details form beside the plan", () => {
     expect(within(form).getByText("Table 7 · Main room")).toBeTruthy();
     expect(within(form).getByText(/, 19:30 · 2 guests$/)).toBeTruthy();
     expect(screen.getAllByRole("timer")).toHaveLength(1); // the countdown is not shown twice
-    expect(within(form).getByText("Request a chair")).toBeTruthy();
+    // The optional things (occasion, diet, allergies, a chair) wait in one closed sub menu; the old heading and description are gone.
+    expect(within(form).getByText("Occasion, dietary preferences, allergies and a chair")).toBeTruthy();
+    expect(within(form).queryByText("Request a chair")).toBeNull();
+    expect(within(form).queryByText(/The restaurant will see your request/)).toBeNull();
     expect(within(form).getByRole("button", { name: "Confirm booking" })).toBeTruthy();
   });
 

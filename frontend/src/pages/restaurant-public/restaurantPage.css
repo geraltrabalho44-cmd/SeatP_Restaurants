@@ -13,7 +13,8 @@
 .rp-hours th { font-weight: var(--fw-bold); white-space: nowrap; }
 .rp-closed { margin: var(--space-3) 0 0; padding-left: var(--space-5); color: var(--c-text-muted); }
 .rp-map { position: relative; height: 16rem; margin-bottom: var(--space-3); }
-.rp-contact { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+/* Google Maps, the phone, the website and Instagram sit on one line (and wrap on a narrow screen). */
+.rp-contact { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-1) var(--space-5); }
 .rp-contact a, .rp aside a { display: inline-flex; align-items: center; min-height: var(--touch-target); }
 .rp-book { padding: var(--space-4) 0 var(--space-5); border-bottom: 1px solid var(--c-border); scroll-margin-top: var(--space-8); }
 .rp-photo-credits { color: var(--c-text-muted); font-size: var(--fs-xs); display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
@@ -43,7 +44,7 @@
 .rp-back {align-self:flex-start;min-height:2.75rem;display:inline-flex;align-items:center;font-size:.875rem}
 .rp-head h1 {font-family:var(--font-display);font-size:3rem;font-weight:400;line-height:1.1}
 .rp-head .discover-features {margin:1rem 0 0}
-.rp-hero-layout {display:grid;grid-template-columns:minmax(0,1.8fr) minmax(22rem,1fr);gap:1.5rem;align-items:start}
+.rp-hero-layout {display:grid;grid-template-columns:minmax(0,1.8fr) minmax(22rem,1fr);gap:1.5rem;align-items:stretch}
 .rp-hero-layout .rp-gallery {grid-template-columns:minmax(0,1fr);gap:.5rem}
 .rp-hero-layout .rp-cover {max-height:none;aspect-ratio:16/10}
 .rp-hero-layout .rp-thumbs {grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -104,4 +105,23 @@
 /* On a phone the details and confirmation steps are one card, not a card inside a card: the form gets the full width. */
 @media (max-width: 40rem) {
   .rp-hero-layout:has(.rb5-stagebar[data-stage="1"], .rb5-stagebar[data-stage="2"], .rb-done, .rb5-confirm) .rp-book { padding: 0; border: 0; background: transparent; border-radius: 0; }
+}
+
+/* The menu reads like a printed carta: sections side by side on a wide screen, each dish with its price at the end of the line. */
+.rp-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--space-6) var(--space-8, 2rem); margin-top: var(--space-4); }
+.rp-menu-section h3 { margin: 0 0 var(--space-3); padding-bottom: var(--space-2); border-bottom: var(--border-width) solid var(--c-border); color: var(--c-primary); }
+.rp-menu-section dl { margin: 0; }
+.rp-menu-item { margin-block: 0 var(--space-4); }
+.rp-menu-item dt { display: flex; align-items: baseline; gap: .5rem; }
+.rp-menu-dots { flex: 1; min-width: 1rem; border-bottom: 1px dotted var(--c-border-strong, var(--c-text-muted)); transform: translateY(-.25em); }
+.rp-menu-price { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.rp-menu-item dd { margin: .125rem 0 0; color: var(--c-text-muted); font-size: .875rem; }
+.rp-menu-item dd.rp-menu-allergens { font-size: .8125rem; }
+
+/* The booking box is as tall as the photo beside it; its main button sits at the bottom. */
+@media (min-width: 60.01rem) {
+  .rp-hero-layout .rp-book { display:flex;flex-direction:column; }
+  .rp-hero-layout .rp-book > .rb-page { flex:1;display:flex;flex-direction:column;width:100%;max-width:none;margin:0;padding-inline:0; }
+  .rp-hero-layout .rp-book form.when-party { flex:1;display:flex;flex-direction:column; }
+  .rp-hero-layout .rp-book form.when-party > :last-child { margin-top:auto; }
 }

@@ -1,9 +1,10 @@
 // The frame around every page: skip link, header with the wordmark, the main
 // landmark and a footer. Pages only supply their content.
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useT } from "../../i18n/I18nProvider";
+import { LanguagePicker } from "../../i18n/LanguagePicker";
 import seatPlanLogo from "../seatplan-logo.png";
 
 // /pay is where a diner pays a restaurant deposit and returns from the payment page.
@@ -33,9 +34,10 @@ interface PageShellProps {
 }
 
 export function Wordmark({ restaurantBrand = false }: { restaurantBrand?: boolean } = {}) {
+  const { t } = useT();
   return (
     <Link to="/" className={restaurantBrand ? "wordmark wordmark-restaurants" : "wordmark"}
-      aria-label={restaurantBrand ? "SeatPlan Restaurantes, home" : "SeatPlan, home"}>
+      aria-label={restaurantBrand ? t("SeatPlan Restaurantes, home") : t("SeatPlan, home")}>
       <img className="wordmark-logo" src={seatPlanLogo} alt="" width={132} height={40} />
     </Link>
   );
@@ -46,6 +48,15 @@ export function PageShell({ title, children, width = "normal", headerActions, fo
   useEffect(() => {
     document.title = `${title} · SeatPlan`;
   }, [title]);
+
+  // The language tab hangs from the header; once the page is scrolled it steps out of the way (it is back at the top).
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = (): void => setScrolled(window.scrollY > 12);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
 
   // The Restaurants look (restaurant-theme.css) applies to <html> on its own routes only.
   const { pathname, search } = useLocation();
@@ -69,6 +80,8 @@ export function PageShell({ title, children, width = "normal", headerActions, fo
           <Wordmark restaurantBrand={restaurantBrand} />
           {headerActions && <div className="shell-actions">{headerActions}</div>}
         </div>
+        {/* One language control for every Restaurants page (diner, owner, staff), in the same place: it hangs from the header line. */}
+        {restaurants && <div className={`shell-inner shell-${width} shell-lang${scrolled ? " is-scrolled" : ""}`}><LanguagePicker /></div>}
       </header>
       {/* tabIndex -1 lets the skip link move keyboard focus here, not just scroll. */}
       <main id="main" tabIndex={-1} className={`shell-main shell-inner shell-${width}`}>
@@ -76,7 +89,7 @@ export function PageShell({ title, children, width = "normal", headerActions, fo
       </main>
       <footer className="shell-footer">
         <div className={`shell-inner shell-${width}`}>
-          <p>SeatPlan, a student project at Nova SBE. Demo data only: every person here is invented.</p>
+          <p>{t("SeatPlan, a student project at Nova SBE. Demo data only: every person here is invented.")}</p>
           {footerContent}
         </div>
       </footer>

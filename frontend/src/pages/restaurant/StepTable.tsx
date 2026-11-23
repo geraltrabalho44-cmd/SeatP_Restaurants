@@ -2,7 +2,7 @@
 // for 5 minutes; "Choose for me" lets the optimiser pick. Live updates
 // redraw the map within about 2 seconds when someone else books a table.
 import { useEffect, useRef, useState } from "react";
-import { applyAmbience, cursorSteps, defaultRoom, lightWords, roomTabs, tablesInRoom } from "./ambienceView";
+import { applyAmbience, cursorSteps, defaultRoom, roomTabs, tablesInRoom } from "./ambienceView";
 import { useLightCursor } from "./useLightCursor";
 import { ApiError } from "../../api/client";
 import { getDinerMap, holdTable, venueDayScope } from "../../api/restaurant";
@@ -15,7 +15,6 @@ import type { Agreements } from "./agreements";
 import { FloorPlan } from "./FloorPlan";
 import { errorMessage, guests, shortDate, tableName } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
-import { LightCursorControl } from "./LightCursor";
 import { DINER_KEY, DINER_KEY_HELD, MapKey, SCENE_NOTE } from "./MapKey";
 import { RoomTabs } from "./RoomTabs";
 import { StepDetails } from "./StepDetails";
@@ -101,11 +100,6 @@ function usePhone(): boolean {
     return () => list.removeEventListener?.("change", onChange);
   }, []);
   return phone;
-}
-
-/** Today's sunset at the restaurant, from the first room that has one. */
-function sunsetOf(map: DinerMap): string | null {
-  return (map.rooms ?? []).find((room) => room.sun?.sunset)?.sun?.sunset ?? null;
 }
 
 export function StepTable(props: StepTableProps) {
@@ -204,7 +198,6 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
   const steps = cursorSteps(loaded.stay_start, loaded.stay_end);
   const cursor = useLightCursor(venueId, needs, time, steps);
   const map = cursor.answer ? applyAmbience(loaded, cursor.answer) : loaded;
-  const canShowLight = steps.length > 1 && (map.rooms ?? []).some((room) => room.sun !== null);
 
   const tabs = roomTabs(map);
   const [chosenRoom, setChosenRoom] = useState<number | null | undefined>(undefined);
@@ -391,7 +384,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
               describe={describeDinerTables(map)}
               narrow={phone}
             />
-            <MapKey entries={DINER_KEY_HELD} look="plan" />
+            <MapKey entries={DINER_KEY_HELD} look="plan" withStar={(map.recommended?.table_ids?.length ?? 0) > 0} />
             <div className="rb5-your-table-actions">
               <Button variant="ghost" disabled={submitting} onClick={changeTable}>
                 {t("Choose a different table")}
@@ -563,7 +556,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
                   narrow={phone}
                 />
               </div>
-              <MapKey entries={heldId !== null ? DINER_KEY_HELD : DINER_KEY} look="plan" />
+              <MapKey entries={heldId !== null ? DINER_KEY_HELD : DINER_KEY} look="plan" withStar={(map.recommended?.table_ids?.length ?? 0) > 0} />
               {map.rooms && <p className="rb-muted rb-scene-note">{t(SCENE_NOTE)}</p>}
             </>
           ) : (
@@ -592,20 +585,6 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, submitting, ph
             </div>
           )}
         </div>
-        {view === "map" && canShowLight && (
-          <div className="rb5-light-slot">
-            <LightCursorControl
-              steps={steps}
-              index={cursor.index}
-              onChange={cursor.setIndex}
-              failed={cursor.failed}
-              bookingTime={time}
-              sunset={sunsetOf(map)}
-              summary={cardTable?.ambience ? lightWords(cardTable.ambience.light) : null}
-              tableLabel={cardTable?.label ?? null}
-            />
-          </div>
-        )}
       </div>
       {/* Only for a hold without the form beside the plan (older callers): the one way on. */}
       {!panelShown && heldId !== null && (

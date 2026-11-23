@@ -6,6 +6,8 @@ import {Button,Dialog} from "../../design/components";
 import {Chip,Chips,toggle} from "./Chips";
 import {cuisineLabel,DISCOVERY_FEATURE_LABELS as LABELS} from "./discoverModel";
 export const QUICK_FEATURES:FeatureKey[]=["sun","view","terrace"];
+/** The kinds of food shown as quick choices in the bar on a wide screen; every other cuisine is in the filters. */
+export const QUICK_CUISINES=["portuguese","seafood","japanese","italian","pizza"] as const;
 interface Props {
  open:boolean;onClose:()=>void;onApply:()=>void;
  cuisines:string[];onCuisines:(value:string[])=>void;prices:number[];onPrices:(value:number[])=>void;

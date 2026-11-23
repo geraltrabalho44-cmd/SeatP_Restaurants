@@ -1,7 +1,8 @@
+import { tr } from "../../i18n/locale";
 import type { Point } from "./geometry";
 
 export function normaliseNorth(degrees: number): number {
-  if (!Number.isFinite(degrees)) throw new Error("Use a finite angle.");
+  if (!Number.isFinite(degrees)) throw new Error(tr("Use a finite angle."));
   return ((Math.round(degrees) % 360) + 360) % 360;
 }
 export function northAt(direction: Point): number { return normaliseNorth(Math.atan2(direction.x, -direction.y) * 180 / Math.PI); }

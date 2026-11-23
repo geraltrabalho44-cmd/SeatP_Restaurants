@@ -12,14 +12,15 @@ export function RestaurantMenu({ slug }: { slug: string }) {
     {state.status === "loading" && <p role="status">{t("Loading menu…")}</p>}
     {state.status === "error" && <p>{t("Could not load the menu.")} <Button variant="ghost" onClick={() => reload()}>{t("Try again")}</Button></p>}
     {state.status === "ready" && (state.data.items.length === 0 ? <p>{t("The restaurant has not added a menu yet.")}</p> : <>
-      {[...new Set(state.data.items.map(item => item.category))].map(category => <div key={category}><h3>{category}</h3>
-        <dl>{state.data.items.filter(item => item.category === category).map((item, index) => <div key={`${item.name}:${index}`} style={{ marginBlock: "1rem" }}>
-          <dt><strong>{item.name}</strong> · {currency.format(item.price_cents / 100)}</dt>
-          {item.description && <dd>{item.description}</dd>}
-          {item.allergens && <dd>{t("Allergens:")} {item.allergens}</dd>}
-        </div>)}</dl>
-      </div>)}
-      <p className="rb-muted">{t("For food allergies, confirm ingredients and preparation directly with the restaurant.")}</p>
+      <div className="rp-menu">
+        {[...new Set(state.data.items.map(item => item.category))].map(category => <section key={category} className="rp-menu-section"><h3>{category}</h3>
+          <dl>{state.data.items.filter(item => item.category === category).map((item, index) => <div key={`${item.name}:${index}`} className="rp-menu-item">
+            <dt><strong>{item.name}</strong><span className="rp-menu-dots" aria-hidden="true" /><span className="rp-menu-price">{currency.format(item.price_cents / 100)}</span></dt>
+            {item.description && <dd>{item.description}</dd>}
+            {item.allergens && <dd className="rp-menu-allergens">{t("Allergens:")} {item.allergens}</dd>}
+          </div>)}</dl>
+        </section>)}
+      </div>
     </>)}
   </section>;
 }

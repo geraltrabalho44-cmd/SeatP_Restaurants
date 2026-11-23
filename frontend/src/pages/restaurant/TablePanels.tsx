@@ -100,6 +100,10 @@ export function TableList({ tables, map, heldId, focusId = null, roomNameOf, onS
   const suitable = tables.filter((t) => t.fits_party);
   const hidden = tables.length - suitable.length;
   const recommended = new Set(map.recommended?.table_ids ?? []);
+  // A line that is the same for every table ("Evening: it will be dark outside") tells nothing about one table: only what sets it apart is shown.
+  const seen = new Map<string, number>();
+  for (const table of suitable) for (const phrase of new Set(table.ambience?.phrases ?? [])) seen.set(phrase, (seen.get(phrase) ?? 0) + 1);
+  const special = (table: DinerTable): string[] => (table.ambience?.phrases ?? []).filter((phrase) => suitable.length < 2 || (seen.get(phrase) ?? 0) < suitable.length);
   return (
     <div className="rb-table-list">
       <h3 className="rb-service-title">{t("Tables that suit your party")}</h3>
@@ -109,10 +113,13 @@ export function TableList({ tables, map, heldId, focusId = null, roomNameOf, onS
           const selected = table.id === focusId;
           return (
             <li key={table.id} className={`rb-table-row${selected ? " is-focus" : ""}`}>
-              <div>
-                <strong>{t("Table {label}", { label: table.label })}</strong>
-                {room && <span className="rb-muted"> · {room}</span>} {recommended.has(table.id) && <Badge tone="warning">{t("Suggested")}</Badge>}{" "}
-                {selected && <Badge tone="success">{t("Selected")}</Badge>}
+              <div className="rb-table-row-main">
+                <div className="rb-table-row-title">
+                  <strong>{t("Table {label}", { label: table.label })}</strong>
+                  {room && <span className="rb-muted">{room}</span>}
+                  {recommended.has(table.id) && <Badge tone="warning">{t("Suggested")}</Badge>}
+                  {selected && <Badge tone="success">{t("Selected")}</Badge>}
+                </div>
                 <div className="rb-badges">
                   {tableFeatures(table, map.zones).map((feature) => (
                     <Badge key={feature} tone={feature === t("Accessible") ? "info" : "neutral"}>
@@ -120,14 +127,14 @@ export function TableList({ tables, map, heldId, focusId = null, roomNameOf, onS
                     </Badge>
                   ))}
                 </div>
-                {table.ambience && table.ambience.phrases.length > 0 && <p className="rb-muted rb-table-light">{table.ambience.phrases.map(serverText).join(" · ")}</p>}
+                {special(table).length > 0 && <p className="rb-muted rb-table-light">{special(table).map(serverText).join(" · ")}</p>}
               </div>
               <TableRowAction table={table} heldId={heldId} selected={selected} onSelect={onSelect} />
             </li>
           );
         })}
       </ul>
-      {hidden > 0 && <p className="rb-muted">{t("{n} other tables are too small, too big or missing something you need.", { n: hidden })}</p>}
+      {hidden > 0 && <p className="rb-muted rb-table-hidden">{hidden === 1 ? t("1 other table is too small, too big or missing something you need.") : t("{n} other tables are too small, too big or missing something you need.", { n: hidden })}</p>}
     </div>
   );
 }

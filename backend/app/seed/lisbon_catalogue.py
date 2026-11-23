@@ -18,6 +18,7 @@ from app.seed import lisbon_data
 from app.seed.demo_restaurant import _schedule, free_slug
 from app.seed.demo_showcase import Opening, ShowRoom, Table, _add_room, _rect
 from app.seed.run import DEMO_ORGANISER_EMAIL, ensure_demo_users
+from app.seed.tidy_layouts import tidy_all
 
 PHOTO_DIR = Path(__file__).with_name("lisbon_photos")
 
@@ -191,6 +192,8 @@ def main() -> None:
                 select(Organiser).where(Organiser.email == DEMO_ORGANISER_EMAIL)
             ).one()
         created, photos = seed(session, owner)
+        session.commit()
+        tidy_all(session)  # evenly spread tables, none touching another
         session.commit()
     print(f"Lisbon demo catalogue: {created} restaurants created, {photos} covers added.")
 

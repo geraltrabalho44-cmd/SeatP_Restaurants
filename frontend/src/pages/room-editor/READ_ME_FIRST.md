@@ -20,6 +20,8 @@ the same conventions. Known reference cases are tested in both languages.
 
 Run npm test -- src/pages/room-editor/geometry.test.ts and npm run typecheck.
 
+The editor speaks the language of the page (catalogue.rooms.ts). What it saves stays English (a zone called "Terrace", a table called "Table 3", a room called "Room 2"); names.ts puts those words into the language in use when they are shown (`word`, `tableLabel`, `roomName`), and leaves an owner's own words alone. Messages from the model files use `tr()`, so a message made while the plan is checked is in the language in use; the editor re-checks the plan when the language changes. A new sentence goes in catalogue.rooms.ts; `roomEditorLanguages.test.tsx` checks the names and two panels in pt, es and fr.
+
 RoomEditorPage starts the room history and accessible properties. RoomCanvas
 uses the shared pan/zoom hook, centimetre grid and rulers. NewRoomDialog and
 shapeModel create rectangles, L-shaped rooms and freehand outlines. Every

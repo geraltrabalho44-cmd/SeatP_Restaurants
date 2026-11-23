@@ -1,3 +1,4 @@
+import { activeTag } from "../../i18n/locale";
 // Small pure helpers of the public restaurant page: contact links that cannot be
 // turned into something else, and the distance from where the diner searched.
 
@@ -31,8 +32,8 @@ export function telHref(phone: string | null): string | null {
   return /^\+?\d{6,}$/.test(digits) ? `tel:${digits}` : null;
 }
 
-/** A date such as 2026-12-24 as "24 Dec", in English like the rest of the page. */
+/** A date such as 2026-12-24 as "24 Dec", in the language in use. */
 export function shortDate(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return new Date(year, month - 1, day).toLocaleDateString(activeTag(), { day: "numeric", month: "short" });
 }

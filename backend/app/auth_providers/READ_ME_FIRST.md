@@ -14,7 +14,7 @@ accounts and its own session tokens, so every other page works exactly as before
 |---|---|
 | `supabase.py` | Calls Supabase's sign-in API over plain HTTPS (httpx, no SDK): sign up, sign in, reset a password, and check that the project asks people to confirm their email. Hides the key from `repr()` and from every error |
 | `../restaurant_service/identity.py` | Turns a confirmed identity into a SeatPlan account: the same person as before, else an existing account with that email (linked), else a new owner account |
-| `../routers/identity.py` | `GET /identity/config`, `POST /identity/owner/signup`, `/login`, `/reset`, `/set-password` |
+| `../routers/identity.py` | `GET /identity/config`, `POST /identity/owner/signup`, `/login`, `/reset`, `/set-password`, and for diners `POST /identity/diner/oauth/start` and `/identity/diner/oauth` (Google or Apple: finds or makes the diner account with that email and answers with a diner session; refused for an email that has two-step verification) |
 
 ## Switching it on (Martim does this; nothing here needs an account until then)
 
@@ -22,7 +22,7 @@ accounts and its own session tokens, so every other page works exactly as before
    If it is off, anyone could sign up with somebody else's address, so SeatPlan refuses to work until it is on
    (it asks the project's settings before every 10 minutes of use).
 2. In **Authentication > URL Configuration**, add `https://<your site>/owner/sign-in`,
-   `https://<your site>/owner/reset-password` and `https://<your site>/owner/sign-in/callback**` (the `**`
+   `https://<your site>/owner/reset-password`, `https://<your site>/owner/sign-in/callback**` and `https://<your site>/restaurants/account/callback**` (for diners) (the `**`
    lets the one-time check value after the `?` through) as redirect URLs.
    For Google and Apple, switch each on in **Authentication > Providers** and paste the client id and secret
    from Google Cloud Console / Apple Developer (Apple needs a paid developer account). SeatPlan offers a

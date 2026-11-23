@@ -1,23 +1,19 @@
-// Step 5: done. The summary and the manage link are ALWAYS shown here,
-// because email can fail; this page alone must be enough to manage the booking.
-// The first thing on it is the result, and the next action is "Manage booking".
+// Step 5: done. The summary and the "Manage booking" button are shown here, so this page alone is enough to manage the booking.
+// The first thing on it is the result, and the next action is "Manage booking". Nothing sits under the buttons.
 import type { BookingConfirmation } from "../../api/restaurant";
 import { AddToCalendar } from "./AddToCalendar";
 import { BookingRows } from "./BookingSummary";
-import { CopyLink, absoluteUrl } from "./CopyLink";
+import { absoluteUrl } from "./CopyLink";
 import { useT } from "../../i18n/I18nProvider";
 import { cancelNote, depositStatus } from "./money";
 import { CHANNEL_NAME } from "./PhoneOptIn";
 import { StepHeading } from "./StepHeading";
-import { EmailPreview, useBookingEmails } from "./EmailPreview";
 import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 
 export function Confirmation({ confirmation }: { confirmation: BookingConfirmation }) {
   const { t } = useT();
   const { booking, manage_url: manageUrl } = confirmation;
   const venue = usePublicVenue(booking.venue_public_id);
-  const token = manageUrl.split("/").filter(Boolean).pop() ?? "";
-  const emails = useBookingEmails(token);
   return (
     <div className="rb5-two">
       <section className="rb-card rb5-confirm">
@@ -49,18 +45,8 @@ export function Confirmation({ confirmation }: { confirmation: BookingConfirmati
           <a className="btn btn-primary" href={absoluteUrl(manageUrl)}>
             {t("Manage booking")} <span aria-hidden="true">{"\u2192"}</span>
           </a>
-          <AddToCalendar token={token} />
+          <AddToCalendar booking={booking} address={venue?.address ?? ""} manageLink={absoluteUrl(manageUrl)} />
           <DirectionsLink venue={venue} />
-        </div>
-        <div className="rb5-after">
-          {emails ? (
-            <EmailPreview emails={emails} address={confirmation.email} />
-          ) : (
-            <p className="rb-muted">
-              {t("Confirmation email")} · <strong>{confirmation.email}</strong>. {t("It can take a few minutes; check your spam folder if you do not see it.")}
-            </p>
-          )}
-          <CopyLink url={absoluteUrl(manageUrl)} label={t("Your manage link")} />
         </div>
       </section>
       <VenueCard booking={booking} venue={venue} />

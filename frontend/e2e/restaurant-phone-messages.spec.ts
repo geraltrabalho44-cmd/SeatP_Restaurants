@@ -1,5 +1,5 @@
 // Phone reminders, end to end with the real backend and the demo provider (nothing is sent):
-// the owner turns SMS on, a diner ticks the box, proves the number with the code shown on screen,
+// the owner turns SMS on, a diner types a number, proves the number with the code shown on screen,
 // books, and the owner's log shows the message with the number masked.
 
 import { expect, test } from "./fixtures";
@@ -20,12 +20,11 @@ test("a diner proves a phone number and books, and the owner sees the masked mes
   await panel.getByLabel("Email", { exact: true }).fill("phone.diner@example.com");
   await panel.getByRole("checkbox", { name: /accept the terms/ }).check();
 
-  // Nothing is pre-ticked. Ticking without verifying blocks the booking, and says why.
-  const box = panel.getByRole("checkbox", { name: /Send me booking messages/ });
-  await expect(box).not.toBeChecked();
-  await box.check();
+  // There is no box to tick: the number is simply asked for. A number that is not verified blocks the booking, and says why.
+  await expect(panel.getByRole("checkbox", { name: /Send me booking messages/ })).toHaveCount(0);
+  await panel.getByLabel("Mobile number").fill("912 345 678");
   await panel.getByRole("button", { name: "Confirm booking" }).click();
-  await expect(panel.getByText("Verify your number, or untick the box to book without phone messages.")).toBeVisible();
+  await expect(panel.getByText("Verify your number, or clear it to book without phone messages.")).toBeVisible();
 
   // A landline is refused; a Portuguese mobile gets a code (shown on screen in demo mode).
   await panel.getByLabel("Mobile number").fill("210 123 456");

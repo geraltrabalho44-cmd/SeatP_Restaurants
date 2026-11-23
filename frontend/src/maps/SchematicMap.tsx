@@ -3,6 +3,7 @@
 // never a grey box. The list next to it is still the way to every restaurant; this only keeps the
 // "where" readable. Pins are buttons, so they work with the keyboard like the real map's pins.
 import { useMemo } from "react";
+import { useT } from "../i18n/I18nProvider";
 import type { KeyboardEvent } from "react";
 import { BOX, placePins } from "./schematic";
 import type { PinPoint } from "./schematic";
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function SchematicMap({ pins, highlightedId, selectedId = null, onSelect, centre, showNames = false }: Props) {
+  const { t } = useT();
   const schematic = useMemo(() => placePins(pins, centre), [pins, centre?.lat, centre?.lng]);
   const focusedId = schematic.pins.find(pin => pin.id === highlightedId)?.id
     ?? schematic.pins.find(pin => pin.id === selectedId)?.id;
@@ -28,7 +30,7 @@ export function SchematicMap({ pins, highlightedId, selectedId = null, onSelect,
     }
   };
   return (
-    <div className="schematic" role="region" aria-label="Diagram of where the restaurants are">
+    <div className="schematic" role="region" aria-label={t("Diagram of where the restaurants are")}>
       <svg viewBox={`0 0 ${BOX.width} ${BOX.height}`} preserveAspectRatio="xMidYMid meet" className="schematic-svg">
         {[25, 50, 75].map((x) => (
           <line key={`v${x}`} x1={x} y1="0" x2={x} y2={BOX.height} className="schematic-grid" />

@@ -262,3 +262,6 @@
 @media (max-width: 24rem) {
   .st-page .st-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* The staff screen has its own side menu instead of the page header, so the language control sits in it. */
+.st-sidebar .lang-picker { align-self:flex-start;border:var(--border-width) solid var(--c-border);border-radius:var(--radius-md);margin-block:.5rem; }
+.st-sidebar .lang-menu { inset-inline-start:0;inset-inline-end:auto; }

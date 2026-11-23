@@ -11,6 +11,7 @@ import { getPublicRestaurant } from "../../api/discovery";
 import type { PublicRestaurant } from "../../api/discovery";
 import { EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
 import { MapCredits } from "../../maps/MapCredits";
+import { WeatherCredit } from "../restaurant/WeatherCredit";
 import { PublicHeaderActions } from "../discover/PublicHeaderActions";
 import { FEATURE_KEYS, FEATURE_LABELS, cuisineLabel, formatDistance, loadPlace, priceText } from "../discover/discoverModel";
 import { BookingEmbed } from "../restaurant/BookingPage";
@@ -35,7 +36,7 @@ export default function RestaurantPage() {
   const hasMap = state.status === "ready" && state.data.lat !== null && state.data.lng !== null;
   return (
     <PageShell title={title} width="wide" restaurantBrand headerActions={<PublicHeaderActions />}
-      footerContent={<>{hasMap && <MapCredits />}{state.status === "ready" && <GalleryCredits photos={state.data.photos} />}</>}>
+      footerContent={<>{hasMap && <MapCredits />}<WeatherCredit />{state.status === "ready" && <GalleryCredits photos={state.data.photos} />}</>}>
       {state.status === "loading" && <Skeleton lines={6} label={t("Loading the restaurant")} />}
       {state.status === "error" && <LoadError error={state.error} onRetry={() => reload()} />}
       {state.status === "ready" && <Page data={state.data} />}
@@ -197,11 +198,11 @@ function Page({ data }: { data: PublicRestaurant }) {
               </Suspense>
             </div>
           )}
-          <p>
-            <a href={data.maps_url} target="_blank" rel="noopener noreferrer">{t("Open in Google Maps")}<span className="visually-hidden"> {t("(opens in a new tab)")}</span>
-            </a>
-          </p>
           <ul className="rp-contact">
+            <li>
+              <a href={data.maps_url} target="_blank" rel="noopener noreferrer">{t("Open in Google Maps")}<span className="visually-hidden"> {t("(opens in a new tab)")}</span>
+              </a>
+            </li>
             {tel && (
               <li>
                 <a href={tel}>{data.phone}</a>

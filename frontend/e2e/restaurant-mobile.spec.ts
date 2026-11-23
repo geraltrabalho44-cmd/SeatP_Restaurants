@@ -42,6 +42,7 @@ test("on a phone: one action per moment, a suggestion in another room, and a cha
   await expect(page.getByRole("form", { name: "Your details" })).toBeVisible();
   await expect(steps.locator('[aria-current="step"]')).toContainText("Details");
   await expect(page.getByRole("heading", { name: "Your details" })).toBeVisible();
+  await page.getByText("Occasion, dietary preferences, allergies and a chair").click(); // the chair waits in the closed sub menu
   await page.getByRole("button", { name: "Choose a chair" }).click();
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();
   await expect(steps.locator('[aria-current="step"]')).toContainText("Details");

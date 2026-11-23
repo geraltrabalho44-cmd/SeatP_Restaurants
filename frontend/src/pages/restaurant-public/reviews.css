@@ -27,8 +27,8 @@
 .discover-card-main { flex:1;min-width:0; }
 .discover-card-rating { flex:none;color:inherit;text-decoration:none;text-align:right; }
 .discover-card:not(.is-compact) .discover-card-rating .review-score {
-  --rating-chair-height:calc(1.75rem * 22 / 15);
-  font-size:clamp(1.75rem,3vw,2.25rem);gap:.375rem;
+  --rating-chair-height:calc(1.5rem * 22 / 15);
+  font-size:clamp(1.5rem,2.5vw,1.875rem);gap:.3125rem;
 }
 .discover-card-rating:hover .review-count { text-decoration:underline; }
 .rp-section-nav { display:flex;gap:var(--space-4);border-block-end:1px solid var(--c-border); }

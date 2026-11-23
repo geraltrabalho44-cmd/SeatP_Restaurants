@@ -1,3 +1,6 @@
+import { word } from "./names";
+import { FIXTURE_NAMES } from "./roomObjects";
+import { tr } from "../../i18n/locale";
 import { outlineToPolygon, pointInPolygon, polygonArea, rectCorners } from "./geometry";
 import type { Point } from "./geometry";
 import type { Room, RoomFixture, RoomTable } from "./roomModel";
@@ -70,22 +73,22 @@ export function validateRooms(rooms: Room[], forPublication = false): RoomProble
   for (const room of rooms) {
     const polygon = outline(room);
     const add = (code: ProblemCode, level: RoomProblem["level"], message: string, table_keys: string[], details: Partial<RoomProblem> = {}) => problems.push({ code, level, message, room_key: room.key, table_keys, ...details });
-    if (!polygon) add("outline_invalid", "error", "The walls cross each other.", []);
-    else if (Math.abs(polygonArea(polygon)) < 40000 - EPS || Math.abs(polygonArea(polygon)) > 50000000 + EPS) add("outline_invalid", "error", "Use a room area between 4 and 5000 square metres.", []);
+    if (!polygon) add("outline_invalid", "error", tr("The walls cross each other."), []);
+    else if (Math.abs(polygonArea(polygon)) < 40000 - EPS || Math.abs(polygonArea(polygon)) > 50000000 + EPS) add("outline_invalid", "error", tr("Use a room area between 4 and 5000 square metres."), []);
     const windows = room.openings.filter(o => o.kind === "window" || o.kind === "glass_wall");
-    if (forPublication && windows.length && room.north_deg === null) add("no_north", "error", "Set north so we can work out the sun.", []);
-    for (const opening of windows) if (!opening.view_text.trim()) add("window_no_view", "info", "Add what guests see from this window.", [], { opening_key: opening.key });
+    if (forPublication && windows.length && room.north_deg === null) add("no_north", "error", tr("Set north so we can work out the sun."), []);
+    for (const opening of windows) if (!opening.view_text.trim()) add("window_no_view", "info", tr("Add what guests see from this window."), [], { opening_key: opening.key });
     const terraces = room.zones.filter(z => z.kind === "terrace").map(z => terraceCorners(room, z));
     room.tables.forEach((table, i) => {
-      if (polygon && !inside(shape(table), polygon) && !terraces.some(area => inside(shape(table), area))) add("table_outside", "error", `Table ${label(table)} is outside the walls.`, [table.key]);
+      if (polygon && !inside(shape(table), polygon) && !terraces.some(area => inside(shape(table), area))) add("table_outside", "error", tr("Table {name} is outside the walls.", { name: label(table) }), [table.key]);
       for (const other of room.tables.slice(i + 1)) {
         const depth = penetration(shape(table), shape(other)), sameGroup = table.combine_group && table.combine_group === other.combine_group;
-        if (table.is_active && other.is_active && depth !== null && depth > (sameGroup ? 2 + EPS : EPS)) add("tables_overlap", "error", `Tables ${label(table)} and ${label(other)} overlap.`, [table.key, other.key]);
-        if (penetration(shape(table, 45), shape(other, 45)) !== null) add("tight_passage", "warning", `Little room to walk between tables ${label(table)} and ${label(other)}.`, [table.key, other.key]);
+        if (table.is_active && other.is_active && depth !== null && depth > (sameGroup ? 2 + EPS : EPS)) add("tables_overlap", "error", tr("Tables {a} and {b} overlap.", { a: label(table), b: label(other) }), [table.key, other.key]);
+        if (penetration(shape(table, 45), shape(other, 45)) !== null) add("tight_passage", "warning", tr("Little room to walk between tables {a} and {b}.", { a: label(table), b: label(other) }), [table.key, other.key]);
       }
-      for (const fixture of room.fixtures) if (penetration(shape(table), shape(fixture)) !== null) add("fixture_overlap", "warning", `Table ${label(table)} overlaps the ${fixture.label || fixture.kind.replaceAll("_", " ")}.`, [table.key], { fixture_key: fixture.key });
+      for (const fixture of room.fixtures) if (penetration(shape(table), shape(fixture)) !== null) add("fixture_overlap", "warning", tr("Table {name} overlaps the {fixture}.", { name: label(table), fixture: fixture.label || word(FIXTURE_NAMES[fixture.kind]).toLowerCase() }), [table.key], { fixture_key: fixture.key });
     });
   }
-  if (forPublication && !rooms.some(r => r.tables.some(t => t.is_active))) problems.push({ code: "no_tables", level: "error", message: "Add at least one table.", room_key: null, table_keys: [] });
+  if (forPublication && !rooms.some(r => r.tables.some(t => t.is_active))) problems.push({ code: "no_tables", level: "error", message: tr("Add at least one table."), room_key: null, table_keys: [] });
   return problems;
 }

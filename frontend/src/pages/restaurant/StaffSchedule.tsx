@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { getSchedule, saveSchedule } from "../../api/restaurant";
 import type { Schedule, ServicePeriod } from "../../api/restaurant";
-import { Button, ErrorState, Skeleton, useToast } from "../../design/components";
+import { Button, Checkbox, ErrorState, Skeleton, useToast } from "../../design/components";
 import type { Message } from "../../i18n/catalogue";
 import { useT } from "../../i18n/I18nProvider";
 import { errorMessage, needsSignIn } from "./format";
@@ -77,6 +77,7 @@ export function ScheduleEditor({ venueId, saved, onSaved, servicesEditor: Servic
       <fieldset className="st-schedule-fields" disabled={busy}><legend className="visually-hidden">{t("Weekly schedule draft")}</legend>
       <Services services={draft.services} onChange={(services) => setDraft({ ...draft, services })} />
       <TurnTimesEditor draft={draft} onChange={setDraft} />
+      <TableSizesEditor draft={draft} onChange={setDraft} />
       <BlackoutEditor draft={draft} onChange={setDraft} />
       </fieldset>
       {problems.length > 0 && (
@@ -211,6 +212,21 @@ function TurnTimesEditor({ draft, onChange }: { draft: Schedule; onChange: (s: S
       <Button variant="secondary" onClick={() => set([...turns, { max_party: 8, minutes: 90 }])}>
         {t("Add a turn time")}
       </Button>
+    </section>
+  );
+}
+
+function TableSizesEditor({ draft, onChange }: { draft: Schedule; onChange: (s: Schedule) => void }) {
+  const { t } = useT();
+  return (
+    <section id="st-table-sizes" className="rb-card">
+      <h2 className="rb-service-title">{t("Table sizes")}</h2>
+      <Checkbox
+        label={t("Let smaller parties book bigger tables")}
+        hint={t("Off: a couple is not given a table for four, but a party of three can have one. On: any table that is big enough.")}
+        checked={draft.allow_larger_tables === true}
+        onChange={(event) => onChange({ ...draft, allow_larger_tables: event.target.checked })}
+      />
     </section>
   );
 }

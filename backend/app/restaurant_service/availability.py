@@ -191,7 +191,9 @@ def table_specs_for(
     """The optimiser's tables. When the party has wishes and the stay is known,
     every table also carries its ambience features for that stay."""
     tables = occupancy.venue_tables(session, venue)
-    specs = occupancy.table_specs(tables, occupancy.zone_kinds(session, venue))
+    specs = occupancy.table_specs(
+        tables, occupancy.zone_kinds(session, venue), venue.allow_larger_tables
+    )
     if needs is None or not needs.prefs or day is None or at is None:
         return specs
     features = ambience_view.table_features(session, venue, day, at, needs.size)

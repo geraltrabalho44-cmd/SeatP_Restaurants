@@ -1,3 +1,5 @@
+import { roomName } from "./names";
+import { tr } from "../../i18n/locale";
 import type { TableShape, ZoneKind } from "../../api/types";
 import type { Box, Outline } from "./geometry";
 
@@ -29,7 +31,8 @@ export function newRoomKey(prefix: string): string { return `${prefix.slice(0, 2
 export function nextRoomName(rooms: { name: string }[]): string {
   const taken = new Set(rooms.map(r => r.name.trim().toLowerCase()));
   let number = rooms.length + 1;
-  while (taken.has(`room ${number}`)) number += 1;
+  // "Room 3" in English, "Sala 3" in Portuguese: either one counts as used.
+  while (taken.has(`room ${number}`) || taken.has(roomName(`Room ${number}`).toLowerCase())) number += 1;
   return `Room ${number}`;
 }
 
@@ -39,7 +42,7 @@ export function withNorthUp(layout: RoomLayout): RoomLayout {
 }
 
 export function createRoom(name: string, width: number, height: number, outdoor = false): Room {
-  if (![width, height].every(n => Number.isFinite(n) && n > 0)) throw new Error("Room dimensions must be positive.");
+  if (![width, height].every(n => Number.isFinite(n) && n > 0)) throw new Error(tr("Room dimensions must be positive."));
   return {
     id: null, key: newRoomKey("r"), name, is_outdoor: outdoor, north_deg: 0, position: 0,
     outline: { points: [{ x: 0, y: 0, curve: 0 }, { x: width, y: 0, curve: 0 }, { x: width, y: height, curve: 0 }, { x: 0, y: height, curve: 0 }] },
@@ -48,7 +51,7 @@ export function createRoom(name: string, width: number, height: number, outdoor 
 }
 
 export function addRoom(layout: RoomLayout, room: Room): RoomLayout {
-  if (layout.rooms.length >= 5) throw new Error("A restaurant can have at most five rooms.");
+  if (layout.rooms.length >= 5) throw new Error(tr("A restaurant can have at most five rooms."));
   return { ...layout, rooms: [...layout.rooms, { ...room, position: layout.rooms.length }] };
 }
 

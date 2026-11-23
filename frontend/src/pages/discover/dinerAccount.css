@@ -6,3 +6,7 @@
 .diner-booking-actions, .diner-pagination { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
 .diner-booking-status { text-transform: capitalize; font-weight: 600; }
 @media (max-width: 600px) { .diner-booking-list > li { align-items: flex-start; flex-direction: column; } }
+
+/* "Continue with Google" under the diner's log-in and sign-up forms. */
+.acc-social { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
+.acc-social-note { margin: 0; color: var(--c-text-muted); font-size: .8125rem; }

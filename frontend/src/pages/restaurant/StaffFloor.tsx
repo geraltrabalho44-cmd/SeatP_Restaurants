@@ -210,10 +210,11 @@ function FloorView({ venueId, date, floor, time, live, onNow, onTime, onRefresh 
 }
 
 function FloorHeader({ floor, date, time, live, onNow, onTime, onWalkin, onCheck }: { floor: Floor; date: string; time: string; live: boolean; onNow: () => void; onTime: (t: string) => void; onWalkin: () => void; onCheck: () => void }) {
-  const { t } = useT();
+  const { t, label } = useT();
   const [editingTime,setEditingTime]=useState(false);
   const counts = countByStatus(floor.tables);
-  const service = floor.services.find(s => s.start_time <= time && time < s.end_time)?.name ?? t("Outside service");
+  const current = floor.services.find(s => s.start_time <= time && time < s.end_time)?.name;
+  const service = current ? label(current) : t("Outside service");
   return (
     <div className="st-floor-head">
       <ul className="st-counts" aria-label={t("Tables by status")}>

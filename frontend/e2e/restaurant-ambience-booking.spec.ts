@@ -18,6 +18,7 @@ test("a diner books a table with a chair in a two-room restaurant and changes th
   await rooms.getByRole("tab", { name: /River hall/ }).click();
 
   await page.getByRole("button", { name: "Choose for me" }).click();
+  await page.getByText("Occasion, dietary preferences, allergies and a chair").click(); // the chair waits in the closed sub menu
   await page.getByRole("button", { name: "Choose a chair" }).click();
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();
   await page.getByRole("radio").first().check();

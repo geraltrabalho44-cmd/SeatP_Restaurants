@@ -1,13 +1,12 @@
 // One card for the table in front of the diner: our suggestion on arrival, the table they pointed
 // at, or the one they hold. It says which room, which kind of table, the view, how many it seats
 // and the light, and carries the one action for that table. The reasons we give for a suggestion
-// sit behind "Why this table", so the card stays short beside the plan.
+// are not listed in the card, so it stays short beside the plan.
 import type { DinerTable } from "../../api/restaurant";
 import { Badge, Button } from "../../design/components";
 import { useT } from "../../i18n/I18nProvider";
 import { lightWords } from "./ambienceView";
 import { guests, tableName } from "./format";
-import { serverText } from "./serverText";
 import { partyRange, unavailableReason } from "./tableView";
 
 interface TableCardProps {
@@ -27,17 +26,6 @@ interface TableCardProps {
   quick?: { party: number };
 }
 
-/** The reasons we give for a suggestion, then what the table is like, without saying the same thing twice. */
-function lines(reasons: string[], phrases: string[]): string[] {
-  const seen = new Set<string>();
-  return [...reasons, ...phrases].map(serverText).filter((line) => {
-    const key = line.trim().toLowerCase();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
 /** Small line icons for the facts of a table: where, the view, the light and the seats. */
 function FactIcon({ kind }: { kind: "where" | "view" | "sun" | "night" | "seats" }) {
   const paths: Record<typeof kind, JSX.Element> = {
@@ -54,12 +42,11 @@ function FactIcon({ kind }: { kind: "where" | "view" | "sun" | "night" | "seats"
   );
 }
 
-export function TableCard({ table, roomName, zone, recommended, reasons, heldId, busy, onTake, quick }: TableCardProps) {
+export function TableCard({ table, roomName, zone, recommended, heldId, busy, onTake, quick }: TableCardProps) {
   const { t } = useT();
   const ambience = table.ambience;
   const reason = unavailableReason(table);
   const held = table.id === heldId && table.state !== "taken";
-  const text = lines(recommended ? reasons : [], ambience?.phrases ?? []);
   const meta = [ambience?.view?.text, t("Seats {n}", { n: table.max_party }), ambience ? lightWords(ambience.light) : null].filter(Boolean).join(" · ");
   if (quick) {
     // "Window table · 2 guests", then "R2 · The river lights · Seats 2": where, for how many, and why it is good.
@@ -73,16 +60,6 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
           {[roomName, zone ? table.label : null, meta].filter(Boolean).join(" · ")}
         </p>
         {reason && <p className="rb-muted rb-table-card-reason">{reason}</p>}
-        {text.length > 0 && (
-          <details className="rb-why">
-            <summary>{t("Why this table")}</summary>
-            <ul className="rb-reasons">
-              {text.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </details>
-        )}
       </section>
     );
   }
@@ -132,18 +109,8 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
           <Button busy={busy} onClick={() => onTake(table.id)}>
             {t("Hold {label} & continue", { label: table.label })} <span aria-hidden="true">{"→"}</span>
           </Button>
-          <p className="rb-muted rb-table-note">{t("You will have five minutes to finish after holding the table.")}</p>
+          <p className="rb-muted rb-table-note">{t("We hold the table for five minutes while you enter your details.")}</p>
         </>
-      )}
-      {text.length > 0 && (
-        <details className="rb-why">
-          <summary>{t("Why this table")}</summary>
-          <ul className="rb-reasons">
-            {text.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        </details>
       )}
     </section>
   );

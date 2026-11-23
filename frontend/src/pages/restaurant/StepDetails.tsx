@@ -115,7 +115,7 @@ export function StepDetails(props: StepDetailsProps) {
       return;
     }
     if (phone.wanted && !phone.verificationId) {
-      setPhoneError(t("Verify your number, or untick the box to book without phone messages."));
+      setPhoneError(t("Verify your number, or clear it to book without phone messages."));
       document.getElementById("rb-phone-code")?.focus();
       return;
     }
@@ -155,6 +155,7 @@ export function StepDetails(props: StepDetailsProps) {
     }
   };
 
+  const [otherOpen, setOtherOpen] = useState(false);
   const bind = (field: "name" | "email" | "phone" | "notes") => ({
     id: `rb-${field}`,
     value: contact[field],
@@ -189,11 +190,19 @@ export function StepDetails(props: StepDetailsProps) {
         <Field label={t("Phone (optional)")} hint={t("Only used if we need to reach you on the day.")} type="tel" autoComplete="tel" placeholder={t("Phone number")} {...bind("phone")} />
         <Field label={t("Notes for the restaurant (optional)")} hint={t("Anything else we should know about your visit.")} placeholder={t("Add a note")} {...bind("notes")} />
       </details>
+      {/* Occasion, diet and allergies: closed until the diner asks for them (open when one is filled in). */}
+      <details
+        className="rb5-more-fields"
+        open={otherOpen || Boolean(contact.occasion) || Boolean(contact.dietary_requirements) || Boolean(contact.allergies) || seatId !== null}
+        onToggle={(event) => setOtherOpen(event.currentTarget.open)}
+      >
+        <summary>{t("Occasion, dietary preferences, allergies and a chair")}</summary>
       <Select label={t("Occasion (optional)")} value={contact.occasion ?? ""} onChange={event => onContactChange({ ...contact, occasion: event.target.value || null })}
         options={[{ value: "", label: t("Just a meal") }, { value: "birthday", label: t("Birthday") }, { value: "anniversary", label: t("Anniversary") }, { value: "proposal", label: t("Marriage proposal") }, { value: "business", label: t("Business meal") }, { value: "date", label: t("Date night") }, { value: "celebration", label: t("Celebration") }]} />
       <Field label={t("Dietary preferences (optional)")} maxLength={500} placeholder={t("Vegetarian, vegan…")} value={contact.dietary_requirements ?? ""} onChange={event => onContactChange({ ...contact, dietary_requirements: event.target.value })} />
       <Field label={t("Food allergies (optional)")} maxLength={500} hint={t("The staff will see this. Please confirm safe preparation directly with the restaurant.")} placeholder={t("Tell us about any food allergies")} value={contact.allergies ?? ""} onChange={event => onContactChange({ ...contact, allergies: event.target.value })} />
-      {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} disabled={busy} />}
+        {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} disabled={busy} />}
+      </details>
       <PhoneOptIn venueId={venueId} value={phone} onChange={(value) => { setPhone(value); setPhoneError(null); }} disabled={busy} error={phoneError} />
       {terms && <DepositNotice terms={terms} accepted={accepted} disabled={busy} error={termsError} onChange={(value) => { setAccepted(value); if (value) setTermsError(null); }} />}
       <OfferCodeField venueId={venueId} email={contact.email} day={needs.date} party={needs.party} value={offer} onChange={setOffer} disabled={busy} />
@@ -217,23 +226,16 @@ export function StepDetails(props: StepDetailsProps) {
   );
 }
 
-/** The optional chair, folded into the form: nothing to open unless the diner wants a chair. */
+/** The optional chair, inside the closed sub menu of optional things: a button, and what was chosen. */
 function ChairRequest({ seatId, seatLabel, onChoose, onClear, disabled }: { seatId: number | null; seatLabel: string | null; onChoose: () => void; onClear?: () => void; disabled: boolean }) {
   const { t } = useT();
   return (
     <section className="rb-chair-request" aria-label={t("Chair request")}>
-      <div className="rb5-chair-row">
-        <div>
-          <h4 className="rb-chair-request-title">{t("Request a chair")}</h4>
-          <p className="rb-muted">{t("Optional · The restaurant will see your request. It does not change your booking.")}</p>
-        </div>
-        {seatId === null && (
-          <Button variant="secondary" disabled={disabled} onClick={onChoose}>
-            {t("Choose a chair")}
-          </Button>
-        )}
-      </div>
-      {seatId !== null && (
+      {seatId === null ? (
+        <Button variant="secondary" disabled={disabled} onClick={onChoose}>
+          {t("Choose a chair")}
+        </Button>
+      ) : (
         <div className="rb-chair-request-chosen">
           <p>
             <strong>{t("Chair requested")}{seatLabel ? `: ${seatLabel}` : ""}</strong>
