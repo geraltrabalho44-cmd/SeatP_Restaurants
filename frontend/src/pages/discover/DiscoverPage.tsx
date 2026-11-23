@@ -212,7 +212,9 @@ export default function DiscoverPage() {
   };
   const closePinSummary = (): void => {
     // A hidden Leaflet map remains mounted behind the fallback diagram.
-    const pin = document.querySelector<HTMLElement>('.schematic-pin[aria-pressed="true"]') ?? document.querySelector<HTMLElement>(".discover-pin-selected");
+    // By the picked pin's id, not by "pressed": while the pointer rests on another pin the diagram shows that
+    // one's preview and nothing is pressed, and the focus would not come back.
+    const pin = (pinned ? document.querySelector<HTMLElement>(`.schematic-pin[data-pin-id="${CSS.escape(pinned)}"]`) : null) ?? document.querySelector<HTMLElement>('.schematic-pin[aria-pressed="true"]') ?? document.querySelector<HTMLElement>(".discover-pin-selected");
     setPinned(null);
     window.requestAnimationFrame(() => pin?.focus({preventScroll:true}));
   };
