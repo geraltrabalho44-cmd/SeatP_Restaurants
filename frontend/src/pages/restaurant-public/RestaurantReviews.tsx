@@ -72,8 +72,9 @@ export function RestaurantReviews({ slug, summary }: { slug: string; summary?: R
         {answer.items.length > 0 && <ul className="reviews-list">{answer.items.map(review => (
           <li key={review.id}>
             <div className="reviews-item-head">
+              <span className="reviews-avatar" aria-hidden="true">{review.author.trim().charAt(0).toUpperCase()}</span>
               <strong>{review.author}</strong>
-              <span>{review.score}/10</span>
+              <span className="reviews-item-score">{review.score}/10</span>
               {review.verified && <span className="reviews-verified-badge">{t("Verified visit")}</span>}
             </div>
             <div className="reviews-item-meta">

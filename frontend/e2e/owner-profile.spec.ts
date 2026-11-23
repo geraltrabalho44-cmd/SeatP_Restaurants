@@ -10,7 +10,7 @@ test("owner saves identity and resumes the location step", async ({ page, reques
   await page.goto("/owner/new");
   await page.getByLabel("Restaurant name", { exact: true }).fill("Café da Testagem");
   await page.getByLabel("Portuguese", { exact: true }).check();
-  await page.getByLabel("Price range", { exact: true }).selectOption("2");
+  await page.getByRole("radio", { name: "€€ · per person: 15–30 €", exact: true }).check(); // the price is four buttons now, not a list
   await page.getByRole("button", { name: "Save and continue", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Location", exact: true })).toBeVisible();
   const setup = page.url();

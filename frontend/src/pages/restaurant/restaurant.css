@@ -991,3 +991,14 @@
 .rb-nowrap { white-space: nowrap; }
 /* The table's name on its card stays on one or two lines, however long the zone's name is. */
 .rb-table-card .rb-table-title { font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
+
+/* Turn times on a phone (2026-11-23): each row is "Up to N people" with Remove beside it, and "stay N minutes" under it,
+   with a line between rows, instead of the two halves breaking onto separate lines at random. */
+@media (max-width: 40rem) {
+  #st-turn-times .st-inline { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--c-border); }
+  #st-turn-times .st-inline > .st-inline-label:first-child { grid-column: 1; grid-row: 1; }
+  #st-turn-times .st-inline > .st-inline-label + .st-inline-label { grid-column: 1; grid-row: 2; }
+  #st-turn-times .st-inline > .btn { grid-column: 2; grid-row: 1; padding-inline: var(--space-2); }
+  #st-turn-times .st-inline-label { display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+  #st-turn-times .st-num { width: 4.5rem; }
+}

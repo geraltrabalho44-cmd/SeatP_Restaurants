@@ -11,6 +11,13 @@ import type { GeoPoint } from "../../maps/reverseGeocode";
 const LeafletMap = lazy(() => import("../../maps/LeafletMap"));
 
 export const EMPTY_PROFILE: OwnerProfile = { public_id: "", status: "draft", slug: "", name: "", description: "", cuisines: [], price_level: 2, phone: null, website: null, instagram: null, google_maps_url: null, address: "", lat: null, lng: null, timezone: "Europe/Lisbon" };
+/** The four price levels: the full sentence is the radio's name; the symbols and the short range are what the eye reads. */
+const PRICES: { level: number; name: Message; range: Message }[] = [
+  { level: 1, name: "€ · per person: under 15 €", range: "under 15 €" },
+  { level: 2, name: "€€ · per person: 15–30 €", range: "15–30 €" },
+  { level: 3, name: "€€€ · per person: 30–60 €", range: "30–60 €" },
+  { level: 4, name: "€€€€ · per person: over 60 €", range: "over 60 €" },
+];
 export const cuisineLabel = (value: string) => tr((value[0].toUpperCase() + value.slice(1)) as Message);
 
 export function IdentityForm({ profile, label, onSave }: { profile: OwnerProfile; label: string; onSave: (changes: ProfileChanges) => Promise<void> }) {
@@ -27,7 +34,12 @@ export function IdentityForm({ profile, label, onSave }: { profile: OwnerProfile
     <Field label={t("Restaurant name")} value={values.name} required maxLength={120} onChange={e => change({ name: e.target.value })} />
     <label className="field"><span className="field-label">{t("Short description")}</span><textarea className="field-input" maxLength={300} value={values.description} onChange={e => change({ description: e.target.value })} /><span>{t("{n}/300 characters", { n: values.description.length })}</span></label>
     <fieldset className="owner-cuisines"><legend>{t("Cuisines (choose 1–3)")}</legend><p className="owner-cuisines-count" role="status">{t("{n} of 3 selected", { n: values.cuisines.length })}</p>{CUISINES.map(c => <Checkbox key={c} label={cuisineLabel(c)} checked={values.cuisines.includes(c)} disabled={values.cuisines.length === 3 && !values.cuisines.includes(c)} onChange={e => change({ cuisines: e.target.checked ? [...values.cuisines, c] : values.cuisines.filter(item => item !== c) })} />)}</fieldset>
-    <Select label={t("Price range")} value={String(values.price_level ?? "")} required options={[{ value: "", label: t("Choose a range") }, { value: "1", label: t("€ · per person: under 15 €") }, { value: "2", label: t("€€ · per person: 15–30 €") }, { value: "3", label: t("€€€ · per person: 30–60 €") }, { value: "4", label: t("€€€€ · per person: over 60 €") }]} onChange={e => change({ price_level: Number(e.target.value) })} />
+    <fieldset className="owner-price"><legend>{t("Price range")}</legend><p className="owner-price-hint">{t("What one guest usually spends.")}</p>
+      <div className="owner-price-options">{PRICES.map(({ level, name, range }) => <label key={level} className="owner-price-option">
+        <input type="radio" name="price_level" value={level} required checked={values.price_level === level} aria-label={t(name)} onChange={() => change({ price_level: level })} />
+        <span className="owner-price-symbol" aria-hidden="true">{"€".repeat(level)}</span><span className="owner-price-range" aria-hidden="true">{t(range)}</span>
+      </label>)}</div>
+    </fieldset>
     <Field label={t("Phone")} type="tel" value={values.phone ?? ""} maxLength={40} onChange={e => change({ phone: e.target.value })} />
     <Field label={t("Website")} type="url" value={values.website ?? ""} maxLength={200} onChange={e => change({ website: e.target.value })} />
     <Field label={t("Instagram")} value={values.instagram ?? ""} maxLength={31} pattern="@?[A-Za-z0-9._]{1,30}" onChange={e => change({ instagram: e.target.value })} />

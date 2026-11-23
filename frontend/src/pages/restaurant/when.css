@@ -66,3 +66,16 @@
 
 /* The sticky "Choose a table at …" bar fades the times scrolling under it, so a slot is never cut in half by a hard edge. */
 .when-continue::before {content:"";position:absolute;left:0;right:0;bottom:100%;height:1.5rem;background:linear-gradient(to bottom,transparent,var(--c-surface));pointer-events:none}
+
+/* A free time shows just the time (2026-11-23): "Available" on every tile was noise. The word stays for screen readers,
+   and the times that are nearly full or full still say so on the tile. */
+.when-times .rb-slot { position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.125rem;text-align:center; }
+.when-times .rb-slot-time { font-size:1rem;font-weight:700; }
+.when-times .rb-slot-available:not(.is-selected) .rb-slot-status { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap; }
+.when-times .rb-slot:not(.is-selected):hover { border-color:var(--c-primary);background:var(--c-primary-soft); }
+@media (prefers-reduced-motion:no-preference) {
+  .when-times .rb-slot { transition:background var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out); }
+  .when-times .rb-slot:active { transform:scale(.97); }
+}
+.when-times .rb-slot-status { display:inline-flex;align-items:center;justify-content:center;gap:.25rem;font-size:.6875rem;line-height:1.2;text-align:center; } /* a long word in another language wraps inside the tile instead of sticking out */
+.when-times .rb-slot-status .rb-slot-icon { flex:none;width:.75rem;height:.75rem; }

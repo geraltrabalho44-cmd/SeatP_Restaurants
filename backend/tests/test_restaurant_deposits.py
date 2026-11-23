@@ -764,3 +764,33 @@ def test_real_stripe_refuses_deposits_below_its_minimum(
         url, json={"policies": [{**rule, "per_person_cents": 50}]}, headers=auth_header(organiser)
     )
     assert ok.status_code == 200 and ok.json()["payments_mode"] == "test"
+
+
+def test_an_unpaid_wait_frees_its_table_even_when_the_cron_never_runs(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    # Audit OPS-1: only the cron used to expire waits, so with the cron off a diner who
+    # started a deposit booking and left kept the table forever.
+    place = make_restaurant(session, organiser)
+    _set_policy(session, place)
+    _book_with_deposit(client, place)
+    assert session.scalar(select(func.count()).select_from(TableSlot)) > 0
+    payment = _payment(session)
+    payment.expires_at = datetime.now(UTC) - timedelta(minutes=1)
+    session.commit()
+    # Nobody calls the cron. The next person to look at this restaurant settles it.
+    assert client.get(f"/api/r/{place.public_id}").status_code == 200
+    assert _payment(session).status == "expired"
+    assert _booking(session).status == "cancelled"
+    assert session.scalar(select(func.count()).select_from(TableSlot)) == 0
+
+
+def test_a_wait_still_in_time_is_not_touched_by_looking_at_the_restaurant(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    _set_policy(session, place)
+    _book_with_deposit(client, place)
+    assert client.get(f"/api/r/{place.public_id}").status_code == 200
+    assert _payment(session).status == "pending"
+    assert _booking(session).status == "pending"

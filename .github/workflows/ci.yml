@@ -1,6 +1,7 @@
 # Continuous integration: every pull request and every push to main must pass
 # lint, tests, build, a dependency audit and a secret scan before it can ship.
-# Nothing here deploys; Vercel deploys main on its own after CI is green.
+# Nothing here deploys. Vercel deploys every push to main on its own, whether CI passed or not,
+# so protect main on GitHub (require a pull request and these checks) to make CI a real gate.
 
 name: ci
 
@@ -45,6 +46,43 @@ jobs:
         run: python -m pytest
       - name: Dependency audit (runtime dependencies, fails on any known vulnerability)
         run: pip-audit -r ../requirements.txt
+
+  backend-postgres:
+    # The same tests against the database the live site uses (Neon is Postgres). SQLite hides things
+    # like a NUL character in a parameter, or how two requests really race. Each test gets its own
+    # fresh database on this server (backend/tests/conftest.py).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SEATPLAN_TEST_POSTGRES: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            backend/requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r ../requirements.txt -r requirements-dev.txt
+      - name: Tests (pytest, a fresh Postgres database per test)
+        run: python -m pytest
 
   frontend:
     runs-on: ubuntu-latest

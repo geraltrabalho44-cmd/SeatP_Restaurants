@@ -65,7 +65,7 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
   const { t } = useT();
   if (error instanceof ApiError && error.code === "not_found") {
     return (
-      <EmptyState title={t("We cannot find this restaurant")}>
+      <EmptyState headingLevel={1} title={t("We cannot find this restaurant")}>
         <p>{t("The booking link may be old or mistyped. Please ask the restaurant for its current link.")}</p>
       </EmptyState>
     );

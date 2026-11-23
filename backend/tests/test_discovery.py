@@ -401,3 +401,13 @@ def test_the_booking_page_data_names_the_public_page_it_forwards_to(
 ) -> None:
     row = open_restaurant(session, organiser, "forward-house")
     assert client.get(f"/api/r/{row.public_id}").json()["slug"] == "forward-house"
+
+
+def test_a_control_character_in_a_smart_search_is_a_422_not_a_500(client: TestClient) -> None:
+    # Audit BE-3: the text rules of the POST body rejected it with a ValidationError nobody caught.
+    for bad in ("\x00", "\x07", "\x1b", "\x7f", "pizza\x00"):
+        got = client.get("/api/restaurants", params={"q": bad, "understand": "true"})
+        assert got.status_code == 422, (bad, got.status_code)
+        assert got.json()["error"]["code"] == "validation"
+    ok = client.get("/api/restaurants", params={"q": "pizza", "understand": "true"})
+    assert ok.status_code == 200

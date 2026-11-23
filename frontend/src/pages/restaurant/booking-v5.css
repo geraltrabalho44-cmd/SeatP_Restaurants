@@ -1213,3 +1213,11 @@
   .rb5-confirm .rb5-actions { flex-wrap: nowrap; align-items: stretch; gap: var(--space-2); }
   .rb5-confirm .rb5-actions .btn { flex: 0 1 auto; white-space: nowrap; padding-inline: var(--space-3); min-width: 0; justify-content: center; }
 }
+
+/* On a phone the buttons of the confirmation and of the booking page fill the card's width, one under the other, instead
+   of three buttons of three different widths (2026-11-23). "Cancel booking" stays a quiet link, centred under them. */
+@media (max-width: 719.98px) {
+  .rb5-confirm .rb5-actions, .rb5-card-actions, .rb5-change .rb-manage-actions { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: var(--space-2); }
+  .rb5-confirm .rb5-actions > .btn, .rb5-card-actions > .btn, .rb5-card-actions > a, .rb5-change .rb-manage-actions > .btn { width: 100%; justify-content: center; }
+  .rb5-change .rb-manage-actions > .rb-danger-link { align-self: center; width: auto; margin-top: var(--space-1); }
+}

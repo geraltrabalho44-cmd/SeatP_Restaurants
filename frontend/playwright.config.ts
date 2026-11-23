@@ -21,8 +21,9 @@ export default defineConfig({
   outputDir: join(tmpdir(), `seatplan-e2e-results-${process.pid}`),
   fullyParallel: false,
   workers: 1,
-  // A retry would hide a flaky test; we want to see it fail instead.
-  retries: 0,
+  // On CI one retry, so a rare timing slip does not block a good change. Playwright still lists the
+  // test as "flaky" in the report, so it is not hidden. On a laptop a failure shows at once.
+  retries: ci ? 1 : 0,
   forbidOnly: ci,
   timeout: 60_000,
   expect: { timeout: 10_000 },

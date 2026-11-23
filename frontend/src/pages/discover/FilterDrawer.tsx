@@ -1,4 +1,5 @@
 import { useT } from "../../i18n/I18nProvider";
+import {useEffect} from "react";
 import type {ReactNode} from "react";
 import type {FeatureKey} from "../../api/discovery";
 import {CUISINES} from "../../api/owner";
@@ -18,9 +19,17 @@ interface Props {
 }
 export function FilterDrawer(p:Props){
   const {t,label} = useT();
+  // The page behind stays still while the panel is open, so a swipe inside it never scrolls the results underneath.
+  // The panel slides in (from the bottom on a phone); it closes at once, so nothing of it is left in the page afterwards.
+  useEffect(()=>{
+   if(!p.open)return undefined;
+   const root=document.documentElement;const before=root.style.overflow;root.style.overflow="hidden";
+   return ()=>{root.style.overflow=before;};
+  },[p.open]);
+  const show=p.total===null?t("Apply filters"):`${t("Apply")} · ${p.total===1?t("Show 1 restaurant"):t("Show {count} restaurants",{count:p.total})}`;
  return <div className="discover-filters-modal"><Dialog open={p.open} title={t("Filters")} onClose={p.onClose} placement="side" actions={<>
   <Button variant="ghost" onClick={p.onClear}>{t("Clear filters")}</Button>
-  <Button onClick={p.onApply}>{t("Apply")}{p.total===null?" filters":` · Show ${p.total} ${p.total===1?t("restaurant"):t("restaurants")}`}</Button>
+  <Button onClick={p.onApply}>{show}</Button>
  </>}>
   <button type="button" className="discover-filter-close" aria-label={t("Cancel filters")} onClick={p.onClose}>×</button>
   <div className="discover-drawer">

@@ -347,11 +347,13 @@ anything.**
 
 ## 5. Out of scope
 
-- Payments, deposits and no-show fees.
-- More than one language. The interface is in English only (`lang="en"` in
-  `frontend/index.html`); dates are written in British English
-  (`"en-GB"`) and times on a 24-hour clock, in the browser's time zone.
-- Native phone apps and push notifications. SMS.
+- Real money. Deposits exist, but only with the demo payment provider (Stripe
+  is written and tested against a fake, not switched on); no-show fees are not
+  built. (Updated 2026-11-23; the first version of this spec left payments out.)
+- Languages beyond English, Portuguese, Spanish and French. The interface
+  follows the visitor's language (`lang` on `<html>` changes with it).
+- Native phone apps and push notifications. SMS is prepared (the demo provider
+  and the consent and opt-out rules) but no real provider is connected.
 - Many separate businesses on one install: this is a single-tenant demo, and
   staff see every venue (decisions log, backend foundation, item 10).
 - A stay that crosses midnight (decisions log, restaurants vertical API,

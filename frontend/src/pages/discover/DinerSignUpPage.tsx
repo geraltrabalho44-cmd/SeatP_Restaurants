@@ -98,6 +98,7 @@ export default function DinerSignUpPage() {
                 {t("Demo: no email is sent. Your code is")} <strong>{sent.demo_code}</strong>.
               </p>
             )}
+            {!sent.demo_code && <p className="rb-notice">{t("Nothing arrived? This demo site does not send real emails. Go back and use an address ending in @example.com: the code then shows on this screen.")}</p>}
             <ProblemBox messages={general ? [general] : []} attempt={attempt} />
             <Field label={t("Code from the email")} inputMode="numeric" autoComplete="one-time-code" autoFocus value={code} onChange={(event) => setCode(codeDigits(event.target.value))} />
             <Button type="submit" busy={busy} className="acc-submit">

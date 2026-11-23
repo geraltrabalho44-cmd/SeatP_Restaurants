@@ -1,10 +1,33 @@
 """Find the restaurant named in the URL, for diners and for staff."""
 
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
-from app.models import Organiser, Venue
+from app.models import Organiser, Venue, utc_now
+
+logger = logging.getLogger("seatplan.payments")
+
+
+def release_unpaid_deposits(session: Session, venue: Venue) -> None:
+    """Give back the tables of this restaurant's deposits whose wait ran out.
+
+    The cron does this for every restaurant, but the cron may be off (it is a
+    separate schedule) and an unpaid booking must never keep a table forever. So
+    each lookup of a restaurant also settles its own overdue waits: one cheap
+    query, and a write only when something is actually overdue. A failure here
+    never breaks the page being read.
+    """
+    from app.restaurant_service import booking_payments  # lazy: it imports a lot
+
+    try:
+        if booking_payments.expire_due(session, utc_now(), venue):
+            session.commit()
+    except Exception:
+        session.rollback()
+        logger.exception("could not release unpaid deposits for %s", venue.public_id)
 
 
 def load_restaurant(session: Session, public_id: str) -> Venue:
@@ -15,6 +38,7 @@ def load_restaurant(session: Session, public_id: str) -> Venue:
     venue = session.scalars(select(Venue).where(Venue.public_id == public_id)).first()
     if venue is None or venue.kind != "restaurant":
         raise ApiError(404, "not_found", "Restaurant not found.")
+    release_unpaid_deposits(session, venue)
     return venue
 
 

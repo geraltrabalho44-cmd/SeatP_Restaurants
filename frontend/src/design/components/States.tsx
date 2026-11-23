@@ -19,11 +19,14 @@ export function Skeleton({ lines = 3, label = "Loading" }: { lines?: number; lab
 
 interface EmptyStateProps {
   title: string;
+  /** 1 when the message is all the page shows, so the page still has a main heading. */
+  headingLevel?: 1 | 2;
   children?: ReactNode;
   action?: ReactNode;
 }
 
-export function EmptyState({ title, children, action }: EmptyStateProps) {
+export function EmptyState({ title, headingLevel = 2, children, action }: EmptyStateProps) {
+  const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
     <div className="state-box state-empty">
       <svg className="state-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -33,7 +36,7 @@ export function EmptyState({ title, children, action }: EmptyStateProps) {
         <circle cx="24" cy="40" r="3.5" />
         <circle cx="8" cy="24" r="3.5" />
       </svg>
-      <h2 className="state-title">{title}</h2>
+      <Heading className="state-title">{title}</Heading>
       {children && <div className="state-body">{children}</div>}
       {action}
     </div>

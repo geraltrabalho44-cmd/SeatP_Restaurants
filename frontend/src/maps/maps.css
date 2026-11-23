@@ -1,5 +1,9 @@
-.owner-location-map { height: 22rem; width: 100%; isolation: isolate; border: 1px solid var(--c-border-strong); border-radius: var(--radius-lg); background: var(--c-surface-sunk); }
-.owner-map-pin { color: var(--c-primary); background: var(--c-surface); border: 3px solid var(--c-primary); border-radius: 50%; text-align: center; line-height: 24px; box-shadow: 0 0 0 4px var(--c-surface); }
+.owner-location-map { height: 22rem; width: 100%; isolation: isolate; overflow: hidden; border: 1px solid var(--c-border); border-radius: var(--radius-lg); background: #dfedf2; box-shadow: var(--shadow-sm); }
+@media (max-width: 40rem) { .owner-location-map { height: 18rem; } }
+/* The restaurant's pin: a purple drop with a white centre, its point on the building. */
+.owner-map-pin { background: none; border: 0; }
+.owner-map-pin span { position: absolute; left: 0; top: 0; box-sizing: border-box; width: 36px; height: 36px; border-radius: 50% 50% 50% 0; background: var(--c-primary); border: 3px solid #fff; transform: rotate(-45deg); box-shadow: 0 4px 10px rgb(31 27 51 / 0.3); }
+.owner-map-pin span::after { content: ""; position: absolute; inset: 0; margin: auto; width: 10px; height: 10px; border-radius: 50%; background: #fff; }
 .owner-location-map .leaflet-control-attribution { color: var(--c-text); background: var(--c-surface); }
 .owner-location-map .leaflet-control-attribution a { color: var(--c-primary); }
 .owner-location-map .leaflet-control-zoom a { min-width: 44px; min-height: 44px; line-height: 44px; }

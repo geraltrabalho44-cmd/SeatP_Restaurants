@@ -82,6 +82,7 @@ export default function OwnerSignUpPage() {
       </>}
       {pending && <>
         {pending.code_shown && <p className="owner-demo" role="status">{t("Demo code")} <strong>{pending.code_shown}</strong></p>}
+        {!pending.code_shown && <p className="owner-demo" role="status">{t("Nothing arrived? This demo site does not send real emails. Go back and use an address ending in @example.com: the code then shows on this screen.")}</p>}
         <Field label={t("Verification code")} autoFocus inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" value={code} onChange={e => setCode(codeDigits(e.target.value))} />
       </>}
       {error && <p role="alert" className="owner-error">{error}</p>}
