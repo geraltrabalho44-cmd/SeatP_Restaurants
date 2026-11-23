@@ -38,27 +38,54 @@
 }
 .rp-section-nav a[aria-current="page"] { border-color:var(--c-primary);color:var(--c-primary); }
 .rp-columns[hidden] { display:none; }
-.restaurant-reviews { display:grid;gap:var(--space-4); }
+.restaurant-reviews { display:grid;gap:var(--space-5); }
 .reviews-head,.reviews-item-head,.reviews-item-meta,.reviews-pagination {
   display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2) var(--space-4);
 }
-.reviews-head { justify-content:space-between; }
-.reviews-head h2 { margin-block:0 var(--space-2); }
-.reviews-head .review-score { justify-content:flex-start; }
-.reviews-filters { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3); }
-.reviews-filters .field { margin:0; }
-.reviews-verified { display:flex;align-items:center;gap:var(--space-2);grid-column:1/-1; }
-.reviews-verified input { accent-color:var(--c-primary); }
-.reviews-list { list-style:none;margin:0;padding:0;display:grid;gap:var(--space-3); }
-.reviews-list li {
-  padding:var(--space-4);border:1px solid var(--c-border);border-radius:var(--radius-md);background:var(--c-surface);
+/* Title, score, chairs and the number of reviews on one line; the button stays at the far end. */
+.reviews-head { justify-content:space-between;flex-wrap:nowrap; }
+.reviews-title { display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2) var(--space-5);min-width:0; }
+.reviews-title h2 { margin:0; }
+.reviews-head .review-rating { flex-direction:row;align-items:center;gap:var(--space-4); }
+.reviews-head .review-score { --rating-chair-height:2.25rem;font-size:2rem;gap:.5rem;justify-content:flex-start; }
+.reviews-head .review-count { font-size:var(--fs-sm); }
+.reviews-head .btn { flex:none;white-space:nowrap; }
+/* The filters are one calm row in a card like the booking cards. */
+.reviews-filters {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;align-items:end;gap:var(--space-3) var(--space-4);
+  padding:var(--space-4);border:1px solid var(--c-border);border-radius:var(--radius-lg,var(--radius-md));background:var(--c-surface);
 }
-.reviews-item-meta { margin-block-start:var(--space-1);color:var(--c-text-muted);font-size:var(--fs-sm); }
-.reviews-item-head > span { color:var(--c-primary); }
-.reviews-verified-badge { background:var(--c-primary-soft);border-radius:var(--radius-sm);padding:.125rem .375rem;font-size:var(--fs-xs); }
-.reviews-list p { margin:var(--space-3) 0 0;white-space:pre-wrap;overflow-wrap:anywhere; }
+.reviews-filters .field { margin:0; }
+.reviews-verified { display:flex;align-items:center;gap:var(--space-2);min-height:var(--touch-target);white-space:nowrap; }
+.reviews-verified input { accent-color:var(--c-primary); }
+.reviews-list { list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4); }
+.reviews-list li {
+  display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-5);
+  border:1px solid var(--c-border);border-radius:var(--radius-lg,var(--radius-md));background:var(--c-surface);
+}
+.reviews-item-head { flex-wrap:nowrap;gap:var(--space-3); }
+.reviews-avatar {
+  flex:none;display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:50%;
+  background:var(--c-primary-soft);color:var(--c-primary);font-weight:700;
+}
+.reviews-who { flex:1;min-width:0;display:grid;gap:.125rem; }
+.reviews-item-meta { gap:var(--space-1) var(--space-3);color:var(--c-text-muted);font-size:var(--fs-sm); }
+.reviews-score {
+  flex:none;padding:.25rem .75rem;border-radius:999px;background:var(--c-primary-soft);color:var(--c-primary);
+  font-weight:700;font-variant-numeric:tabular-nums;
+}
+.reviews-verified-badge { background:var(--c-primary-soft);color:var(--c-primary);border-radius:var(--radius-sm);padding:.0625rem .375rem;font-size:var(--fs-xs); }
+.reviews-list p { margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55; }
+.reviews-pagination { justify-content:center; }
 .review-editor textarea { resize:vertical;min-height:6rem; }
+@media (max-width:56rem) {
+  .reviews-list { grid-template-columns:minmax(0,1fr); }
+  .reviews-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .reviews-verified { grid-column:1/-1;min-height:0; }
+}
 @media (max-width:38rem) {
+  .reviews-head { flex-wrap:wrap; }
+  .reviews-head .review-score { --rating-chair-height:1.75rem;font-size:1.5rem; }
   .reviews-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .reviews-filters > .field:first-child { grid-column:1/-1; }
 }

@@ -265,3 +265,53 @@ def test_the_map_marks_the_chair_at_the_second_joined_table_and_highlights_both_
     (row,) = rows(session, "booking_confirmed")
     assert row.image_png is not None
     assert "T5" in row.body_text and "T6" in row.body_text
+
+
+# ---------------------------------------------------------------- sent at once
+
+
+def test_with_resend_the_confirmation_is_sent_at_once_and_the_cron_does_not_send_it_again(
+    client: TestClient, session: Session, organiser: Organiser, monkeypatch
+) -> None:
+    import httpx
+
+    from app.config import get_settings
+    from app.mail.providers import ResendProvider
+
+    monkeypatch.setenv("EMAIL_PROVIDER", "resend")
+    monkeypatch.setenv("RESEND_API_KEY", "re_test_not_a_real_key_123")
+    monkeypatch.setenv("EMAIL_ALLOWLIST", "lia.moreno@example.com")
+    get_settings.cache_clear()
+    sent: list[dict] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        import json
+
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"})
+
+    monkeypatch.setattr(
+        "app.restaurant_service.emails.provider_from_settings",
+        lambda settings: ResendProvider(
+            settings.resend_api_key,
+            "SeatPlan <noreply@example.com>",
+            client=httpx.Client(transport=httpx.MockTransport(answer)),
+        ),
+    )
+    try:
+        seated_booking(client, session, organiser, future_day(7))
+    finally:
+        get_settings.cache_clear()
+    (row,) = rows(session, "booking_confirmed")
+    session.refresh(row)
+    assert row.status == "sent" and row.attempts >= 0
+    assert [message["to"] for message in sent] == [["lia.moreno@example.com"]]
+    assert sent[0]["subject"].startswith("Booked: ")
+
+
+def test_with_the_console_provider_the_confirmation_stays_queued(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    seated_booking(client, session, organiser, future_day(7))
+    (row,) = rows(session, "booking_confirmed")
+    assert row.status == "queued"

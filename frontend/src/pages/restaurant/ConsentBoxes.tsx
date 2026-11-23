@@ -88,14 +88,8 @@ export function ConsentBoxes({ venueId, value, onChange, error = null, disabled 
 
 /** The document, as plain paragraphs: nothing here is ever rendered as markup. */
 export function TermsText({ document }: { document: TermsDocument }) {
-  const { t } = useT();
   return (
     <div className="rb-terms">
-      {document.draft && (
-        <p className="rb-notice rb-notice-warning" role="note">
-          {t("Demo text: a draft that has not been reviewed by a lawyer.")}
-        </p>
-      )}
       {document.sections.map((section) => (
         <section key={section.title}>
           <h3>{section.title}</h3>

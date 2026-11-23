@@ -28,7 +28,7 @@ export default function OwnerHomePage() {
   const { state, reload } = useLoad(listOwnerRestaurants, "owner-restaurants");
   const signIn = state.status === "error" && state.error instanceof ApiError && [401, 403].includes(state.error.status);
   return <OwnerShell title={t("My restaurants")} current="restaurants">
-    <div className="owner-heading"><div><h1>{t("My restaurants")}</h1><p className="rb-muted">{t("Manage listings, rooms and day-to-day service.")}</p></div><Link className="btn btn-primary" to="/owner/new">{t("Add a restaurant")}</Link></div>
+    <div className="owner-heading"><div><h1>{t("My restaurants")}</h1><p className="rb-muted">{t("Manage your listings, floor plans, offers and bookings.")}</p></div><Link className="btn btn-primary" to="/owner/new">{t("Add a restaurant")}</Link></div>
     {state.status === "loading" && <Skeleton lines={4} label={t("Loading your restaurants")} />}
     {signIn && <EmptyState title={t("Sign in to manage your restaurants")}><p><Link to="/owner/sign-in">{t("Sign in")}</Link> {t("or")} <Link to="/owner/sign-up">{t("create an owner account")}</Link>.</p></EmptyState>}
     {state.status === "error" && !signIn && <ErrorState title={t("We could not load your restaurants")} message={state.error instanceof Error ? state.error.message : t("Please try again.")} onRetry={() => reload()} />}
@@ -55,14 +55,13 @@ function RestaurantCard({ card }: { card: OwnerCard }) {
       {/* One main action for the state the restaurant is in; everything else is a labelled second step. */}
       <div className="owner-card-main">
         {published
-          ? <Link className="btn btn-primary" to={`${base}/dashboard`}>{t("Open service floor")} <span aria-hidden="true">→</span><span className="visually-hidden"> {t("for {name}", { name: card.name })}</span></Link>
+          ? <Link className="btn btn-primary" to={`${base}/profile`}>{t("Manage restaurant")} <span aria-hidden="true">→</span><span className="visually-hidden"> {t("for {name}", { name: card.name })}</span></Link>
           : <Link className="btn btn-primary" to={next ? `${base}/${next.path}` : `${base}/review`}>{t("Continue setup")} <span aria-hidden="true">→</span><span className="visually-hidden"> {t("for {name}", { name: card.name })}</span></Link>}
       </div>
       <nav className="owner-card-links ow-card-links" aria-label={t("Manage {name}", { name: card.name })}>
         <Link to={`${base}/profile`}>{t("Edit restaurant")}<span className="visually-hidden"> {card.name}</span></Link>
         {published && <Link to={publicPage}>{t("View public page")}<span className="visually-hidden"> {t("of {name}", { name: card.name })}</span></Link>}
         <Link to={`${base}/review`}>{published ? t("Publishing") : t("Review and publish")}<span className="visually-hidden"> {t("for {name}", { name: card.name })}</span></Link>
-        {!published && <Link to={`${base}/dashboard`}>{t("Dashboard")}<span className="visually-hidden"> {t("of {name}", { name: card.name })}</span></Link>}
       </nav>
     </div>
   </article>;

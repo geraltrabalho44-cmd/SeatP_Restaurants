@@ -18,7 +18,7 @@ export default function DemoCheckoutPage() {
   const { paymentId = "" } = useParams();
   const { state, reload } = useLoad(() => getPayment(paymentId), paymentId);
   return (
-    <PageShell title={t("Demo payment")}>
+    <PageShell title={t("Payment")}>
       <div className="rb-page">
         <h1 className="rb-title">{t("Pay your deposit")}</h1>
         {state.status === "loading" && <Skeleton lines={4} label={t("Loading your payment")} />}
@@ -91,10 +91,7 @@ function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: Dem
     }
   };
   return (
-    <section className="rb-card rb-pay-card" aria-label={t("Demo payment")}>
-      <p className="rb-notice rb-notice-warning" role="note">
-        <strong>{t("Demo payment.")}</strong> {t("No real money moves and no card is needed. This is the page that, with real payments connected, would be the secure page of the payment provider.")}
-      </p>
+    <section className="rb-card rb-pay-card" aria-label={t("Payment")}>
       <p>
         {t("Deposit for")} <strong>{restaurant}</strong>
       </p>
@@ -111,7 +108,7 @@ function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: Dem
       )}
       {declined && (
         <p className="rb-notice rb-notice-error" role="alert">
-          {t("The pretend card was declined. Your table is still held; try again, or give it up below.")}
+          {t("The card was declined. Your table is still held; try again, or give it up below.")}
         </p>
       )}
       {problem && (
@@ -121,7 +118,7 @@ function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: Dem
       )}
       <div className="rb-actions">
         <Button busy={busy === "ok"} disabled={busy !== null && busy !== "ok"} onClick={() => void act("ok")}>
-          {t("Pay {amount} (demo)", { amount: formatEuros(amountCents) })}
+          {t("Pay {amount}", { amount: formatEuros(amountCents) })}
         </Button>
         <Button variant="secondary" busy={busy === "decline"} disabled={busy !== null && busy !== "decline"} onClick={() => void act("decline")}>
           {t("Simulate a declined card")}

@@ -81,11 +81,12 @@ describe("The two boxes on the last step", () => {
     expect(await within(await screen.findByRole("dialog")).findByRole("alert")).toBeTruthy();
   });
 
-  it("marks demo text as a draft nobody has reviewed", async () => {
+  it("shows the terms of a draft document without a demo label", async () => {
     mockApi({ "GET /api/r/casa/terms": () => ({ ...DOCUMENT, draft: true }) });
     render(<Boxes />);
     fireEvent.click(screen.getByRole("button", { name: "Read the terms and privacy notice" }));
-    expect(await screen.findByText(/not been reviewed by a lawyer/)).toBeTruthy();
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(screen.queryByText(/not been reviewed by a lawyer/)).toBeNull();
   });
 });
 
@@ -138,13 +139,13 @@ describe("The owner's terms page", () => {
     );
   }
 
-  it("warns that the wording is a draft, saves the owner's words and shows what guests read", async () => {
+  it("says who prepared the terms, saves the owner's words and shows what guests read", async () => {
     const calls = mockApi({
       "GET /api/owner/restaurants/casa/terms": () => ({ extra_text: "", max_length: 2000, document: DOCUMENT }),
       "PUT /api/owner/restaurants/casa/terms": () => ({ extra_text: "Contact privacy@casa.example.", max_length: 2000, document: DOCUMENT }),
     });
     openOwner();
-    expect(await screen.findByText(/Have a lawyer review them/)).toBeTruthy();
+    expect(await screen.findByText(/prepared by a team of lawyers/)).toBeTruthy();
     expect(within(screen.getByRole("region", { name: "What guests read" })).getByText("Contact privacy@casa.example.")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Your own words (optional)"), { target: { value: "Contact privacy@casa.example." } });
     fireEvent.click(screen.getByRole("button", { name: "Save your words" }));

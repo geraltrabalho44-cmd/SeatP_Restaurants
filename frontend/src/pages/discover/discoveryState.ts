@@ -4,6 +4,10 @@ import { CUISINES } from "../../api/owner";
 export interface DiscoveryState { text: string; cuisines: string[]; prices: number[]; features: FeatureKey[]; date: string; time: string; party: string; availableOnly: boolean; view: "list" | "map"; scroll: number; pages: number; pinned?: string | null }
 const KEY = "seatplan.discover.context.v3";
 const EMPTY: DiscoveryState = {text:"", cuisines:[], prices:[], features:[], date:"", time:"", party:"2", availableOnly:true, view:"list", scroll:0, pages:1};
+/** The page as a visitor finds it on arriving: nothing chosen. */
+export function emptyDiscoveryState(): DiscoveryState {
+  return { ...EMPTY };
+}
 export function loadDiscoveryState(): DiscoveryState {
   try {
     const value = JSON.parse(sessionStorage.getItem(KEY) ?? "null") as Partial<DiscoveryState> | null;

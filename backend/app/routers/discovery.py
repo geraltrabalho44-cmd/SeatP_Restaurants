@@ -35,6 +35,14 @@ def _read_limit(session: db.SessionDep, request: Request) -> None:
     rate_limit(session, f"r-read:{client_ip(request)}", limit=READ_LIMIT, window_s=60)
 
 
+def _anchor(raw: str | None) -> tuple[float, float] | None:
+    """ "38.72,-9.13" -> (38.72, -9.13); None when absent or out of range."""
+    if not raw:
+        return None
+    lat, lng = (float(part) for part in raw.split(","))
+    return (lat, lng) if -90 <= lat <= 90 and -180 <= lng <= 180 else None
+
+
 def _invalid(message: str) -> ApiError:
     return ApiError(422, "validation", message)
 
@@ -56,7 +64,10 @@ def search(
     available: bool = False,
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
     offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
+    within: Annotated[int | None, Query(ge=100, le=500_000)] = None,
+    anchor: Annotated[str | None, Query(pattern=r"^-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?$")] = None,
 ) -> dict[str, Any]:
+    """`within` (metres) keeps only the restaurants that far from lat and lng, so a city shows its own restaurants."""
     if understand and q:
         return natural_search(
             NaturalSearch(
@@ -72,6 +83,8 @@ def search(
                 available=available,
                 limit=limit,
                 offset=offset,
+                within=within,
+                anchor=anchor,
             ),
             request,
             session,
@@ -79,6 +92,8 @@ def search(
     _read_limit(session, request)
     if (lat is None) != (lng is None):
         raise _invalid("Send both lat and lng, or neither.")
+    if within is not None and lat is None:
+        raise _invalid("A distance needs lat and lng.")
     if len({date is None, time is None, party is None}) != 1:
         raise _invalid("Send date, time and party together, or none of them.")
     if any(name not in CUISINES for name in cuisine or []):
@@ -102,6 +117,8 @@ def search(
             available=available,
             limit=limit,
             offset=offset,
+            within_m=within,
+            anchor=_anchor(anchor),
         ),
     )
 
@@ -119,6 +136,8 @@ class NaturalSearch(Strict):
     available: bool = False
     limit: int = Field(default=20, ge=1, le=50)
     offset: int = Field(default=0, ge=0, le=100000)
+    within: int | None = Field(default=None, ge=100, le=500_000)
+    anchor: str | None = Field(default=None, pattern=r"^-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?$")
 
 
 @router.post("/restaurants/search")
@@ -156,7 +175,8 @@ def natural_search(body: NaturalSearch, request: Request, session: db.SessionDep
         at=at,
         party=party,
         available=body.available or bool(intent.party or intent.day or intent.at),
-        within_m=intent.within,
+        within_m=intent.within or body.within,
+        anchor=_anchor(body.anchor),
         river=intent.river,
         quiet=intent.quiet,
         limit=body.limit,

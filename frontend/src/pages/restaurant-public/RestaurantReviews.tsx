@@ -47,7 +47,7 @@ export function RestaurantReviews({ slug, summary }: { slug: string; summary?: R
   return (
     <div className="restaurant-reviews">
       <div className="reviews-head">
-        <div><h2>{t("Reviews")}</h2><ReviewRating summary={displayed} /></div>
+        <div className="reviews-title"><h2>{t("Reviews")}</h2><ReviewRating summary={displayed} /></div>
         {signedIn && own.state.status === "ready" && (
           <Button onClick={() => setEditing(true)}>{own.state.data.review ? t("Edit your review") : t("Write a review")}</Button>
         )}
@@ -72,13 +72,16 @@ export function RestaurantReviews({ slug, summary }: { slug: string; summary?: R
         {answer.items.length > 0 && <ul className="reviews-list">{answer.items.map(review => (
           <li key={review.id}>
             <div className="reviews-item-head">
-              <strong>{review.author}</strong>
-              <span>{review.score}/10</span>
-              {review.verified && <span className="reviews-verified-badge">{t("Verified visit")}</span>}
-            </div>
-            <div className="reviews-item-meta">
-              <time dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString(tag)}</time>
-              {review.table_type && <span>{label(REVIEW_TABLES.find(table => table.value === review.table_type)?.label ?? "")}</span>}
+              <span className="reviews-avatar" aria-hidden="true">{review.author.trim().charAt(0).toUpperCase()}</span>
+              <div className="reviews-who">
+                <strong>{review.author}</strong>
+                <div className="reviews-item-meta">
+                  <time dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString(tag)}</time>
+                  {review.table_type && <span>{label(REVIEW_TABLES.find(table => table.value === review.table_type)?.label ?? "")}</span>}
+                  {review.verified && <span className="reviews-verified-badge">{t("Verified visit")}</span>}
+                </div>
+              </div>
+              <span className="reviews-score">{review.score}/10</span>
             </div>
             {review.comment && <p>{review.comment}</p>}
           </li>

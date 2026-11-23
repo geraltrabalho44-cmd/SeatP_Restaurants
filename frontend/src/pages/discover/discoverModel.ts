@@ -87,7 +87,7 @@ export function loadPlace(): Place | null {
   try {
     const raw = sessionStorage.getItem(PLACE_KEY);
     const found = raw ? (JSON.parse(raw) as Partial<Place>) : null;
-    return found && typeof found.lat === "number" && typeof found.lng === "number" && typeof found.label === "string"
+    return found && found.label !== "Near me" && typeof found.lat === "number" && typeof found.lng === "number" && typeof found.label === "string"
       ? { label: found.label, lat: found.lat, lng: found.lng }
       : null;
   } catch {

@@ -24,11 +24,6 @@ export function DepositNotice({ terms, accepted, onChange, error = null, disable
         <strong>{formatEuros(terms.total_cents)}</strong> {t("paid now, taken off your bill")}
       </p>
       <p>{terms.text}</p>
-      {terms.payments_mode === "demo" && (
-        <p className="rb-deposit-demo" role="note">
-          {t("Demo payment: no real money moves.")}
-        </p>
-      )}
       <Checkbox
         id="rb-accept-deposit"
         label={terms.accept_text}

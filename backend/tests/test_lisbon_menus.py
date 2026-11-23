@@ -12,13 +12,16 @@ from app.security import hash_password
 from app.seed import lisbon_menus
 
 CATALOGUE = Path(lisbon_menus.__file__).with_name("lisbon_catalogue.json")
+PORTO = Path(lisbon_menus.__file__).with_name("porto_catalogue.json")
 MADE_UP = {"casa-lumen", "tagus-terrace", "patio-das-laranjeiras", "miradouro-7", "tasca-do-bairro"}
 
 
 def test_every_lisbon_restaurant_has_a_menu_and_nothing_else_is_named() -> None:
     slugs = {entry["slug"] for entry in json.loads(CATALOGUE.read_text(encoding="utf-8"))}
-    assert slugs <= set(lisbon_menus.MENUS)
-    assert set(lisbon_menus.MENUS) - slugs == MADE_UP | {"casa-guedes"}
+    porto = {entry["slug"] for entry in json.loads(PORTO.read_text(encoding="utf-8"))}
+    assert len(porto) == 15
+    assert slugs <= set(lisbon_menus.MENUS) and porto <= set(lisbon_menus.MENUS)
+    assert set(lisbon_menus.MENUS) - slugs - porto == MADE_UP | {"casa-guedes"}
 
 
 def test_every_menu_is_valid_for_the_menu_api_and_has_the_four_sections() -> None:

@@ -30,6 +30,8 @@ interface Props {
   showNames?: boolean;
   /** Where the diner searched from, shown as a small dot. */
   center?: { lat: number; lng: number } | null;
+  /** Where the map opens while no place was chosen, if any restaurant is near it (otherwise it shows all the pins). */
+  home?: { lat: number; lng: number; zoom: number } | null;
   /** Tells the page when the tiles failed and a numbered diagram took the map's place, so cards can show the same numbers. */
   onFallback?: (active: boolean) => void;
 }
@@ -37,6 +39,7 @@ interface Props {
 const TILE_PATIENCE_MS = 6000;
 const LISBON = { lat: 38.7223, lng: -9.1393 };
 const INITIAL_ZOOM = 11;
+const HOME_RADIUS_M = 50_000; // a restaurant this close makes the home view worth showing
 const RESTAURANT_ZOOM = 14;
 const MIN_ZOOM = 0;
 const MAX_ZOOM = 19;
@@ -45,8 +48,17 @@ const MAX_ZOOM = 19;
 // recomputed from it at every zoom and fades away as the map is zoomed in (see spreadPins.ts).
 const PIN_SIZE = 32;
 interface Spot { lat: number; lng: number }
+// Zoomed far out, a dozen restaurants of one city stand on top of each other. Nudging numbered discs apart there would put them
+// over the river or the sea, so far out every pin is a small dot on its true place; the numbers come back when zoomed in.
+const FAR_ZOOM = 12.5;
 function placePins(view: L.Map, pins: Map<string, { spot: Spot; marker: L.Marker }>): void {
   const entries = [...pins.values()];
+  const far = view.getZoom() < FAR_ZOOM;
+  view.getContainer().classList.toggle("is-far", far);
+  if (far) {
+    entries.forEach((e) => e.marker.setLatLng([e.spot.lat, e.spot.lng]));
+    return;
+  }
   const home = entries.map((e) => view.latLngToContainerPoint([e.spot.lat, e.spot.lng]));
   const spread = spreadPoints(home);
   entries.forEach((e, k) => e.marker.setLatLng(view.containerPointToLatLng(L.point(spread[k].x, spread[k].y))));
@@ -59,7 +71,7 @@ function locationIcon(name: string) {
   return L.divIcon({ className: "restaurant-location-pin", html: label, iconSize: [14, 14], iconAnchor: [7, 7] });
 }
 
-export default function ResultsMap({ pins, highlightedId = null, selectedId = null, centerRequest, onSelect, center, onFallback, showNames = false }: Props) {
+export default function ResultsMap({ pins, highlightedId = null, selectedId = null, centerRequest, onSelect, center, home = null, onFallback, showNames = false }: Props) {
   const { t } = useT();
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -156,7 +168,9 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
     const fit = () => {
       const size = view.getSize();
       if (!size.x || !size.y) return; // hidden for now: fitted as soon as it has a size
-      if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15, animate: false });
+      const nearHome = home && !center && pins.some((pin) => view.distance([pin.lat, pin.lng], [home.lat, home.lng]) <= HOME_RADIUS_M);
+      if (home && nearHome) view.setView([home.lat, home.lng], home.zoom, { animate: false });
+      else if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15, animate: false });
       else if (points.length === 1) view.setView(points[0], RESTAURANT_ZOOM, { animate: false });
       if (!showNames) placePins(view, spots);
     };
@@ -171,7 +185,7 @@ export default function ResultsMap({ pins, highlightedId = null, selectedId = nu
       view.off("zoomend", spread);
       if (refit.current === fit) refit.current = null;
     };
-  }, [pins, center?.lat, center?.lng, showNames]);
+  }, [pins, center?.lat, center?.lng, home?.lat, home?.lng, showNames]);
   useEffect(() => {
     const view = map.current;
     const marker = centerRequest && markers.current.get(centerRequest.id);

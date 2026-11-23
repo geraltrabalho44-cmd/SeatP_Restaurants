@@ -19,8 +19,6 @@ interface OwnerShellProps {
   venueId?: string;
   venueName?: string;
   current: OwnerSection;
-  /** Where "Public restaurant" leads; the booking address forwards to the public page when there is one. */
-  publicHref?: string;
   children: React.ReactNode;
   width?: "normal" | "wide";
 }
@@ -35,12 +33,11 @@ const STEPS: { key: Exclude<OwnerSection, "restaurants">; label: Message; path: 
   { key: "insights", label: "Insights", path: "insights" },
   { key: "offers", label: "Offers", path: "offers" },
   { key: "terms", label: "Terms and privacy", path: "terms" },
-  { key: "security", label: "Security", path: "security" },
   { key: "rooms", label: "Floor plan", path: "rooms" },
   { key: "review", label: "Review and publish", path: "review" },
 ];
 
-export function OwnerShell({ title, venueId, venueName, current, publicHref, children, width = "wide" }: OwnerShellProps) {
+export function OwnerShell({ title, venueId, venueName, current, children, width = "wide" }: OwnerShellProps) {
   const { t } = useT();
   const base = venueId ? `/owner/${encodeURIComponent(venueId)}` : null;
   const nav = useRef<HTMLElement>(null);
@@ -71,12 +68,6 @@ export function OwnerShell({ title, venueId, venueName, current, publicHref, chi
               ))}
           </ul>
           <ul className="ow-nav-more">
-            {base && <li><Link to={`${base}/dashboard`}>{t("Service floor")}</Link></li>}
-            {venueId && (
-              <li>
-                <Link to={publicHref ?? `/r/${encodeURIComponent(venueId)}`}>{t("Public restaurant")}</Link>
-              </li>
-            )}
             <li>
               <Link to="/owner/sign-in" onClick={() => logout()}>
                 {t("Sign out")}

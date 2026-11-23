@@ -13,6 +13,7 @@ import { useLoad } from "../restaurant/useLoad";
 import { checklist } from "./publishChecklist";
 import { OwnerShell } from "./OwnerShell";
 import { ListingPreview } from "./ListingPreview";
+import { RoomsPreview } from "./RoomsPreview";
 import "./owner.css";
 
 export default function PublishReview() {
@@ -20,7 +21,7 @@ export default function PublishReview() {
   const { venueId = "" } = useParams();
   const { state, reload, setData } = useLoad(() => getPublishCheck(venueId), venueId);
   return (
-    <OwnerShell title={t("Review and publish")} venueId={venueId} venueName={state.status === "ready" ? state.data.name : undefined} current="review" publicHref={state.status === "ready" && state.data.slug ? publicUrl(state.data.slug) ?? undefined : undefined}>
+    <OwnerShell title={t("Review and publish")} venueId={venueId} venueName={state.status === "ready" ? state.data.name : undefined} current="review">
       {state.status === "loading" && <><h1 className="ow-title">{t("Review and publish")}</h1><Skeleton label={t("Checking your restaurant")} lines={5} /></>}
       {state.status === "error" && <><h1 className="ow-title">{t("Review and publish")}</h1><ErrorState message={t("Could not check your restaurant. Check your sign-in or retry.")} onRetry={() => reload()} /></>}
       {state.status === "ready" && <Review key={venueId} venueId={venueId} check={state.data} onChange={setData} refresh={() => reload(true)} />}
@@ -95,6 +96,7 @@ function Review({ venueId, check, onChange, refresh }: { venueId: string; check:
         <aside className="rb-card ow-listing" aria-label={t("Public listing")}>
           <h2 className="ow-card-title">{t("Public listing")}</h2>
           <ListingPreview venueId={venueId} name={check.name} profile={profile.status === "ready" ? profile.data : undefined} />
+          <RoomsPreview venueId={venueId} />
         </aside>
         <div className="ow-publish-bar" role="group" aria-label={t("Publish")}>
           <p className="rb-muted">

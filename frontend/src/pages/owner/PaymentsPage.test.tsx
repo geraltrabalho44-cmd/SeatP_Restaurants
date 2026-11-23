@@ -47,11 +47,11 @@ describe("rowProblem", () => {
 });
 
 describe("the deposits page", () => {
-  it("starts with no deposit and says what the demo mode means", async () => {
+  it("starts with no deposit and no demo banner", async () => {
     mockApi({ [`GET ${URL}`]: () => SETTINGS });
     open();
     expect(await screen.findByText(/guests book without paying anything up front/)).toBeTruthy();
-    expect(screen.getByText(/Demo payments\./)).toBeTruthy();
+    expect(screen.queryByText(/Demo payments\./)).toBeNull();
   });
 
   it("adds a rule and saves it as cents", async () => {

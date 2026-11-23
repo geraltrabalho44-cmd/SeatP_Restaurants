@@ -174,11 +174,11 @@ def process(session):
                 )
             link = get_settings().public_base_url.rstrip("/") + "/b/rain/" + token
             source = (
-                "Simulated weather (demo)"
+                ""
                 if get_settings().weather_provider == "demo"
-                else "Weather data by Open-Meteo.com"
+                else " Weather data by Open-Meteo.com."
             )
-            message = f"Rain expected at {wet['time']} ({wet['probability']}%). Indoor table {row.label} is held until {expires.astimezone(venue_zone(venue)):%H:%M}. Your reservation stays unchanged unless you accept. {source}."
+            message = f"Rain expected at {wet['time']} ({wet['probability']}%). Indoor table {row.label} is held until {expires.astimezone(venue_zone(venue)):%H:%M}. Your reservation stays unchanged unless you accept.{source}"
             enqueue(
                 session,
                 idempotency_key=f"rain-offer-{booking.public_id}",

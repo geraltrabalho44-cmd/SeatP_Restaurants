@@ -67,7 +67,7 @@ OfferCodeField.tsx is the "Offer code" box of the details form: it fills in from
 
 ConsentBoxes.tsx is the last step of the details form: the terms box (required; its words open in a window) and, separately, the optional offers box, never pre-ticked. `agreements.ts` keeps what was ticked in the booking flow (with the phone choice), so a trip to the chair step does not make the diner tick again. OffersChoice.tsx is the same offers choice on the booking page.
 
-PhoneOptIn.tsx is the optional "Reminders on your phone" block of the details form: it appears only when the restaurant sends phone messages (`messages` in `GET /r/{vid}`), is never pre-ticked, and the number must be verified with a code before the booking can be sent (`phone_verification_id`). The link a message carries opens `pages/messages/MessageActionPage.tsx` (`/m/:token`).
+PhoneOptIn.tsx (the old "Reminders on your phone" block with its box and 6-digit code) is no longer drawn by the details form: the phone number typed in the form is the one messaged (backend `phone_messages.link_typed_number`, consent version `2026-11-23-typed`, only for Portuguese mobiles and only when the restaurant sends phone messages). The component and its tests stay for a restaurant that later wants a proven number. The link a message carries opens `pages/messages/MessageActionPage.tsx` (`/m/:token`).
 
 money.ts has the deposit words and euro formatting (`formatEuros`, `depositStatus`, `cancelNote`, `staffDepositLabel`), so the diner's
 pages, the staff floor and the tests all say the same thing. DepositNotice.tsx is the terms box the diner must tick; StepDetails asks

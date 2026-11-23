@@ -389,7 +389,12 @@ def _add_room(session: Session, venue: Venue, position: int, spec: ShowRoom) -> 
         )
         session.add(row)
         session.flush()
-        session.add_all(_chairs(row))
+        chairs = _chairs(row)
+        for chair in chairs:
+            chair.room_id = (
+                room.id
+            )  # a chair without a room would add an empty "Main room" to the editor
+        session.add_all(chairs)
 
 
 def seed(session: Session) -> dict[str, str]:

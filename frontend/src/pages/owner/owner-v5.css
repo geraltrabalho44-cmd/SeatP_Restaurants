@@ -557,3 +557,20 @@
   margin: 0 0 var(--space-3);
   padding-left: var(--space-5);
 }
+
+.ow-list { margin: 0; padding-inline-start: var(--space-5); display: grid; gap: var(--space-2); }
+
+.ow-ready { display: grid; gap: var(--space-3); margin-block-end: var(--space-6); }
+.ow-ready h2, .ow-ready p { margin: 0; }
+.ow-ready-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: var(--space-4); }
+.ow-ready-card { height: 100%; }
+.ow-ready-card .owner-card-body { display: flex; flex-direction: column; gap: var(--space-3); height: 100%; }
+.ow-ready-card h3 { margin: 0; font-size: var(--fs-lg, 1.125rem); }
+.ow-ready-card p { flex: 1; }
+.ow-offers-title { margin-block: var(--space-4) 0; }
+
+/* A deposit rule is a soft card of its own, with its fields side by side. */
+.owner-card .ow-rule { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); padding: var(--space-4); margin: 0; border: 1px solid var(--c-border); border-radius: var(--radius-md); background: var(--c-surface-sunk, var(--c-surface)); }
+.owner-card .ow-rule legend { padding-inline: var(--space-2); font-weight: 700; color: var(--c-primary); }
+.owner-card .ow-rule > .btn { justify-self: start; grid-column: 1 / -1; }
+@media (max-width: 40rem) { .owner-card .ow-rule { grid-template-columns: minmax(0, 1fr); } }

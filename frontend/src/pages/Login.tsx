@@ -35,7 +35,6 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   // Owners and staff sign in through the sign-in service when the site uses one; organisers never do.
   const identityConfig = useIdentityConfig();
   const provider = identityConfig.provider;
@@ -113,7 +112,7 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
           <Field label={t("Email")} type="email" name="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field
             label={t("Password")}
-            type={owner && showPassword ? "text" : "password"}
+            type="password"
             name="password"
             autoComplete="current-password"
             required
@@ -121,11 +120,6 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
             onChange={(e) => setPassword(e.target.value)}
             error={error}
           />
-          {owner && (
-            <Button variant="ghost" aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? t("Hide password") : t("Show password")}
-            </Button>
-          )}
           <Button type="submit" busy={busy} className="login-submit">
             {t("Sign in")}
           </Button>

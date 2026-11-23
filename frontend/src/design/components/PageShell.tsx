@@ -36,7 +36,7 @@ interface PageShellProps {
 export function Wordmark({ restaurantBrand = false }: { restaurantBrand?: boolean } = {}) {
   const { t } = useT();
   return (
-    <Link to="/" className={restaurantBrand ? "wordmark wordmark-restaurants" : "wordmark"}
+    <Link to="/" state={{ fresh: Date.now() }} className={restaurantBrand ? "wordmark wordmark-restaurants" : "wordmark"}
       aria-label={restaurantBrand ? t("SeatPlan Restaurantes, home") : t("SeatPlan, home")}>
       <img className="wordmark-logo" src={seatPlanLogo} alt="" width={132} height={40} />
     </Link>

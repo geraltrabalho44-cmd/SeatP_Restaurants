@@ -10,9 +10,10 @@ test("owner sign-in defaults to the private restaurant cards", async ({ page }) 
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/owner$/);
   await expect(page.getByRole("heading", { name: "Casa Lumen" })).toBeVisible();
-  // The demo organiser also owns the four showcase restaurants. Each published card opens its service floor first;
-  // editing is one quiet link away, and the side menu leads to every step of one restaurant.
-  await expect(page.getByRole("link", { name: /^Open service floor/ }).first()).toBeVisible();
+  // The demo organiser also owns the four showcase restaurants. Each published card opens its settings first
+  // (there is no service floor), and the side menu leads to every step of one restaurant.
+  await expect(page.getByRole("link", { name: /^Manage restaurant/ }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Open service floor/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /^Edit restaurant/ }).first()).toBeVisible();
   await page.screenshot({ path: join(tmpdir(), "seatplan-owner-cards.png"), fullPage: true });
 });

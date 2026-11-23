@@ -39,6 +39,8 @@ hang because the email service is slow, and a stored row can be retried,
 logged and shown to organisers. Because `enqueue()` does not commit, a booking
 that rolls back leaves no email behind.
 
+**The booking confirmation is also sent at once.** A diner who has just booked is looking at the confirmation page and expects the email within seconds, so `diner_flow.confirm_booking` calls `emails.send_confirmation_now` after the commit. It uses `send_now()` (the same claim as the cron, so nothing is sent twice) and only when `EMAIL_PROVIDER` is not `console`. It never raises: if Resend is down or the key is missing the row stays `queued` and the cron sends it. Changes, cancellations, reminders and deposit bookings still wait for the cron.
+
 ## 2. Idempotency and retries
 
 **One row per email.** Every email has an `idempotency_key` such as

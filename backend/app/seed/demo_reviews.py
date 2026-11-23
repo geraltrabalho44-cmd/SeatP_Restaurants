@@ -1,7 +1,7 @@
 """Add sample reviews to the demo restaurants.
 
-By default every review says "Demo review". With `--plain` the reviews read like ordinary ones, so the
-sample data looks right while testing. The site says "Demo · Nova SBE Programming" on its landing page and
+The reviews read like ordinary ones, so the site looks right when it is presented. With `--label` every review
+starts with "Demo review" instead (and a plain run removes that label again). The site says "Demo · Nova SBE Programming" on its landing page and
 "Demo data only" in every footer; keep that if the site is ever shown beyond the course, because the Lisbon
 catalogue lists real businesses and their reviews and availability are invented.
 """
@@ -130,8 +130,8 @@ def apply_target_averages(session: Session) -> int:
     return changed
 
 
-def seed(session: Session, plain: bool = False) -> tuple[int, int]:
-    """Add reviews. `plain` drops the per-review "Demo review" label."""
+def seed(session: Session, plain: bool = True) -> tuple[int, int]:
+    """Add reviews. `plain` (the default) leaves out the per-review "Demo review" label."""
     venues = session.scalars(
         select(Venue)
         .where(Venue.kind == "restaurant", Venue.is_demo.is_(True), Venue.status == "published")
@@ -218,7 +218,12 @@ def seed(session: Session, plain: bool = False) -> tuple[int, int]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--plain", action="store_true", help="no 'Demo review' label on each review"
+        "--label",
+        action="store_true",
+        help="start each review with 'Demo review' (default: no label)",
+    )
+    parser.add_argument(
+        "--plain", action="store_true", help="no 'Demo review' label (already the default)"
     )
     parser.add_argument(
         "--allow-remote",
@@ -235,7 +240,7 @@ def main() -> None:
     db.init_engine(settings.database_url)
     db.create_all()
     with db.new_session() as session:
-        venues, reviews = seed(session, plain=args.plain)
+        venues, reviews = seed(session, plain=not args.label)
         session.commit()
     print(f"Reviews: {reviews} added across {venues} published demo restaurants.")
 

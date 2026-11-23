@@ -82,7 +82,7 @@ describe("DiscoverPage: the command bar", () => {
     // On a wide screen the bar holds where and when, near me, the five kinds of food and the drawer button.
     expect(within(bar).getByLabelText("Choose a city")).toBeTruthy();
     expect(within(bar).getByLabelText("Date")).toBeTruthy();
-    expect(within(bar).getByRole("button", { name: "Near me" })).toBeTruthy();
+    expect(within(bar).queryByRole("button", { name: "Near me" })).toBeNull(); // the location feature was removed
     for (const name of ["Portuguese", "Seafood", "Japanese", "Italian", "Pizza"]) expect(within(bar).getByRole("button", { name })).toBeTruthy();
     for (const name of ["Has sunny tables", "Tables with a view"]) expect(within(bar).queryByRole("button", { name })).toBeNull();
     const first = (await screen.findByRole("heading", { name: "Casa 1" })).closest("article") as HTMLElement;
@@ -155,28 +155,15 @@ describe("DiscoverPage: the command bar", () => {
     // The drawer button counts only what is inside the drawer, so the food chips in the bar do not inflate it.
     expect(screen.getByRole("button", { name: "Filters" })).toBeTruthy();
   });
-  it("falls back to a city when the browser refuses the location, and remembers the city", async () => {
+  it("remembers the city chosen, and sorts by distance from it", async () => {
     const asked = server(() => ({ items: [card(1, { distance_m: 850 })], total: 1 }));
-    vi.stubGlobal("navigator", { geolocation: { getCurrentPosition: (_ok: unknown, fail: () => void) => fail() } });
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
-    fireEvent.click(screen.getByRole("button", { name: "Near me" }));
-    expect(await screen.findByText("We could not get your location. Choose a city instead.")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Choose a city"), { target: { value: "Porto" } });
     await waitFor(() => expect(asked.at(-1)?.get("lat")).toBe("41.1579"));
     expect(asked.at(-1)?.get("lng")).toBe("-8.6291");
     expect(await screen.findByText("850 m", { exact: false })).toBeTruthy();
     expect(sessionStorage.getItem("seatplan.discover.place")).toContain("Porto");
-  });
-  it("uses the location when the browser gives it, and names it in the city list", async () => {
-    const asked = server(() => ({ items: [card(1)], total: 1 }));
-    vi.stubGlobal("navigator", { geolocation: { getCurrentPosition: (ok: (p: unknown) => void) => ok({ coords: { latitude: 38.71, longitude: -9.14 } }) } });
-    renderPage();
-    await screen.findByRole("heading", { name: "Casa 1" });
-    fireEvent.click(screen.getByRole("button", { name: "Near me" }));
-    await waitFor(() => expect(asked.at(-1)?.get("lat")).toBe("38.71"));
-    expect(screen.getByText(/Sorted by distance/)).toBeTruthy();
-    expect((screen.getByLabelText("Choose a city") as HTMLSelectElement).value).toBe("__near");
   });
 });
 describe("DiscoverPage: when", () => {

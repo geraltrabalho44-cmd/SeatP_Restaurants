@@ -64,6 +64,9 @@ export function searchQueryString(query: SearchQuery): string {
   if (query.place) {
     params.set("lat", String(query.place.lat));
     params.set("lng", String(query.place.lng));
+    params.set("within", String(PLACE_RADIUS_M));
+  } else {
+    params.set("anchor", `${HOME_ANCHOR.lat},${HOME_ANCHOR.lng}`); // no place chosen: Lisbon first, like the map
   }
   if (query.when) {
     params.set("date", query.when.date);
@@ -76,13 +79,19 @@ export function searchQueryString(query: SearchQuery): string {
   return params.toString();
 }
 
+/** Where the home page starts when no place was chosen: only the order of the results and the map follow it. */
+export const HOME_ANCHOR = { lat: 38.7223, lng: -9.1393 };
+
+/** A city or "near me" shows the restaurants up to this far (metres): the city and its neighbours, not the whole country. */
+export const PLACE_RADIUS_M = 25_000;
+
 export function searchRestaurants(query: SearchQuery): Promise<SearchAnswer> {
   if (query.q.trim() && query.q.trim().length <= 80) {
     return api.get<SearchAnswer>(`/restaurants?${searchQueryString(query)}&understand=true`, "none");
   }
   if(query.q.trim()) return api.post<SearchAnswer>("/restaurants/search",{
     q:query.q.trim(),cuisine:query.cuisines,price:query.prices,features:query.features,
-    ...query.place,...query.when,available:query.availableOnly,limit:query.limit,offset:query.offset
+    ...query.place,...(query.place?{within:PLACE_RADIUS_M}:{anchor:`${HOME_ANCHOR.lat},${HOME_ANCHOR.lng}`}),...query.when,available:query.availableOnly,limit:query.limit,offset:query.offset
   },"none");
   return api.get<SearchAnswer>(`/restaurants?${searchQueryString(query)}`);
 }

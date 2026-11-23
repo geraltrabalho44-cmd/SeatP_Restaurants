@@ -241,6 +241,17 @@
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 
+.field-control { position: relative; display: flex; }
+.field-control .field-input { flex: 1; min-width: 0; }
+.field-input-password { padding-inline-end: calc(var(--touch-target) + var(--space-1)); }
+.field-eye {
+  position: absolute; inset-block: 0; inset-inline-end: 0; width: var(--touch-target);
+  display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--c-text-muted);
+  border-radius: var(--radius-md); cursor: pointer;
+}
+.field-eye:hover { color: var(--c-text); }
+.field-eye:focus-visible { outline: 2px solid var(--c-primary); outline-offset: -2px; }
+
 .field-input:hover {
   border-color: var(--c-text);
 }

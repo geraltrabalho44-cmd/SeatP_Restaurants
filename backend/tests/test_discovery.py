@@ -201,6 +201,37 @@ def test_with_a_location_results_are_nearest_first_with_distances(
     assert unlocated["distance_m"] is None
 
 
+def test_a_distance_keeps_only_the_restaurants_of_that_place(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    venue(session, organiser, "Porto Place", "porto-place", at=PORTO)
+    venue(session, organiser, "Lisbon Place", "lisbon-place", at=(38.7100, -9.1400))
+    venue(session, organiser, "Unlocated Place", "unlocated-place", at=None)
+    body = search(client, lat=LISBON[0], lng=LISBON[1], within=25_000)
+    assert (
+        names(body) == ["Lisbon Place"] and body["total"] == 1
+    )  # Porto is 274 km away; no pin, no place
+    body = search(client, lat=PORTO[0], lng=PORTO[1], within=25_000)
+    assert names(body) == ["Porto Place"]
+    assert (
+        client.get("/api/restaurants", params={"within": 5000}).status_code == 422
+    )  # a distance needs a place
+
+
+def test_an_anchor_only_orders_the_results_and_shows_no_distance(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    venue(session, organiser, "A Porto Place", "porto-place", at=PORTO)
+    venue(session, organiser, "Z Lisbon Place", "lisbon-place", at=(38.7100, -9.1400))
+    body = search(client, anchor=f"{LISBON[0]},{LISBON[1]}")
+    assert names(body) == [
+        "Z Lisbon Place",
+        "A Porto Place",
+    ]  # Lisbon first although "A" comes first by name
+    assert all(item["distance_m"] is None for item in body["items"])
+    assert client.get("/api/restaurants", params={"anchor": "nowhere"}).status_code == 422
+
+
 def test_without_a_location_results_are_by_name(
     client: TestClient, session: Session, organiser: Organiser
 ) -> None:

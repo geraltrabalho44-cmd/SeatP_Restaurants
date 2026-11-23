@@ -17,7 +17,6 @@
 .rp-contact { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-1) var(--space-5); }
 .rp-contact a, .rp aside a { display: inline-flex; align-items: center; min-height: var(--touch-target); }
 .rp-book { padding: var(--space-4) 0 var(--space-5); border-bottom: 1px solid var(--c-border); scroll-margin-top: var(--space-8); }
-.rp-photo-credits { color: var(--c-text-muted); font-size: var(--fs-xs); display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 .rp-book .rp-demo-note { margin-bottom: var(--space-3); }
 
 .rp-gallery { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-3); }
@@ -99,7 +98,7 @@
 /* Fingers on a phone: the back link and the credits are at least 44 px tall to tap. */
 @media (max-width: 47.99rem) {
   .rp .rp-back { min-height: 2.75rem; }
-  .rp-photo-credits a, .rp-contact a { min-height: 2.75rem; }
+  .rp-contact a { min-height: 2.75rem; }
 }
 
 /* On a phone the details and confirmation steps are one card, not a card inside a card: the form gets the full width. */

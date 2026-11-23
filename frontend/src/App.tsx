@@ -1,6 +1,6 @@
 // The complete route table. Every screen of SeatPlan is listed here once,
 // so feature owners fill in their page file and never need to touch this one.
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import EditorPage from "./pages/editor/EditorPage";
 import AttendeePage from "./pages/events/AttendeePage";
@@ -14,7 +14,7 @@ import ResetPage from "./pages/account/ResetPage";
 import DinerAccountPage from "./pages/discover/DinerAccountPage";
 import DinerSignUpPage from "./pages/discover/DinerSignUpPage";
 import DinerSocialCallbackPage from "./pages/discover/DinerSocialCallbackPage";
-import DiscoverPage from "./pages/discover/DiscoverPage";
+import DiscoverRoute from "./pages/discover/DiscoverRoute";
 import Home from "./pages/Home";
 import JoinPage from "./pages/join/JoinPage";
 import JoinSignInPage from "./pages/join/JoinSignInPage";
@@ -30,14 +30,13 @@ import BookingPage from "./pages/restaurant/BookingPage";
 import RestaurantPage from "./pages/restaurant-public/RestaurantPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
 import WeatherRainOffer from "./pages/restaurant/WeatherRainOffer";
-import StaffPage from "./pages/restaurant/StaffPage";
 import HoursPage from "./pages/owner/HoursPage";
 import MenuPage from "./pages/owner/MenuPage";
 import PublishReview from "./pages/owner/PublishReview";
 import UnsubscribePage from "./pages/legal/UnsubscribePage";
 import InsightsPage from "./pages/owner/InsightsPage";
 import ForgotPasswordPage from "./pages/owner/ForgotPasswordPage";
-import MessagesPage from "./pages/owner/MessagesPage";
+import MessagesPage from "./pages/owner/EmailMessagesPage";
 import OffersPage from "./pages/owner/OffersPage";
 import PaymentsPage from "./pages/owner/PaymentsPage";
 import ResetPasswordPage from "./pages/owner/ResetPasswordPage";
@@ -49,10 +48,15 @@ import MessageActionPage from "./pages/messages/MessageActionPage";
 import PaymentReturnPage from "./pages/pay/PaymentReturnPage";
 const RoomEditorPage = lazy(() => import("./pages/room-editor/RoomEditorPage"));
 
+function ToOpeningHours() {
+  const { venueId = "" } = useParams();
+  return <Navigate to={`/owner/${encodeURIComponent(venueId)}/hours`} replace />;
+}
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<DiscoverPage />} />
+      <Route path="/" element={<DiscoverRoute />} />
       {/* The original SeatPlan home page, with the demo links, moved here (spec 4.1). */}
       <Route path="/demo" element={<Home />} />
       <Route path="/login" element={<Login />} />
@@ -77,7 +81,8 @@ export default function App() {
       <Route path="/m/:token" element={<MessageActionPage />} />
       <Route path="/owner/:venueId/review" element={<PublishReview />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />
-      <Route path="/owner/:venueId/dashboard" element={<StaffPage />} />
+      {/* The service floor and the staff workspace were removed: SeatPlan is for bookings, not for the day-to-day service. */}
+      <Route path="/owner/:venueId/dashboard" element={<ToOpeningHours />} />
       <Route path="/owner/:venueId/rooms" element={<Suspense fallback={<p role="status">Loading room editor…</p>}><RoomEditorPage /></Suspense>} />
       {/* Events: personal attendee link, organiser workspace */}
       <Route path="/e/:token" element={<AttendeePage />} />
@@ -104,7 +109,7 @@ export default function App() {
       {/* Deposits: the pretend payment page (demo only) and where every payment page sends the diner back. */}
       <Route path="/pay/demo/:paymentId" element={<DemoCheckoutPage />} />
       <Route path="/pay/return/:paymentId" element={<PaymentReturnPage />} />
-      <Route path="/staff/:venueId" element={<StaffPage />} />
+      <Route path="/staff/:venueId" element={<Navigate to="/owner" replace />} />
       {/* Shared: floor-plan editor for both kinds of venue */}
       <Route path="/editor/:venueId" element={<EditorPage />} />
       <Route path="*" element={<NotFound />} />
