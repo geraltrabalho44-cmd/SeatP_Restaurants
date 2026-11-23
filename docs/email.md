@@ -25,8 +25,9 @@ process_due()  -> allowlist check -> Provider.send() -> Resend HTTP API (or cons
   body_text, body_html)` out. Every user value is HTML-escaped in the HTML
   version; both versions carry the manage-or-cancel link, the sender name
   ("SeatPlan") and a footer saying why the person received the email and how
-  to stop. The HTML is one column, max 560 px wide, inline styles only, no
-  images, and the link is also printed as text in case the button does not work.
+  to stop. The HTML is one column, max 560 px wide, inline styles only, and its
+  one image is the logo (section 11). The buttons are the links: the HTML
+  prints no web address (the plain-text version keeps it).
 - **ics.py**: the calendar invite (section 4).
 - **providers.py**: `Provider` protocol with `send(message) -> provider id`;
   `ConsoleProvider` (logs one line, never the body, because the body holds a
@@ -297,3 +298,34 @@ Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
   also empty `image_png`.
 - **Not verified yet:** a real Resend send with an inline image, and how
   Gmail, Outlook and Apple Mail show it.
+
+## 11. Look, logo and buttons
+
+Added 2026-11-23 (`docs/superpowers/specs/2026-11-23-email-branding-design.md`).
+
+- **Colours and fonts** come from `frontend/src/design/tokens.css` (linen page,
+  bottle-green buttons, serif headings) and are written out in
+  `backend/app/mail/style.py`, because email apps ignore CSS variables and web
+  fonts. `tests/test_mail_style.py` fails if a value drifts from the tokens or a
+  text pair drops under 4.5:1 contrast. All emails share the one shell in
+  `templates.py` (`_PAGE`), so event and account emails got the new look too;
+  their words, keys and timing did not change.
+- **Logo.** `mail/logo.py` draws the favicon's shapes as a 96 x 96 PNG with
+  `png.py` (about 600 bytes), shown at 40 px. `ResendProvider` attaches it as
+  the inline image `cid:logo` whenever the HTML uses it; it is never stored in
+  `email_outbox`. With images off, the word "SeatPlan" beside it still reads.
+- **Buttons.** Confirmed, changed and reminder restaurant emails carry **Change
+  time** (filled) and **Cancel booking** (outlined). They open
+  `/b/<token>?action=change` and `?action=cancel`. The manage page only opens
+  the time form or the confirmation dialog from that: a link that is opened (by
+  a person, a scanner or a preview) never changes or cancels anything. No
+  account or sign-in is involved: the secret link is the key (section 7).
+- **No reply.** Every email says not to reply. There is no `Reply-To`: there is
+  no inbox behind the sender. Under the buttons, a diner who cannot tap one is
+  told to call the restaurant (its phone, when it has one).
+- **Payments, later.** `RestaurantBooking.note` and the `note` argument of
+  `booking_cancellation()` carry one optional sentence about money (a deposit
+  refunded or kept). Nothing fills them yet: the deposit code lives on the
+  branch `seatp-restaurants-main`.
+- **Not verified yet:** how Gmail, Outlook and Apple Mail show the logo, the
+  colours and the buttons (a real send to the Resend test address is the check).

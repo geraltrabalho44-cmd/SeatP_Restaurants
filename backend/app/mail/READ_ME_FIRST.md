@@ -19,6 +19,8 @@ later. Longer design notes, RFC references and the provider comparison are in
 | `png.py` | `encode_indexed(width, height, pixels, palette)`, `png_width(png)` | A tiny PNG writer (zlib, struct, binascii); no new dependency. `png_width` reads the width back, so the email's `<img width>` is never wider than the picture |
 | `pixel_font.py` | `can_write`, `text_width`, `inked_pixels` | A 5 x 7 pixel font for the picture's labels |
 | `templates.py` | `format_when(moment, timezone)` | UTC datetime to "Sat 14 Mar 2027, 19:30" in the venue's time |
+| `style.py` | `BG`, `CARD`, `INK`, `PRIMARY`, ..., `FONT_DISPLAY`, `FONT_BODY`, `button_html(href, label, primary=True)`, `with_action(link, "change" or "cancel")` | The product's colours and fonts as email-safe values (a test checks them against `tokens.css`), the button, and the `?action=` link the manage page understands |
+| `logo.py` | `logo_png()`, `logo_base64()`, `LOGO_CONTENT_ID` | The SeatPlan logo as a 96 px PNG, drawn once; `ResendProvider` attaches it as `cid:logo` |
 | `ics.py` | `build_invite(...)`, `make_uid(kind, public_id)` | The `.ics` calendar invite text |
 | `invites.py` | `calendar_invite(...)` | The invite every seat and booking email carries: sender from `EMAIL_FROM`, SEQUENCE that always grows |
 | `outbox.py` | `enqueue(session, ...)` | Queue one email (does not commit) |
