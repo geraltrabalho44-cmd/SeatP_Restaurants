@@ -21,7 +21,7 @@ import argparse
 import random
 import secrets
 import unicodedata
-from datetime import timedelta
+from datetime import date, timedelta
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
@@ -42,10 +42,18 @@ from app.models import (
     VenueTable,
     Zone,
 )
-from app.restaurant_service import features, occupancy
-from app.restaurant_service.clock import now_local
+from app.optimiser.restaurant_assign import recommend_table
+from app.restaurant_service import booking_rows, features, occupancy
+from app.restaurant_service.availability import PartyNeeds
+from app.restaurant_service.clock import booking_window, now_local
 from app.security import hash_password
-from app.seed.demo_restaurant import DEMO_ORGANISER_EMAIL, SERVICES, _seed_service, _table_size
+from app.seed.demo_restaurant import (
+    DEMO_ORGANISER_EMAIL,
+    PARTIES_PER_SERVICE,
+    SERVICES,
+    _seed_service,
+    _table_size,
+)
 from app.seed.demo_showcase import Fixture, Opening, ShowRoom, Table, _add_room, _rect
 from app.seed.run import ensure_demo_users
 from app.seed.tidy_layouts import footprint, tidy_all
@@ -374,25 +382,93 @@ def _diversify(session: Session, venue: Venue) -> None:
     session.flush()
 
 
+PARTY_MIXES = (
+    (2, 2, 2, 2, 2, 3, 4),  # mostly couples
+    (2, 2, 3, 4, 4, 4, 5, 6),  # families and friends
+    (2, 4, 4, 5, 6, 6, 8, 8),  # big tables, celebrations
+    (1, 2, 2, 2, 3, 4),  # a counter and a quick lunch
+)
+
+
+def _profile(slug: str) -> tuple[float, float, float, tuple[int, ...]]:
+    """What kind of place this restaurant is, the same every time: how busy, how much busier on a Friday and a Saturday,
+    how strong its lunch is against its dinner, and the party sizes it usually sees."""
+    rng = random.Random(f"{slug}-profile")
+    return (
+        rng.uniform(0.45, 1.5),
+        rng.uniform(1.0, 1.9),
+        rng.uniform(0.4, 1.3),
+        rng.choice(PARTY_MIXES),
+    )
+
+
 def _history(session: Session, venue: Venue) -> int:
-    """90 days of bookings and the next two weeks, placed by the optimiser like guests booking one by one."""
+    """90 days of bookings and the next two weeks, placed by the optimiser like guests booking one by one.
+
+    Every restaurant gets its own pattern (see `_profile`), so no two insights pages look alike."""
     specs = occupancy.table_specs(
         occupancy.venue_tables(session, venue), occupancy.zone_kinds(session, venue)
     )
+    if not specs:
+        return 0
+    busy, weekend, lunch, sizes = _profile(venue.slug)
     rng = random.Random(venue.slug)
     today = now_local(venue).date()
     for offset in range(-HISTORY_DAYS, UPCOMING_DAYS):
         day = today + timedelta(days=offset)
         for service in SERVICES:
-            if day.weekday() in service[1]:
-                _seed_service(session, venue, specs, day, service, rng)
+            if day.weekday() not in service[1]:
+                continue
+            factor = busy * (weekend if day.weekday() in (4, 5) else 1.0)
+            if service[0] == "Lunch":
+                factor *= lunch
+            parties = max(2, round(PARTIES_PER_SERVICE[service[0]] * factor))
+            _seed_service(session, venue, specs, day, service, rng, parties, sizes)
     _diversify(session, venue)
+    link_tables(
+        session, venue
+    )  # finished bookings keep their table: that is what "the busiest tables" counts
     return (
         session.scalar(
             select(func.count()).select_from(Booking).where(Booking.venue_id == venue.id)
         )
         or 0
     )
+
+
+def link_tables(session: Session, venue: Venue) -> int:
+    """Give every finished booking without a table the table the optimiser would have picked for it.
+
+    Older runs of the history seed left the finished bookings with no table, so the insights could not say which tables
+    were booked most. Day by day, oldest first, each party goes to a table that was free at its time."""
+    specs = occupancy.table_specs(
+        occupancy.venue_tables(session, venue), occupancy.zone_kinds(session, venue)
+    )
+    if not specs:
+        return 0
+    has_table = select(TableSlot.booking_id).where(TableSlot.booking_id == Booking.id).exists()
+    waiting = session.scalars(
+        select(Booking)
+        .where(
+            Booking.venue_id == venue.id, Booking.status.in_(("completed", "no_show")), ~has_table
+        )
+        .order_by(Booking.date, Booking.start_at)
+    ).all()
+    busy_by_day: dict[date, occupancy.Busy] = {}
+    linked = 0
+    for booking in waiting:
+        busy = busy_by_day.setdefault(
+            booking.date, occupancy.booked_slots(session, venue, booking.date)
+        )
+        window = booking_window(venue, booking)
+        picks = recommend_table(specs, busy, PartyNeeds(booking.party_size).spec(window), top=1)
+        if not picks:
+            continue
+        for table_id in picks[0].table_ids:
+            busy.setdefault(table_id, set()).update(range(*window))
+        booking_rows.write_slots(session, booking, picks[0].table_ids, window)
+        linked += 1
+    return linked
 
 
 def run(session: Session, keep: tuple[str, ...] = KEEP) -> dict[str, object]:
@@ -446,6 +522,21 @@ def run(session: Session, keep: tuple[str, ...] = KEEP) -> dict[str, object]:
         _zones(session, venue)
         features.refresh_features(session, venue)
         report[slug] = f"{_history(session, venue)} bookings"
+    # Every other restaurant gets a history too, drawn on the plan it already has, so each one's insights have something to show.
+    for venue in session.scalars(
+        select(Venue).where(Venue.kind == "restaurant", Venue.slug.not_in(keep))
+    ):
+        if not session.scalar(
+            select(func.count()).select_from(Booking).where(Booking.venue_id == venue.id)
+        ):
+            report[venue.slug] = f"{_history(session, venue)} bookings"
+    # Finished bookings from earlier runs gain their table, so "the tables guests book most" has something to show.
+    for venue in session.scalars(
+        select(Venue).where(Venue.kind == "restaurant", Venue.is_demo.is_(True))
+    ):
+        linked = link_tables(session, venue)
+        if linked:
+            report[f"{venue.slug} tables"] = f"{linked} finished bookings now have a table"
     # Chairs made before they carried their room: without it the room editor shows an extra empty "Main room".
     session.execute(
         update(Seat)

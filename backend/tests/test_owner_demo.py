@@ -1,6 +1,7 @@
 """The demo owner has three restaurants with a complete floor plan and a history of bookings; everything else is theirs to see
 only on the public site, and every table keeps its guests 90 minutes."""
 
+import pytest
 from conftest import make_user
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -33,7 +34,9 @@ def test_the_demo_owner_has_three_complete_restaurants(session: Session) -> None
     session.flush()
 
     report = owner_demo.run(session)
-    assert set(report) == set(owner_demo.KEEP)
+    assert set(owner_demo.KEEP) <= set(
+        report
+    )  # the three, and a history for every other restaurant too
 
     mine = list(session.scalars(select(Venue).where(Venue.organiser_id == owner.id)))
     assert sorted(v.slug for v in mine) == sorted(owner_demo.KEEP)
@@ -134,3 +137,47 @@ def test_no_table_or_chair_crosses_the_edge_of_a_zone_or_a_piece_of_furniture(
                     or box.y0 >= fixture.y + fixture.h
                 )
                 assert apart, f"{venue.slug} {table.label} touches {fixture.label or fixture.kind}"
+
+
+def test_every_restaurant_has_its_own_history_with_its_tables(
+    session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each restaurant's insights have something to show, and no two restaurants have the same pattern."""
+    monkeypatch.setattr(
+        owner_demo, "HISTORY_DAYS", 21
+    )  # three weeks is enough to tell places apart
+    owner = make_user(session, DEMO_ORGANISER_EMAIL)
+    lisbon_catalogue.seed(session, owner, LISBON)
+    keep = ("cervejaria-ramiro",)
+    owner_demo.run(session, keep=keep)
+
+    venues = list(session.scalars(select(Venue).where(Venue.kind == "restaurant")))
+    totals = []
+    for venue in venues:
+        view = insights.overview(session, venue, 90)
+        assert view["bookings"] > 50, venue.slug
+        tables = insights.table_demand(session, venue, 90)
+        # The finished bookings keep their table, so the busiest tables are not all at zero.
+        assert tables["total"] > 0 and tables["top"], venue.slug
+        totals.append(view["bookings"])
+    # A busier or quieter place each time: nearly every count is its own, and the busiest is well above the quietest.
+    assert len(set(totals)) >= len(totals) - 3
+    assert max(totals) > 1.5 * min(totals)
+
+    # Running it again changes nothing: nobody is booked twice.
+    before = session.scalar(select(func.count()).select_from(Booking))
+    owner_demo.run(session, keep=keep)
+    assert session.scalar(select(func.count()).select_from(Booking)) == before
+
+
+def test_the_guests_in_the_history_never_say_what_they_are(
+    session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    owner = make_user(session, DEMO_ORGANISER_EMAIL)
+    monkeypatch.setattr(owner_demo, "HISTORY_DAYS", 7)
+    lisbon_catalogue.seed(session, owner, LISBON)
+    owner_demo.run(session, keep=("cervejaria-ramiro",))
+    words = ("demo", "fake", "sample", "test", "dummy", "invented")
+    for booking in session.scalars(select(Booking)):
+        text = f"{booking.name} {booking.email} {booking.notes or ''}".lower()
+        assert not any(word in text for word in words), text
