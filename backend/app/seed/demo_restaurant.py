@@ -1,5 +1,11 @@
 """Demo data for the restaurants vertical: one invented restaurant, "Casa Lumen".
 
+TEST FIXTURE, NOT A PUBLIC RESTAURANT. "Casa Lumen" exists only because the automated tests (backend tests and
+the browser tests in frontend/e2e) need a small, predictable restaurant with known tables, hours and bookings. It
+is not shown on the public site: `public_catalogue` turns it into a draft, so visitors only see the 20 Lisbon and
+15 Porto restaurants. It is kept in the code on purpose, not forgotten; do not delete it without rewriting the
+tests that use it.
+
 seed() adds the rows (it assumes the demo organiser exists), does not commit,
 and returns entry links by name for the demo home page.
 

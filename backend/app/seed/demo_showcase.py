@@ -1,5 +1,11 @@
 """Four invented restaurants with real rooms, to show off the platform (spec 13).
 
+TEST FIXTURES, NOT PUBLIC RESTAURANTS. These four restaurants exist only because the automated tests (backend tests and
+the browser tests in frontend/e2e) need a small, predictable restaurant with known tables, hours and bookings. They
+are not shown on the public site: `public_catalogue` turns them into drafts, so visitors only see the 20 Lisbon and
+15 Porto restaurants. They are kept in the code on purpose, not forgotten; do not delete them without rewriting the
+tests that use them.
+
 Each sits in a real Lisbon neighbourhood so the sun and the distances make sense,
 but the names, addresses (street numbers), phones and pictures are all invented.
 No real restaurant, brand or photograph is used; the pictures are drawn by
