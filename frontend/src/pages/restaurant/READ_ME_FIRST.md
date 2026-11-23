@@ -8,8 +8,8 @@ Three screens of the restaurant vertical:
   (date and party, time, table, details, done). Phone first.
 - `/b/:token` (`ManageBookingPage.tsx`): the link from the confirmation, to
   change the time or party size, or cancel.
-- `/staff/:venueId` (`StaffPage.tsx`): signed-in staff run the service. Four
-  tabs: Floor, Dashboard, Optimise, Schedule. Laptop first.
+- The staff workspace (the live floor, the day's numbers and the Optimise tab) was removed from the product. `/staff/:venueId` and
+  `/owner/:venueId/dashboard` send people to the owner area; the opening hours are edited on the owner's Opening hours page.
 
 The journeys, every screen state, the microcopy and an honest usability
 self-check are in `docs/ux-restaurant.md`.
@@ -26,10 +26,7 @@ self-check are in `docs/ux-restaurant.md`.
 | `FloorPlan.tsx`, `floorPlanScene.ts`, `floor-plan.css` | The diner's floor plan in the table step (events keep the shared `SeatMap`). One room at a time (the room chips switch), flat and quiet like the common table pickers: a pale floor, soft tables with chairs drawn as chairs, and colour only for the state: free (white, soft green chairs), yours (filled green, a tick and a halo) and not yours (pale grey). A star marks our suggestion. Sun is a warm wash by day; after dark the whole plan turns to night with gold chairs and warm light at free tables. The view through glass is a thin labelled strip. Same listbox and keyboard model as `SeatMap`; no zoom, and a wide room turns a quarter on a phone so its tables stay big. `floorPlanScene.ts` is the tested pure part |
 | `tableView.ts` | Pure rules for the diner map: the state each table shows, its spoken name, alternatives after a conflict |
 | `ChangeBookingForm.tsx`, `BookingSummary.tsx` | The manage page's form and the summary shared with the confirmation |
-| `StaffFloor.tsx`, `FloorLists.tsx`, `SelectionPanel.tsx`, `MoveDialog.tsx`, `WalkinDialog.tsx`, `WhatIf.tsx` | The live floor and its actions |
-| `staffStatus.ts` | Pure rules for the staff floor: status looks, spoken table names, which actions fit a status |
-| `StaffDashboard.tsx`, `StaffSchedule.tsx` | The day's numbers and the opening hours editor |
-| `StaffOptimise.tsx`, `ServicePlanCard.tsx`, `ExactCheckCard.tsx` | The Optimise tab: re-plan one service (preview, then apply) and the exact check |
+| `StaffSchedule.tsx` | The opening hours editor (`ScheduleEditor`), used by the owner's Opening hours page |
 | `useLoad.ts`, `format.ts` | Loading, error and ready states in one hook; small pure text helpers |
 
 ## Data flow
