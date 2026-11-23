@@ -61,7 +61,8 @@ test("mobile map keeps booking context and returns focus after closing a selecte
  const pin=diagram.getByRole("button").first();await pin.focus();await pin.press("Enter");
  const close=page.getByRole("button",{name:"Close summary",exact:true});
  await expect(close).toBeFocused();
- const bounds=await close.boundingBox();expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(844);
+ // The summary slides up from the bottom edge in about 220 ms; it must end up fully inside the screen.
+ await expect.poll(async()=>{const bounds=await close.boundingBox();return bounds!.y+bounds!.height;}).toBeLessThanOrEqual(844);
  const target=new URL((await page.locator(".discover-pin-summary").getByRole("link",{name:/^\d{2}:\d{2}$/}).first().getAttribute("href"))!,"http://localhost");
  expect(target.searchParams.get("date")).toBe(isoDaysFromToday(9));expect(target.searchParams.get("party")).toBe("2");
  await close.click();await expect(pin).toBeFocused();

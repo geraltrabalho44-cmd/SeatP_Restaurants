@@ -2,6 +2,9 @@
 .when-party .rb-step-title,.when-times .rb-step-title {font-family:var(--font-display);font-size:2rem;font-weight:400;line-height:1.2;margin:0 0 1.5rem}
 .when-fields {display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
 .when-fields .field {margin:0;min-width:0}
+/* The fields of the booking box are set exactly like the ones in the Discover filters panel: the same label and value sizes. */
+.when-fields .field-label {font-size:.8125rem}
+.when-fields .field-input,.when-fields .discover-date-preview,.when-requirements .field-input {font-size:.875rem}
 .when-requirements {grid-column:1/-1}
 .when-requirements summary {min-height:2.75rem;display:flex;align-items:center;cursor:pointer;font-weight:600;font-size:.875rem}
 .when-requirements summary::before {content:'+';margin-right:.5rem}

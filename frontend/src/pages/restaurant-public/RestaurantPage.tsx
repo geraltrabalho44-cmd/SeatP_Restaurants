@@ -66,10 +66,29 @@ function Page({ data }: { data: PublicRestaurant }) {
   useEffect(() => {
     if (linked && !data.preview) book.current?.scrollIntoView?.({ block: "start" });
   }, [linked, data.preview]);
+  // Arriving by a link that names a tab (the "reviews" link on a card) scrolls to that tab once. Switching tabs afterwards
+  // never moves the page: the reader stays where they are.
+  const arrived = useRef(false);
   useEffect(() => {
+    if (arrived.current) return;
+    arrived.current = true;
     if (showReviews) reviewSection.current?.scrollIntoView?.();
-  }, [showReviews]);
-  useEffect(() => { if (showMenu) menuSection.current?.scrollIntoView?.(); }, [showMenu]);
+    if (showMenu) menuSection.current?.scrollIntoView?.();
+  }, [showReviews, showMenu]);
+  // The tab area keeps the height it had while the other tab takes its place, then lets it go slowly, so a shorter tab
+  // does not pull the page up with it.
+  const tabArea = useRef<HTMLDivElement>(null);
+  const holdHeight = (): void => {
+    const area = tabArea.current;
+    if (!area) return;
+    area.style.transition = "none";
+    area.style.minHeight = `${area.offsetHeight}px`;
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      area.style.transition = "min-height 420ms cubic-bezier(0.65, 0, 0.35, 1)";
+      area.style.minHeight = "0px";
+    }));
+    window.setTimeout(() => { area.style.transition = ""; area.style.minHeight = ""; }, 700);
+  };
 
   // The button moves keyboard focus with the page, so the next Tab lands in the booking, not back at the top.
   const goToBooking = (event: MouseEvent<HTMLAnchorElement>): void => {
@@ -142,10 +161,11 @@ function Page({ data }: { data: PublicRestaurant }) {
 
       </div>
       {!data.preview && <nav className="rp-section-nav" aria-label={t("Restaurant sections")}>
-        <Link to={{ pathname, search, hash: "#details" }} aria-current={!showReviews && !showMenu ? "page" : undefined}>{t("Details")}</Link>
-        <Link to={{ pathname, search, hash: "#menu" }} aria-current={showMenu ? "page" : undefined}>{t("Menu")}</Link>
-        <Link to={{ pathname, search, hash: "#reviews" }} aria-current={showReviews ? "page" : undefined}>{t("Reviews")}</Link>
+        <Link to={{ pathname, search, hash: "#details" }} onClick={holdHeight} aria-current={!showReviews && !showMenu ? "page" : undefined}>{t("Details")}</Link>
+        <Link to={{ pathname, search, hash: "#menu" }} onClick={holdHeight} aria-current={showMenu ? "page" : undefined}>{t("Menu")}</Link>
+        <Link to={{ pathname, search, hash: "#reviews" }} onClick={holdHeight} aria-current={showReviews ? "page" : undefined}>{t("Reviews")}</Link>
       </nav>}
+      <div ref={tabArea} className="rp-tab-area">
       {showMenu && data.slug && <section id="menu" ref={menuSection} aria-label={t("Restaurant menu")}><RestaurantMenu key={data.slug} slug={data.slug} /></section>}
       {showReviews && data.slug && <section id="reviews" ref={reviewSection} aria-label={t("Restaurant reviews")}>
         <RestaurantReviews key={data.slug} slug={data.slug} summary={data.reviews} />
@@ -219,6 +239,7 @@ function Page({ data }: { data: PublicRestaurant }) {
             )}
           </ul>
         </aside>
+      </div>
       </div>
     </article>
   );

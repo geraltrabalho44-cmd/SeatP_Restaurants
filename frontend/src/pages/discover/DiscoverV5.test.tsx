@@ -45,3 +45,27 @@ it("finds the results from the desktop context bar and moves keyboard focus ther
  fireEvent.click(screen.getByRole("button",{name:/^Find a table/}));
  expect(document.activeElement?.id).toBe("discover-results-title");
 });
+
+it("Clear filters in the panel also lets go of the date, time and party, so an empty result can be left",async()=>{
+ render(<MemoryRouter><DiscoverPage/></MemoryRouter>);
+ fireEvent.click(screen.getByRole("button",{name:/^Filters/}));
+ const panel=screen.getByRole("dialog",{name:"Filters"});
+ fireEvent.change(within(panel).getByLabelText("Date"),{target:{value:"2030-05-01"}});
+ fireEvent.change(within(panel).getByLabelText("People"),{target:{value:"4"}});
+ expect((within(panel).getByLabelText("Date") as HTMLInputElement).value).toBe("2030-05-01");
+ fireEvent.click(within(panel).getByRole("button",{name:"Clear filters"}));
+ expect((within(panel).getByLabelText("Date") as HTMLInputElement).value).toBe("");
+ expect((within(panel).getByLabelText("People") as HTMLSelectElement).value).toBe("2");
+});
+
+it("shows Clear filters next to the count when only a date and time are chosen, and no 'select a time' note",async()=>{
+ render(<MemoryRouter><DiscoverPage/></MemoryRouter>);
+ expect(screen.queryByRole("button",{name:"Clear filters"})).toBeNull();
+ fireEvent.click(screen.getByRole("button",{name:/^Filters/}));
+ fireEvent.change(within(screen.getByRole("dialog",{name:"Filters"})).getByLabelText("Date"),{target:{value:"2030-05-01"}});
+ fireEvent.click(within(screen.getByRole("dialog",{name:"Filters"})).getByRole("button",{name:/^Apply/}));
+ const clear=await screen.findByRole("button",{name:"Clear filters"});
+ expect(screen.queryByText(/Select a time to book/)).toBeNull();
+ fireEvent.click(clear);
+ await waitFor(()=>expect(screen.queryByRole("button",{name:"Clear filters"})).toBeNull());
+});

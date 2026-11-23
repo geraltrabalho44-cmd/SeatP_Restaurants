@@ -51,8 +51,8 @@ function TermsForm({ venueId, terms, onSaved }: { venueId: string; terms: OwnerT
   };
   return (
     <div className="ow-stack">
-      <p className="rb-notice" role="note">
-        <strong>{t("Prepared by a team of lawyers.")}</strong> {t("These terms and the privacy notice were prepared by a team of lawyers. You are responsible for your guests' data; SeatPlan stores and sends it on your behalf.")}
+      <p className="rb-notice rb-notice-warning" role="note">
+        <strong>{t("Draft wording.")}</strong> {t("SeatPlan wrote these terms as a starting point. Have a lawyer review them before you rely on them. You are responsible for your guests' data; SeatPlan stores and sends it on your behalf.")}
       </p>
       <section className="owner-card" aria-label={t("Your words")}>
         <div className="owner-card-body">

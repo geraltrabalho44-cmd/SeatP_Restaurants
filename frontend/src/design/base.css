@@ -55,6 +55,64 @@ a:hover {
   color: var(--c-primary-hover);
 }
 
+/* Everything you can press moves gently, on every page: colours, borders and shadows ease over 220 ms instead of snapping.
+   :where() keeps this at the lowest weight, so a component that sets its own transition still wins. */
+:where(a, button, summary, select, input, textarea, [role="tab"], [role="button"]) {
+  transition:
+    color var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    text-decoration-color var(--dur-base) var(--ease-out);
+}
+
+/* A page arrives with a small rise, so moving between pages is never a hard cut. */
+@keyframes page-in {
+  from {
+    transform: translateY(0.625rem);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.shell-main {
+  animation: page-in var(--dur-slow) var(--ease-out);
+}
+
+/* The content of a tab slides in when you switch, wherever tabs are used. */
+@keyframes panel-in {
+  from {
+    transform: translateY(0.75rem);
+  }
+  to {
+    transform: none;
+  }
+}
+
+[role="tabpanel"] {
+  animation: panel-in var(--dur-slow) var(--ease-out);
+}
+
+/* Every "show more" panel (details) opens and closes by growing and shrinking instead of jumping. Browsers that cannot do
+   this open it at once. The clip margin keeps the keyboard focus ring of a field at the panel's edge from being cut off. */
+details {
+  interpolate-size: allow-keywords;
+}
+
+details::details-content {
+  block-size: 0;
+  overflow: clip;
+  overflow-clip-margin: 0.5rem;
+  transition:
+    block-size var(--dur-slow) var(--ease-in-out),
+    content-visibility var(--dur-slow) allow-discrete;
+}
+
+details[open]::details-content {
+  block-size: auto;
+}
+
 /* One focus style for the whole product: a rust ring that is never used to
    mean anything else, shown only for keyboard focus. */
 :focus-visible {

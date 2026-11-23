@@ -1,5 +1,6 @@
 import { useT } from "../../i18n/I18nProvider";
 import { useEffect, useId, useRef, useState } from "react";
+import { FieldError } from "../../design/components/Field";
 import { formatDate, todayIso } from "../restaurant/format";
 
 function monthStart(date: string) {
@@ -7,10 +8,17 @@ function monthStart(date: string) {
   return new Date(year, month - 1, 1);
 }
 
-export function DiscoveryDate({ value, onChange, stacked }: {
+/** How long the calendar takes to fold away, in ms; it stays on the page that long so it can leave gently. */
+const LEAVE_MS = 180;
+
+export function DiscoveryDate({ value, onChange, stacked, min, error = null, required = false }: {
   value: string;
   onChange: (value: string) => void;
   stacked: boolean;
+  /** The first day that can be chosen (today when left out). */
+  min?: string;
+  error?: string | null;
+  required?: boolean;
 }) {
   const {t,tag} = useT();
   const id = useId();
@@ -18,7 +26,9 @@ export function DiscoveryDate({ value, onChange, stacked }: {
   const trigger = useRef<HTMLButtonElement>(null);
   const calendar = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const minimum = todayIso();
+  // The calendar stays in the page a moment after it is closed, so it can fold away instead of vanishing.
+  const [present, setPresent] = useState(false);
+  const minimum = min ?? todayIso();
   const [month, setMonth] = useState(() => monthStart(value || minimum));
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
@@ -27,6 +37,15 @@ export function DiscoveryDate({ value, onChange, stacked }: {
   const preview = value
     ? new Date(`${value}T12:00:00`).toLocaleDateString(tag, { weekday: "short", day: "numeric", month: "short" })
     : t("Choose a date");
+
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setPresent(false), LEAVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -48,7 +67,7 @@ export function DiscoveryDate({ value, onChange, stacked }: {
   };
 
   return (
-    <div ref={field} className={stacked ? "field discover-date" : "discover-date"}
+    <div ref={field} className={stacked ? `field discover-date${error ? " field-invalid" : ""}` : "discover-date"}
       onBlur={event => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
       }}
@@ -61,7 +80,8 @@ export function DiscoveryDate({ value, onChange, stacked }: {
       <label htmlFor={id} className={stacked ? "field-label" : undefined}>{t("Date")}</label>
       <div className="discover-date-control">
         <input className={stacked ? "field-input" : undefined} id={id} type="date" aria-label={t("Date")} min={minimum}
-          value={value} onChange={event => onChange(event.target.value)}
+          value={value} required={required} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined}
+          onChange={event => onChange(event.target.value)}
           onKeyDown={event => {
             if (event.altKey && event.key === "ArrowDown") {
               event.preventDefault();
@@ -75,7 +95,8 @@ export function DiscoveryDate({ value, onChange, stacked }: {
           <span aria-hidden="true" />
         </button>
       </div>
-      {open && <div ref={calendar} id={`${id}-calendar`} className="discover-calendar" role="group" aria-label={t("Booking calendar")}>
+      {error && <FieldError id={`${id}-error`} message={error} />}
+      {(open || present) && <div ref={calendar} id={`${id}-calendar`} className={open ? "discover-calendar" : "discover-calendar is-leaving"} role="group" aria-label={t("Booking calendar")} aria-hidden={open ? undefined : true}>
         <div className="discover-calendar-header">
           <button type="button" aria-label={t("Previous month")} disabled={month <= monthStart(minimum)}
             onClick={() => setMonth(new Date(year, monthIndex - 1, 1))}>‹</button>

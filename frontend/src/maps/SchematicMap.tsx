@@ -64,6 +64,7 @@ export function SchematicMap({ pins, highlightedId, selectedId = null, onSelect,
             tabIndex={0}
             aria-label={`${pin.number}. ${pin.name}`}
             aria-pressed={selectedId === pin.id}
+            data-pin-id={pin.id}
             className={`schematic-pin${highlightedId === pin.id ? " is-active" : ""}${selectedId === pin.id ? " is-selected" : ""}${focusedId && focusedId !== pin.id ? " is-muted" : ""}`}
             transform={`translate(${pin.x} ${pin.y})`}
             onClick={() => onSelect?.(pin.id)}

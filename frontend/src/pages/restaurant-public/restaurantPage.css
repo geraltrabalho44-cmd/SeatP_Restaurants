@@ -43,7 +43,7 @@
 .rp-back {align-self:flex-start;min-height:2.75rem;display:inline-flex;align-items:center;font-size:.875rem}
 .rp-head h1 {font-family:var(--font-display);font-size:3rem;font-weight:400;line-height:1.1}
 .rp-head .discover-features {margin:1rem 0 0}
-.rp-hero-layout {display:grid;grid-template-columns:minmax(0,1.8fr) minmax(22rem,1fr);gap:1.5rem;align-items:stretch}
+.rp-hero-layout {display:grid;grid-template-columns:minmax(0,min(47rem,64%)) minmax(22rem,1fr);gap:1.5rem;align-items:stretch}
 .rp-hero-layout .rp-gallery {grid-template-columns:minmax(0,1fr);gap:.5rem}
 .rp-hero-layout .rp-cover {max-height:none;aspect-ratio:16/10}
 .rp-hero-layout .rp-thumbs {grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -58,7 +58,7 @@
 .rp-hero-layout:has(.rb5-stagebar[data-stage="1"], .rb5-stagebar[data-stage="2"],.rb-done,.rb5-confirm) .rp-gallery {display:none}
 @media(max-width:60rem){.rp-hero-layout{grid-template-columns:1fr}.rp-hero-layout:has(.when-times) .rp-gallery{grid-column:1;grid-row:2}.rp-hero-layout:has(.when-times) .rp-book{grid-row:1}.rp-head h1{font-size:2.25rem}}
 @media(max-width:40rem){.rp-head{flex-wrap:nowrap;gap:.5rem}.rp-head-main{flex:1;min-width:0}.rp-head h1{font-size:2rem}.rp-cta{width:auto;min-width:5rem;font-size:.8125rem;padding:.5rem}.rp-hero-layout .rp-book{padding:1rem}.rp-hero-layout .rp-cover{aspect-ratio:16/8;max-height:11rem}.rp .discover-features{font-size:.75rem}}
-.rp {max-width:75rem;width:100%;margin:0 auto;position:relative;gap:1rem}
+.rp {max-width:85rem;width:100%;margin:0 auto;position:relative;gap:1rem}
 .rp .rp-back {min-height:1.5rem}
 .rp-head .discover-features {display:none}
 .rp-visit {min-width:0}
@@ -117,10 +117,48 @@
 .rp-menu-item dd { margin: .125rem 0 0; color: var(--c-text-muted); font-size: .875rem; }
 .rp-menu-item dd.rp-menu-allergens { font-size: .8125rem; }
 
-/* The booking box is as tall as the photo beside it; its main button sits at the bottom. */
+/* The booking box is only as tall as what is in it (the main button right under the last field), and stands level with the middle of the photo beside it. */
 @media (min-width: 60.01rem) {
-  .rp-hero-layout .rp-book { display:flex;flex-direction:column; }
-  .rp-hero-layout .rp-book > .rb-page { flex:1;display:flex;flex-direction:column;width:100%;max-width:none;margin:0;padding-inline:0; }
-  .rp-hero-layout .rp-book form.when-party { flex:1;display:flex;flex-direction:column; }
-  .rp-hero-layout .rp-book form.when-party > :last-child { margin-top:auto; }
+  .rp-hero-layout:has(.when-party) .rp-book { align-self:center;justify-self:start;inline-size:min(27rem,100%);box-sizing:border-box;transition:inline-size var(--dur-slow) var(--ease-in-out),block-size var(--dur-slow) var(--ease-in-out); }
 }
+/* On a big screen the box opens sideways: when "Access needs and table preferences" is open it grows to the right, to the
+   full width the wider page leaves it, and up and down to the top and bottom of the photo, never past them. The two groups
+   of questions sit side by side inside it, so it does not need to be taller. */
+@media (min-width: 90rem) {
+  .rp-hero-layout:has(.when-party):has(.when-requirements[open]) .rp-book { inline-size:100%;block-size:100%;overflow:auto;padding:1.25rem 1.5rem; }
+  .rp-hero-layout .rp-cover { aspect-ratio:4 / 3; }
+  .rp-hero-layout .when-requirements[open]::details-content { display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);column-gap:var(--space-5); }
+  .rp-hero-layout:has(.when-requirements[open]) .rp-book > h2 { margin:0 0 .75rem;font-size:1.375rem; }
+  .rp-hero-layout:has(.when-requirements[open]) .when-party { gap:.5rem; }
+  .rp-hero-layout .when-requirements .rb-needs { border-top:0;padding-block:.25rem;gap:.5rem; }
+  .rp-hero-layout .when-requirements .rb-needs .checkbox-hint { font-size:.75rem; }
+  .rp-hero-layout .when-requirements .rb-needs:last-child { gap:.375rem; }
+  .rp-hero-layout .when-requirements .rb-needs:last-child .checkbox { min-height:2rem; }
+  .rp-hero-layout .when-requirements .rb-needs:last-child .checkbox-input { margin-block:0; }
+}
+/* The wishes are pills that wrap, not a long list of boxes. */
+.when-requirements .rb-needs:last-child { display:flex;flex-direction:row;flex-wrap:wrap;gap:.5rem;align-content:flex-start; }
+.when-requirements .rb-needs:last-child > legend,.when-requirements .rb-needs:last-child > .rb-muted { flex:0 0 100%; }
+.when-requirements .rb-needs:last-child .checkbox { flex:0 0 auto;width:auto;max-width:100%;margin:0;align-items:center;min-height:2.25rem;padding:0 .75rem 0 .625rem;border:1px solid var(--c-border);border-radius:var(--radius-pill);background:var(--c-surface);transition:background-color var(--dur-base) var(--ease-out),border-color var(--dur-base) var(--ease-out); }
+.when-requirements .rb-needs:last-child .checkbox:hover { border-color:var(--c-primary); }
+.when-requirements .rb-needs:last-child .checkbox:has(input:checked) { background:var(--c-primary-soft);border-color:var(--c-primary);color:var(--c-primary); }
+
+/* Below the booking: About, Hours and Find us read a little larger, and the map is bigger. */
+@media (min-width: 60.01rem) { .rp-columns { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } }
+.rp-columns { font-size:1.0625rem; }
+.rp-columns h2 { font-size:1.625rem; }
+.rp-hours { max-width:36rem; }
+.rp-hours th,.rp-hours td { padding:var(--space-3) var(--space-3); }
+.rp-map { height:24rem; }
+@media (max-width: 40rem) { .rp-map { height:18rem; } }
+
+/* Everything you can press on this page moves gently: colours ease in, the back arrow leans, the sections slide in when you switch. */
+.rp-back,.rp-section-nav a {
+  transition:color var(--dur-base) var(--ease-out),border-color var(--dur-base) var(--ease-out),background-color var(--dur-base) var(--ease-out),text-decoration-color var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out);
+}
+.rp-back:hover { transform:translateX(-.25rem); }
+.rp-section-nav a:hover { color:var(--c-primary); }
+.rp-section-nav a:active { transform:translateY(1px); }
+@keyframes rp-section-in { from { transform:translateY(.75rem); } to { transform:none; } }
+#menu,#reviews,.rp-columns:not([hidden]) { animation:rp-section-in var(--dur-slow) var(--ease-out); }
+

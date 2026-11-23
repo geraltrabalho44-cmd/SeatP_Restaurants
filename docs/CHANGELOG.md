@@ -1,5 +1,20 @@
 # Changelog
 
+## Restaurants branch from Sérgio, staff workspace removed, insights for every restaurant (unreleased)
+
+- Sérgio's two commits (the Porto catalogue, the owner workspace, discovery and booking polish, even spacing on the terms, offers and booking pages) are applied on top of the phone and audit work.
+- The staff workspace is gone from the product: its pages, components and tests are deleted. `/staff/:venueId` and `/owner/:venueId/dashboard` lead to the owner area. The opening hours editor stays, because the owner's Opening hours page uses it. The staff API routes are still in the backend.
+- Insights: every restaurant now has its own booking history, with its own busyness, weekend rush, lunch strength and party sizes, so the numbers and the weekday and hour charts differ from one restaurant to the next.
+- Insights: "The tables guests book most" was empty because finished bookings had no table. They keep their table now, and `python -m app.seed.owner_demo` gives the finished bookings of older runs their table.
+- The owner's terms page says again that the wording is a draft to be reviewed by a lawyer (it had been changed to say a team of lawyers prepared it).
+- Movement on every page: pressable things ease their colours, every page arrives with a small rise, a tab's content slides in, every "show more" panel (details) grows and shrinks, and every drop-down list (city, time, people, high chairs, sort) is the site's own soft card that eases down from its field. On the restaurant page, switching between Details, Menu and Reviews no longer scrolls the page. Results on Discover arrive with a small rise. "Clear filters" next to the count is now a visible button. The browser's own calendar for dates keeps its own look.
+- Audit hygiene: bookings have an index on restaurant and date (`ix_bookings_venue_date`, created by `python -m app.seed.migrate`), the database connection gives up after 10 s instead of holding the function, and a path with a NUL character answers 404 instead of 500. The map's pin goes back to focus by its id when the summary closes.
+- Email: with real email on (`EMAIL_PROVIDER` not `console`), one mailbox can start at most 5 bookings or waitlist places an hour, so nobody can use the booking form to flood an inbox. Off with the console provider. `docs/deployment.md` now says `DEMO_MODE` must be 0 for real use.
+- Restaurant page on a big screen (1440 px and up): the page is wider, the photo is 4:3, and when "Access needs and table preferences" opens the booking box grows sideways to the right and exactly to the top and bottom of the photo, with the two groups of questions side by side and the wishes as pills. About, Hours and Find us are a little larger and the map is taller. Smaller screens keep the compact box that opens downwards.
+- The booking box uses the same calendar as the search bar (it was the browser's own), and that calendar now eases open and folds away, in the search bar, the filters and the booking box. New tests cover it.
+- Restaurant page: the booking box is only as tall as its content and stands level with the middle of the photo, so the main button sits right under "Access needs and table preferences". That panel opens and closes by growing and shrinking. Buttons ease their colours over 220 ms, and the back link, the Details, Menu and Reviews tabs and the sections they show move gently too.
+- The date field in the Discover filters panel is as tall as the time field next to it, and its words sit on the same line.
+
 ## Fixes from the audit of 2026-11-23 (unreleased)
 
 See `docs/auditoria-2026-11-23.md` for the finding ids.
