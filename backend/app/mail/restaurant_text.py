@@ -138,22 +138,22 @@ _TEXT: dict[str, dict[str, str]] = {
     # The footer does not say "we never send marketing": a diner may have ticked the box for the restaurant's offers.
     "stop": {
         "en": (
-            "This email is only about your booking. To stop these emails, cancel the booking with the link above: you will "
+            "This email is only about your booking. To stop these emails, cancel the booking using the button or link above: you will "
             "get nothing more about it. If you ticked the box for offers from this restaurant, those arrive in separate "
             "emails and each has its own link to stop them."
         ),
         "pt": (
-            "Este email é só sobre a tua reserva. Para deixares de os receber, cancela a reserva com a ligação acima: não "
+            "Este email é só sobre a tua reserva. Para deixares de os receber, cancela a reserva com o botão ou a ligação acima: não "
             "recebes mais nada sobre ela. Se marcaste a caixa das ofertas deste restaurante, essas chegam em emails à "
             "parte e cada um tem a sua própria ligação para os parares."
         ),
         "es": (
-            "Este email es solo sobre tu reserva. Para dejar de recibirlos, cancela la reserva con el enlace de arriba: no "
+            "Este email es solo sobre tu reserva. Para dejar de recibirlos, cancela la reserva con el botón o el enlace de arriba: no "
             "recibirás nada más sobre ella. Si marcaste la casilla de ofertas de este restaurante, esas llegan en emails "
             "aparte y cada uno tiene su propio enlace para darte de baja."
         ),
         "fr": (
-            "Cet email ne concerne que votre réservation. Pour ne plus les recevoir, annulez la réservation avec le lien "
+            "Cet email ne concerne que votre réservation. Pour ne plus les recevoir, annulez la réservation avec le bouton ou le lien "
             "ci-dessus : vous ne recevrez plus rien à son sujet. Si vous avez coché la case des offres de ce restaurant, "
             "elles arrivent dans des emails séparés, chacun avec son propre lien pour les arrêter."
         ),

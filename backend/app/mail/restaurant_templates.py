@@ -215,10 +215,12 @@ def _buttons(link: str, phone: str | None, locale: str) -> str:
 
     The buttons are the links: no web address is printed, and a diner who cannot
     tap one is told to phone the restaurant."""
-    pair = style.button_html(
-        style.with_action(link, "change"), text("change_time", locale)
-    ) + style.button_html(
-        style.with_action(link, "cancel"), text("cancel_booking", locale), kind="danger"
+    pair = (
+        style.button_html(style.with_action(link, "change"), text("change_time", locale))
+        + " "
+        + style.button_html(
+            style.with_action(link, "cancel"), text("cancel_booking", locale), kind="danger"
+        )
     )
     block = f'<p style="margin:24px 0 8px;">{pair}</p>'
     if phone:

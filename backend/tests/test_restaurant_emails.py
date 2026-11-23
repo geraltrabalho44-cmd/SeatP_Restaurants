@@ -321,3 +321,15 @@ def test_the_headline_is_a_purple_heading() -> None:
     heading = re.search(r"<h1 [^>]*>(.*?)</h1>", page)
     assert heading and "You&#x27;re booked at Casa Azul." in heading.group(1)
     assert "color:#4f3f8f" in heading.group(0) and "font-weight:800" in heading.group(0)
+
+
+def test_the_two_buttons_are_separated_by_a_space() -> None:
+    # Outlook for Windows ignores the margin on links; a plain space keeps the buttons apart,
+    # and in an app that strips styles the two labels do not run together.
+    page = booking_email("confirmed", facts()).body_html
+    assert "Change time</a> <a " in page
+
+
+def test_the_footer_names_the_button_as_well_as_the_link() -> None:
+    page = booking_email("confirmed", facts()).body_html
+    assert "using the button or link above" in page

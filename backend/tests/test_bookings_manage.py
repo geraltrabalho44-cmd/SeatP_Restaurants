@@ -1,6 +1,6 @@
 """Manage links (view, change, cancel) and the waitlist."""
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import Any
 
 import pytest
@@ -16,7 +16,7 @@ from test_restaurant_helpers import (
     place_booking,
 )
 
-from app.models import EmailOutbox, Organiser, TableSlot, Venue, WaitlistEntry
+from app.models import Booking, EmailOutbox, Organiser, TableSlot, Venue, WaitlistEntry
 from app.restaurant_service import manage_flow
 
 
@@ -277,3 +277,19 @@ def test_manage_view_tells_the_largest_party_the_restaurant_can_seat(
     too_big = client.patch(f"/api/b/{token}", json={"party_size": 9})
     assert too_big.status_code == 422
     assert too_big.json()["error"]["code"] == "validation"
+
+
+def test_a_booking_that_already_started_cannot_be_cancelled_by_the_diner(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    token = _booked(client, place)
+    booking = session.scalars(select(Booking)).one()
+    booking.date = booking.date - timedelta(days=60)  # the meal is long over
+    session.commit()
+    refused = client.delete(f"/api/b/{token}")
+    assert refused.status_code == 409
+    assert refused.json()["error"]["code"] == "deadline_passed"
+    session.refresh(booking)
+    assert booking.status == "confirmed"  # nothing changed...
+    assert not _emails(session).get("booking_cancelled")  # ...and no cancellation email went out

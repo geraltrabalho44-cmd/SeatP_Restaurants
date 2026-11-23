@@ -1,13 +1,18 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ManageBookingPage from "../ManageBookingPage";
 import { BOOKING, SLOTS, VENUE } from "./fixtures";
 import { apiError, callsTo, mockApi } from "./mockApi";
 
+function SearchProbe() {
+  return <p data-testid="search">{useLocation().search}</p>;
+}
+
 function renderManage(token = "tok123", search = ""): void {
   render(
     <MemoryRouter initialEntries={[`/b/${token}${search}`]}>
+      <SearchProbe />
       <Routes>
         <Route path="/b/:token" element={<ManageBookingPage />} />
       </Routes>
@@ -53,6 +58,23 @@ describe("Manage booking page opened from an email button", () => {
     expect(await screen.findByText(/can no longer be changed online/)).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+  });
+
+  it("?action=change brings the form into view (on a phone it opens below the fold)", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", { value: scrollIntoView, configurable: true });
+    mockApi(routes());
+    renderManage("tok123", "?action=change");
+    await screen.findByLabelText("Time");
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("forgets the action once it has opened, so a reload does not open it again", async () => {
+    mockApi(routes());
+    renderManage("tok123", "?action=cancel");
+    await screen.findByRole("dialog", { name: "Cancel this booking?" });
+    await waitFor(() => expect(screen.getByTestId("search").textContent).toBe(""));
   });
 
   it("ignores an action it does not know", async () => {

@@ -217,3 +217,17 @@ def test_the_table_sentences_and_the_chair_are_in_the_language_of_the_booking(
     assert all(
         re.search(r"Direct|Sunset|Facing|window|View of", p) is None for p in facts.phrases
     ), facts.phrases
+
+
+@pytest.mark.parametrize(
+    ("locale", "phrase"),
+    [
+        ("pt", "com o botão ou a ligação acima"),
+        ("es", "con el botón o el enlace de arriba"),
+        ("fr", "avec le bouton ou le lien ci-dessus"),
+    ],
+)
+def test_the_footer_names_the_button_as_well_as_the_link_in_every_language(
+    locale: str, phrase: str
+) -> None:
+    assert phrase in booking_email("confirmed", facts(locale)).body_html
