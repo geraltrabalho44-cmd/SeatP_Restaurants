@@ -142,7 +142,7 @@ export default function OffersPage() {
       {state.status === "loading" && <Skeleton label={t("Loading your offers")} lines={4} />}
       {state.status === "error" && <ErrorState message={t("Could not open your offers. Check your sign-in or retry.")} onRetry={() => reload()} />}
       {state.status === "ready" && (
-        <>
+        <div className="ow-stack">
           {creating && (
             <OfferForm
               venueId={venueId}
@@ -158,7 +158,7 @@ export default function OffersPage() {
           {state.data.offers.map((offer) => (
             <OfferCard key={offer.id} venueId={venueId} offer={offer} limits={state.data} firstSegment={firstSegment} onChanged={(next) => setData({ ...state.data, offers: state.data.offers.map((o) => (o.id === next.id ? next : o)) })} />
           ))}
-        </>
+        </div>
       )}
     </OwnerShell>
   );
