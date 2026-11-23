@@ -1,4 +1,4 @@
-"""Email colours come from the design tokens, pass contrast, and the button is safe."""
+"""Email colours come from the restaurants look, pass contrast, and the buttons are safe."""
 
 import re
 from pathlib import Path
@@ -7,16 +7,17 @@ import pytest
 
 from app.mail import style
 
-TOKENS = Path(__file__).resolve().parents[2] / "frontend" / "src" / "design" / "tokens.css"
+THEME = Path(__file__).resolve().parents[2] / "frontend" / "src" / "design" / "restaurant-theme.css"
 
 
 def _token(name: str) -> str:
-    match = re.search(rf"--{re.escape(name)}:\s*(#[0-9a-fA-F]{{6}})", TOKENS.read_text("utf-8"))
-    assert match, f"{name} not found in tokens.css"
+    # The first definition in the file is the light one (the dark block comes later).
+    match = re.search(rf"--{re.escape(name)}:\s*(#[0-9a-fA-F]{{6}})", THEME.read_text("utf-8"))
+    assert match, f"{name} not found in restaurant-theme.css"
     return match.group(1).lower()
 
 
-def test_colours_match_the_design_tokens() -> None:
+def test_colours_match_the_restaurants_theme() -> None:
     expected = {
         "c-bg": style.BG,
         "c-surface": style.CARD,
@@ -25,6 +26,7 @@ def test_colours_match_the_design_tokens() -> None:
         "c-border": style.BORDER,
         "c-primary": style.PRIMARY,
         "c-on-primary": style.ON_PRIMARY,
+        "c-cta": style.CTA,
         "c-accent": style.ACCENT,
         "c-danger": style.DANGER,
     }
@@ -49,8 +51,10 @@ def _ratio(foreground: str, background: str) -> float:
         (style.INK, style.CARD),
         (style.MUTED, style.CARD),
         (style.MUTED, style.BG),
+        (style.ON_PRIMARY, style.CTA),
         (style.ON_PRIMARY, style.PRIMARY),
         (style.PRIMARY, style.CARD),
+        (style.DANGER, style.CARD),
         (style.ACCENT, style.CARD),
     ],
 )
@@ -59,10 +63,15 @@ def test_text_pairs_pass_wcag_aa(foreground: str, background: str) -> None:
 
 
 def test_button_escapes_and_has_two_looks() -> None:
-    primary = style.button_html('https://x/b/a?x=1&y="2"', "<b>Go</b>")
-    assert 'href="https://x/b/a?x=1&amp;y=&quot;2&quot;"' in primary
-    assert "&lt;b&gt;Go&lt;/b&gt;" in primary and "<b>" not in primary
-    assert "background:#1f5a48" in primary
-    secondary = style.button_html("https://x/b/a", "Cancel", primary=False)
-    assert "border:2px solid #1f5a48" in secondary
-    assert "background:#1f5a48" not in secondary
+    main = style.button_html('https://x/b/a?x=1&y="2"', "<b>Go</b>")
+    assert 'href="https://x/b/a?x=1&amp;y=&quot;2&quot;"' in main
+    assert "&lt;b&gt;Go&lt;/b&gt;" in main and "<b>" not in main
+    assert "background:#b0347a" in main  # the site's one main action is pink
+    danger = style.button_html("https://x/b/a", "Cancel", kind="danger")
+    assert "border:2px solid #923b31" in danger and "color:#923b31" in danger
+    assert "background:#b0347a" not in danger
+
+
+def test_with_action_adds_the_action_to_a_link_with_or_without_a_query() -> None:
+    assert style.with_action("https://s/b/t", "change") == "https://s/b/t?action=change"
+    assert style.with_action("https://s/b/t?x=1", "cancel") == "https://s/b/t?x=1&action=cancel"

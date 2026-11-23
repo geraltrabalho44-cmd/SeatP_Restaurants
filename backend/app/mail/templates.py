@@ -86,42 +86,44 @@ def _text_version(
 
 
 # Inline styles because many email apps ignore <style> blocks. One column with a
-# max width reads well on a phone and on a desktop. The only image is the logo,
-# sent inside the email as cid:logo (app/mail/logo.py); with images off the
-# word "SeatPlan" next to it still reads. Colours and fonts: app/mail/style.py.
+# max width reads well on a phone and on a desktop. The only image the shell
+# adds is the SeatPlan logo, sent inside the email as cid:logo (app/mail/logo.py,
+# 150 px wide); with images off its alt text "SeatPlan" is what reads. The
+# look is the site's restaurants look: lavender page, white card, purple
+# headings. Colours and fonts: app/mail/style.py.
 _PAGE = (
     '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
     '<meta name="viewport" content="width=device-width, initial-scale=1"></head>'
     '<body style="margin:0;padding:0;background:' + style.BG + ';">'
     '<div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:'
-    + style.FONT_BODY
+    + style.FONT
     + ";font-size:16px;line-height:1.5;color:"
     + style.INK
     + ';">'
-    '<table role="presentation" style="margin:0 0 16px;border-collapse:collapse;"><tr>'
-    '<td><img src="cid:logo" width="40" height="40" alt="SeatPlan" '
-    'style="display:block;border:0;width:40px;height:40px;"></td>'
-    '<td style="padding-left:10px;font-family:'
-    + style.FONT_DISPLAY
-    + ";font-size:22px;font-weight:bold;color:"
-    + style.INK
-    + ';">{sender}</td></tr></table>'
+    '<p style="margin:0 0 20px;"><img src="cid:logo" width="150" height="45" alt="SeatPlan" '
+    'style="display:block;border:0;width:150px;height:45px;"></p>'
     '<div style="background:'
     + style.CARD
     + ";border:1px solid "
     + style.BORDER
-    + ';border-radius:10px;padding:24px;">{content}</div>'
+    + ';border-radius:18px;padding:28px 24px;">{content}</div>'
     '<p style="margin:16px 0 0;font-size:13px;color:'
     + style.MUTED
-    + ';">{footer}<br>'
-    + html.escape(NO_REPLY_TEXT)
-    + "</p></div></body></html>"
+    + ';">{footer}</p></div></body></html>'
 )
 
 
 def _button_block(href: str, label: str) -> str:
-    """One primary button in its own paragraph. No address is printed under it."""
+    """One main button in its own paragraph. No address is printed under it."""
     return f'<p style="margin:24px 0;">{style.button_html(href, label)}</p>'
+
+
+def _heading(text: str) -> str:
+    """The headline of an email: heavy purple sans, like the site's headings."""
+    return (
+        '<h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;font-weight:800;'
+        f'letter-spacing:-0.015em;color:{style.PRIMARY};">{html.escape(text)}</h1>'
+    )
 
 
 def _paragraph(text: str) -> str:
@@ -140,7 +142,7 @@ def _html_version(
     content = _paragraph(greeting) + "".join(_paragraph(text) for text in paragraphs)
     content += _button_block(link, link_label)
     content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
-    footer = f"{escape(reason)}<br>{escape(stop)}"
+    footer = f"{escape(reason)}<br>{escape(stop)}<br>{escape(NO_REPLY_TEXT)}"
     return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
 
 
@@ -390,7 +392,10 @@ def _account_seat_html(facts: AccountSeat) -> str:
     content += _paragraph(_deadline_sentence(facts))
     content += _button_block(facts.link, "See my seat")
     content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
-    footer = f"{escape(_account_reason(facts.event_name))}<br>{escape(_ACCOUNT_STOP_TEXT)}"
+    footer = (
+        f"{escape(_account_reason(facts.event_name))}<br>{escape(_ACCOUNT_STOP_TEXT)}"
+        f"<br>{escape(NO_REPLY_TEXT)}"
+    )
     return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
 
 
