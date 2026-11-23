@@ -54,7 +54,7 @@ export function ConsentBoxes({ venueId, value, onChange, error = null, disabled 
       <Checkbox
         id="rb-accept-offers"
         label={t("I'd like to receive offers and news from this restaurant (optional).")}
-        hint={t("Only from this restaurant, by email or phone. You can stop at any time with the link in every message. Not ticking this changes nothing about your booking.")}
+        hint={t("Only from this restaurant, by email. You can stop at any time with the link in every message. Not ticking this changes nothing about your booking.")}
         checked={value.offers}
         disabled={disabled}
         onChange={(event) => onChange({ ...value, offers: event.target.checked })}
