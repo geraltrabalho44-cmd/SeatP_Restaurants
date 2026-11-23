@@ -68,7 +68,7 @@ describe("the demo payment page", () => {
       "POST /api/payments/demo/p1": () => payment({ declined: true }),
     });
     open("/pay/demo/p1");
-    fireEvent.click(await screen.findByRole("button", { name: "Simulate a declined card" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Try a declined card" }));
     expect(await screen.findByText(/The card was declined/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Pay €40" })).toBeTruthy();
   });
@@ -91,7 +91,7 @@ describe("the demo payment page", () => {
   it("is not a payment page when real payments are on", async () => {
     mockApi({ "GET /api/payments/p1": () => payment({ mode: "stripe" }) });
     open("/pay/demo/p1");
-    expect(await screen.findByText("This is not a demo payment")).toBeTruthy();
+    expect(await screen.findByText("This payment is not made on this page")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Pay/ })).toBeNull();
   });
 

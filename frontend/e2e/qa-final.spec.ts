@@ -37,3 +37,15 @@ test("clearing the date or choosing a day that has passed shows a plain message,
   await expect(page.getByRole("heading", { name: "This date has passed" })).toBeVisible();
   await expect(page.getByText("No times left today")).toHaveCount(0);
 });
+
+test("the sign-up code screen says where the code is without the word demo", async ({ page }) => {
+  await page.goto("/restaurants/account/sign-up");
+  await page.getByLabel(/name/i).first().fill("Teresa Antunes");
+  await page.getByLabel("Email", { exact: true }).fill("teresa.antunes.qa@example.com");
+  await page.getByLabel("Password", { exact: true }).first().fill("a long safe diner password");
+  await page.getByRole("checkbox").first().check();
+  await page.getByRole("button", { name: "Send my code" }).click();
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await expect(page.getByText(/No email is sent to an @example\.com address, so your code is \d{6}/)).toBeVisible();
+  expect(await page.locator("main").innerText()).not.toMatch(/\bdemo\b/i);
+});

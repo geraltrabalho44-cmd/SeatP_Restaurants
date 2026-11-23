@@ -154,7 +154,7 @@ function Block({ venueId, options, value, onChange, disabled, error }: PhoneOptI
                   </p>
                   {sent.demoCode && (
                     <p className="rb-notice" role="note">
-                      {t("Demo: no message is sent. Your code is")} <strong>{sent.demoCode}</strong>.
+                      {t("Messages are not sent from this site, so your code is")} <strong>{sent.demoCode}</strong>.
                     </p>
                   )}
                   <Field id="rb-phone-code" label={t("Code")} inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} disabled={disabled} onChange={(event) => setCode(codeDigits(event.target.value))} />
