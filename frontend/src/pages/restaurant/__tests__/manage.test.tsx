@@ -5,9 +5,9 @@ import ManageBookingPage from "../ManageBookingPage";
 import { BOOKING, SLOTS, VENUE } from "./fixtures";
 import { apiError, callsTo, mockApi } from "./mockApi";
 
-function renderManage(token = "tok123"): void {
+function renderManage(token = "tok123", search = ""): void {
   render(
-    <MemoryRouter initialEntries={[`/b/${token}`]}>
+    <MemoryRouter initialEntries={[`/b/${token}${search}`]}>
       <Routes>
         <Route path="/b/:token" element={<ManageBookingPage />} />
       </Routes>
@@ -17,6 +17,43 @@ function renderManage(token = "tok123"): void {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe("Manage booking page opened from an email button", () => {
+  const routes = (booking = BOOKING) => ({
+    "GET /api/b/tok123": () => booking,
+    [`GET /api/r/${VENUE}/slots`]: () => SLOTS,
+    "DELETE /api/b/tok123": () => ({ ...BOOKING, status: "cancelled" }),
+  });
+
+  it("?action=cancel opens the confirmation and cancels nothing by itself", async () => {
+    const calls = mockApi(routes());
+    renderManage("tok123", "?action=cancel");
+    expect(await screen.findByRole("dialog", { name: "Cancel this booking?" })).toBeTruthy();
+    expect(callsTo(calls, "DELETE", "/api/b/tok123")).toHaveLength(0);
+  });
+
+  it("?action=change opens the time form", async () => {
+    mockApi(routes());
+    renderManage("tok123", "?action=change");
+    expect(await screen.findByLabelText("Time")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("opens nothing for a booking that is already cancelled", async () => {
+    mockApi(routes({ ...BOOKING, status: "cancelled" }));
+    renderManage("tok123", "?action=cancel");
+    expect(await screen.findByText(/This booking is cancelled/)).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("ignores an action it does not know", async () => {
+    mockApi(routes());
+    renderManage("tok123", "?action=bogus");
+    await screen.findByRole("heading", { name: "Reservation details" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByLabelText("Time")).toBeNull();
+  });
 });
 
 describe("Manage booking page", () => {

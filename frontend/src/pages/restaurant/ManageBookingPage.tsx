@@ -2,7 +2,7 @@
 // email. Anyone with the link can view, change or cancel, so the token is
 // the only key; a wrong or old token shows the same "link does not work".
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { cancelBooking, getBooking } from "../../api/restaurant";
 import type { BookingView } from "../../api/restaurant";
@@ -60,8 +60,12 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
   const { t } = useT();
   const toast = useToast();
   // Which part of the booking is being edited: opened by the diner's intent, one at a time.
-  const [panel, setPanel] = useState<"time" | "chair" | null>(null);
-  const [cancelling, setCancelling] = useState(false);
+  // The email's two buttons add ?action=change or ?action=cancel. It only decides what is open at
+  // the start (a form, or the confirmation dialog): opening the link never changes or cancels anything.
+  const [params] = useSearchParams();
+  const action = isEditable(booking) ? params.get("action") : null;
+  const [panel, setPanel] = useState<"time" | "chair" | null>(action === "change" ? "time" : null);
+  const [cancelling, setCancelling] = useState(action === "cancel");
   // Only GET /b/{token} sends max_party, so the answers to a change or a cancel keep the one we had.
   const update = (next: BookingView): void => onUpdate({ ...next, max_party: next.max_party ?? booking.max_party });
   const changed = (next: BookingView): void => {
