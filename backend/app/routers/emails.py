@@ -1,26 +1,23 @@
 """Outbox processing endpoint and email log (/internal/email/process, /emails/log).
 
-POST /internal/email/process is called every 15 minutes by the GitHub Actions
-workflow .github/workflows/email-cron.yml. It is not for browsers: the caller
-proves itself with the X-Cron-Secret header.
+POST /internal/email/process runs the scheduled work by hand (the same work app/scheduler.py
+does on its own when the site is used; there is no cron any more). It is not for browsers: the
+caller proves itself with the X-Cron-Secret header.
 """
 
-import logging
 from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Header, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import select
 
-from app import db
+from app import db, scheduler
 from app.config import get_settings
 from app.core.errors import ApiError
 from app.core.privacy import mask_email
-from app.mail.outbox import process_due, redact_links, scrub_expired
-from app.mail.providers import provider_from_settings
-from app.models import EmailCode, EmailOutbox, utc_now
-from app.restaurant_service import booking_payments, offers, phone_messages
+from app.mail.outbox import redact_links
+from app.models import EmailOutbox, utc_now
 from app.security import CurrentOrganiser, client_ip, rate_limit, tokens_match
 
 router = APIRouter(tags=["emails"])
@@ -57,65 +54,17 @@ def _check_cron_secret(given: str | None) -> None:
         raise ApiError(401, "unauthorised", "Wrong or missing cron secret.")
 
 
-def _sweep_deposits(session: db.SessionDep, now: datetime) -> None:
-    """Give tables back where a deposit was never paid, and retry refunds that failed.
-
-    It rides on this same 15-minute cron call, so deposits need no second
-    schedule. It runs after the emails are sent and can never make the call fail:
-    event emails must keep flowing whatever happens here.
-    """
-    try:
-        booking_payments.sweep(session, now)
-    except Exception:
-        session.rollback()
-        logging.getLogger("seatplan.payments").exception("deposit sweep failed")
-
-
-def _sweep_phone_messages(session: db.SessionDep, now: datetime) -> None:
-    """Send the phone reminders and notices that are due, and forget old numbers.
-
-    Same rule as the deposits: it runs last and can never make the call fail.
-    """
-    try:
-        phone_messages.sweep(session, now)
-    except Exception:
-        session.rollback()
-        logging.getLogger("seatplan.messages").exception("phone message sweep failed")
-
-
-def _sweep_offers(session: db.SessionDep, now: datetime) -> None:
-    """Give the automatic offers (win-back, welcome, Nth visit) to guests who said yes to them.
-
-    Same rule as the other sweeps: it runs last and can never make the call fail.
-    """
-    try:
-        offers.sweep_auto(session, now)
-    except Exception:
-        session.rollback()
-        logging.getLogger("seatplan.offers").exception("offer sweep failed")
-
-
 @router.post("/internal/email/process")
 def process_outbox(
     request: Request,
     session: db.SessionDep,
     x_cron_secret: Annotated[str | None, Header()] = None,
 ) -> ProcessResult:
-    """Send the emails that are due. Called by the scheduled workflow."""
-    # Limits guessing of the secret; the real cron calls 4 times an hour.
+    """Send the emails that are due and do the housekeeping, by hand."""
+    # Limits guessing of the secret.
     rate_limit(session, f"cron-email:{client_ip(request)}", limit=30, window_s=60)
     _check_cron_secret(x_cron_secret)
-    provider = provider_from_settings(get_settings())
-    now = utc_now()
-    report = process_due(session, provider, now)
-    # Retention (S9): old finished rows lose their words and invite.
-    scrub_expired(session, now)
-    # Codes nobody typed in time (guest accounts) are of no more use.
-    session.execute(delete(EmailCode).where(EmailCode.expires_at <= now))
-    session.commit()
-    _sweep_deposits(session, now)
-    _sweep_phone_messages(session, now)
-    _sweep_offers(session, now)
+    report = scheduler.run_chores(session, utc_now())
     return ProcessResult(
         sent=report.sent, skipped=report.skipped, retrying=report.retrying, failed=report.failed
     )

@@ -13,8 +13,6 @@ The target is the one described in the contract (section 2):
 - **one hosted Postgres database** from Neon, added through the Vercel
   Marketplace,
 - **Resend** for real email, only after a sending domain is verified,
-- **GitHub Actions** for the email cron (already in
-  `.github/workflows/email-cron.yml`).
 
 What the repository already contains for this (checked in the code today):
 `vercel.json` (build command `cd frontend && npm ci && npm run build`, output
@@ -99,7 +97,7 @@ Set these for **Production** in the Vercel project. Every name is read by
 | `DEMO_KEY` | A new secret | The only way to call `POST /api/demo/reset` (header `X-Demo-Key`). Empty means nobody can reset |
 | `DEMO_ORGANISER_PASSWORD` | A private password | The public local defaults never apply on Postgres |
 | `DEMO_STAFF_PASSWORD` | A private password | Same as above |
-| `CRON_SECRET` | A new secret | The email cron sends it as `X-Cron-Secret`. Empty rejects every call |
+| `CRON_SECRET` | A new secret | Only for the by-hand endpoint `POST /api/internal/email/process` (header `X-Cron-Secret`). Empty rejects every call |
 | `EMAIL_PROVIDER` | `console` until step 6, then `resend` | `console` only writes one log line per email |
 | `RESEND_API_KEY` | Empty until step 6 | Needed only for `resend` |
 | `EMAIL_FROM` | Until step 6: `SeatPlan <noreply@example.com>`; after: an address on your verified domain | Resend sends only from a verified domain |
@@ -253,26 +251,19 @@ emails are written to the outbox and logged in one line each.
    an hour (`MAX_EMAILS_PER_RECIPIENT_PER_HOUR` in `restaurant_service/booking_caps.py`);
    the sixth gets a 429 "Too many emails have been sent to this address in the
    last hour". It is off while `EMAIL_PROVIDER=console`.
-5. Make one booking to an address on the allowlist and run the cron by hand
-   (step 7). Check the email arrives and `GET /api/emails/log` shows `sent`.
+5. Make one booking to an address on the allowlist and make the site send it
+   (step 7: it sends on its own). Check the email arrives and `GET /api/emails/log` shows `sent`.
 
-## Step 7. Turn on the email cron
+## Step 7. Emails send themselves (no cron)
 
-Status: **not done yet**
+Status: **nothing to set up**
 
-The workflow file is already in the repository and runs every 15 minutes. It
-does nothing until two **repository secrets** exist (GitHub: Settings,
-Secrets and variables, Actions):
-
-| Secret | Value |
-|---|---|
-| `SEATPLAN_URL` | The deployed site, for example `https://seatplan-demo.vercel.app` (no trailing slash) |
-| `CRON_SECRET` | Exactly the same value as `CRON_SECRET` in Vercel |
-
-Then press "Run workflow" on `email-cron` in the Actions tab once. A green run
-means the endpoint answered 2xx; a red run usually means a wrong secret (401)
-or a wrong URL. Why GitHub Actions and not a Vercel cron: `email-cron.yml`
-explains that on the Hobby plan a Vercel cron may run at most once a day.
+There is no scheduled job any more. The site sends a confirmation right after a booking
+goes through, and on any visit, at most once a minute per server, it sends reminders that
+became due and does the housekeeping (`backend/app/scheduler.py`). If nobody uses the site,
+a reminder waits for the next visit, which is fine for a demo. `SEND_ON_REQUEST=0` switches
+this off. `POST /api/internal/email/process` with `X-Cron-Secret` still runs the same work
+by hand; it needs `CRON_SECRET`, but nothing calls it for you.
 
 ## Step 8. After the deploy
 

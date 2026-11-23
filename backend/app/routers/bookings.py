@@ -198,6 +198,9 @@ def cancel_booking(manage_token: str, request: Request, session: db.SessionDep) 
     venue = _venue_of(session, booking.venue_id)
     if booking.status != "confirmed":
         raise ApiError(409, "conflict", "This booking can no longer be cancelled.")
+    # A meal that already started (or happened) cannot be "cancelled" by the diner: it would
+    # corrupt the restaurant's numbers and send a cancellation email for a meal already eaten.
+    manage_flow.check_changeable(venue, booking)
     manage_flow.cancel_booking(session, venue, booking, actor="diner", token=manage_token)
     session.commit()
     detail = booking_rows.describe(session, venue, booking)

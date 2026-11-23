@@ -61,6 +61,8 @@ def _use_database(url: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
     monkeypatch.setenv("SECRET_KEY", "test-secret-key-not-used-anywhere-else")
     monkeypatch.setenv("DEMO_MODE", "1")
     monkeypatch.setenv("FRONTEND_ORIGIN", "http://localhost:5173")
+    # Emails stay queued after a request, so a test can read them; tests/test_scheduler.py switches this on.
+    monkeypatch.setenv("SEND_ON_REQUEST", "0")
     for name in ("DEMO_KEY", "DEMO_ORGANISER_PASSWORD", "DEMO_STAFF_PASSWORD"):
         monkeypatch.delenv(name, raising=False)
     if url.startswith("postgresql"):

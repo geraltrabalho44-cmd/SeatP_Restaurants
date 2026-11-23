@@ -2,7 +2,6 @@
 
 import secrets
 from datetime import timedelta
-from html import escape
 from typing import Any
 
 from sqlalchemy import delete, select, update
@@ -65,11 +64,7 @@ def register(session: Session, name: str, email: str, password: str) -> dict[str
         )
         session.add(row)
         key = _email_key(row)
-        parts = templates.EmailParts(
-            "Your SeatPlan owner verification code",
-            f"Your code is {code}. It expires in 15 minutes. Sign in at {link}",
-            f'<p>Your code is <strong>{code}</strong>. It expires in 15 minutes.</p><p><a href="{escape(link, quote=True)}">Sign in</a></p>',
-        )
+        parts = templates.owner_account_code(code, link)
     enqueue(
         session,
         idempotency_key=key,

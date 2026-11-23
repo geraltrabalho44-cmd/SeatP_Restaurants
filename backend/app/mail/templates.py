@@ -18,6 +18,8 @@ from datetime import datetime
 from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
+from app.mail import style
+
 SENDER_NAME = "SeatPlan"
 # The outbox column is VARCHAR(200); a longer subject would be refused by Postgres.
 MAX_SUBJECT_LENGTH = 200
@@ -64,6 +66,7 @@ _STOP_TEXT = (
     "To stop these emails, cancel or decline with the link above: you will get "
     "nothing more about it. We never send marketing."
 )
+NO_REPLY_TEXT = "Please do not reply to this email: nobody reads this address."
 
 
 def _text_version(
@@ -78,30 +81,49 @@ def _text_version(
     for paragraph in paragraphs:
         lines += [paragraph, ""]
     lines += [f"{link_label}: {link}", "", f"The {SENDER_NAME} team", "", "--", reason]
-    lines.append(stop)
+    lines += [stop, NO_REPLY_TEXT]
     return "\n".join(lines) + "\n"
 
 
 # Inline styles because many email apps ignore <style> blocks. One column with a
-# max width reads well on a phone and on a desktop, and nothing needs images.
+# max width reads well on a phone and on a desktop. The only image the shell
+# adds is the SeatPlan logo, sent inside the email as cid:logo (app/mail/logo.py,
+# 150 px wide); with images off its alt text "SeatPlan" is what reads. The
+# look is the site's restaurants look: lavender page, white card, purple
+# headings. Colours and fonts: app/mail/style.py.
 _PAGE = (
     '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
     '<meta name="viewport" content="width=device-width, initial-scale=1"></head>'
-    '<body style="margin:0;padding:0;background:#f4f4f5;">'
-    '<div style="max-width:560px;margin:0 auto;padding:24px 16px;'
-    'font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#18181b;">'
-    '<p style="margin:0 0 16px;font-size:14px;font-weight:bold;color:#3f3f46;">{sender}</p>'
-    '<div style="background:#ffffff;border-radius:8px;padding:24px;">{content}</div>'
-    '<p style="margin:16px 0 0;font-size:13px;color:#52525b;">{footer}</p>'
-    "</div></body></html>"
+    '<body style="margin:0;padding:0;background:' + style.BG + ';">'
+    '<div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:'
+    + style.FONT
+    + ";font-size:16px;line-height:1.5;color:"
+    + style.INK
+    + ';">'
+    '<p style="margin:0 0 20px;"><img src="cid:logo" width="150" height="45" alt="SeatPlan" '
+    'style="display:block;border:0;width:150px;height:45px;"></p>'
+    '<div style="background:'
+    + style.CARD
+    + ";border:1px solid "
+    + style.BORDER
+    + ';border-radius:18px;padding:28px 24px;">{content}</div>'
+    '<p style="margin:16px 0 0;font-size:13px;color:'
+    + style.MUTED
+    + ';">{footer}</p></div></body></html>'
 )
-_BUTTON = (
-    '<p style="margin:24px 0;"><a href="{href}" style="display:inline-block;'
-    "background:#1d4ed8;color:#ffffff;text-decoration:none;padding:12px 20px;"
-    'border-radius:6px;font-weight:bold;">{label}</a></p>'
-    '<p style="margin:0 0 16px;font-size:13px;color:#52525b;word-break:break-all;">'
-    "If the button does not work, copy this link: {href}</p>"
-)
+
+
+def _button_block(href: str, label: str) -> str:
+    """One main button in its own paragraph. No address is printed under it."""
+    return f'<p style="margin:24px 0;">{style.button_html(href, label)}</p>'
+
+
+def _heading(text: str) -> str:
+    """The headline of an email: heavy purple sans, like the site's headings."""
+    return (
+        '<h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;font-weight:800;'
+        f'letter-spacing:-0.015em;color:{style.PRIMARY};">{html.escape(text)}</h1>'
+    )
 
 
 def _paragraph(text: str) -> str:
@@ -118,9 +140,9 @@ def _html_version(
 ) -> str:
     escape = html.escape
     content = _paragraph(greeting) + "".join(_paragraph(text) for text in paragraphs)
-    content += _BUTTON.format(href=escape(link, quote=True), label=escape(link_label))
+    content += _button_block(link, link_label)
     content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
-    footer = f"{escape(reason)}<br>{escape(stop)}"
+    footer = f"{escape(reason)}<br>{escape(stop)}<br>{escape(NO_REPLY_TEXT)}"
     return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
 
 
@@ -336,7 +358,7 @@ def _account_seat_text(facts: AccountSeat) -> str:
     lines += [f"{label}: {value}" for label, value in _account_details(facts)]
     lines += ["", _PICTURE_NOTE, "", _deadline_sentence(facts), ""]
     lines += [f"See my seat: {facts.link}", "", f"The {SENDER_NAME} team", "", "--"]
-    lines += [_account_reason(facts.event_name), _ACCOUNT_STOP_TEXT]
+    lines += [_account_reason(facts.event_name), _ACCOUNT_STOP_TEXT, NO_REPLY_TEXT]
     return "\n".join(lines) + "\n"
 
 
@@ -357,8 +379,8 @@ def _picture_html(facts: AccountSeat) -> str:
     return (
         f'<img src="cid:seatmap" width="{width}" alt="{alt}" '
         f'style="display:block;width:100%;max-width:{width}px;height:auto;'
-        'border:1px solid #d4d4d8;border-radius:6px;margin:16px 0 8px;">'
-        f'<p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Your seat: {seat}, marked YOU.</p>'
+        f'border:1px solid {style.BORDER};border-radius:6px;margin:16px 0 8px;">'
+        f'<p style="margin:0 0 16px;font-size:14px;color:{style.MUTED};">Your seat: {seat}, marked YOU.</p>'
     )
 
 
@@ -368,9 +390,12 @@ def _account_seat_html(facts: AccountSeat) -> str:
     content += "".join(_paragraph(sentence) for sentence in _account_opening(facts))
     content += _details_table(facts) + _picture_html(facts)
     content += _paragraph(_deadline_sentence(facts))
-    content += _BUTTON.format(href=escape(facts.link, quote=True), label="See my seat")
+    content += _button_block(facts.link, "See my seat")
     content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
-    footer = f"{escape(_account_reason(facts.event_name))}<br>{escape(_ACCOUNT_STOP_TEXT)}"
+    footer = (
+        f"{escape(_account_reason(facts.event_name))}<br>{escape(_ACCOUNT_STOP_TEXT)}"
+        f"<br>{escape(NO_REPLY_TEXT)}"
+    )
     return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
 
 
@@ -452,6 +477,31 @@ def diner_account_exists(name: str, sign_in_link: str) -> EmailParts:
         sign_in_link,
         _CODE_REASON,
         _CODE_STOP_TEXT,
+    )
+
+
+def owner_account_code(code: str, sign_in_link: str) -> EmailParts:
+    """The 6-digit code that finishes a restaurant owner's sign-up. Never in the subject."""
+    return _compose(
+        "Your SeatPlan owner verification code",
+        "",
+        [f"Your code is {code}. It expires in 15 minutes."],
+        "Sign in",
+        sign_in_link,
+        _CODE_REASON,
+        _CODE_STOP_TEXT,
+    )
+
+
+def rain_offer(diner_name: str, restaurant_name: str, message: str, review_link: str) -> EmailParts:
+    """Sent when rain is expected and an indoor table is held for the diner (they may accept it)."""
+    return _compose(
+        f"An indoor table is available at {restaurant_name}",
+        diner_name,
+        [message],
+        "Review indoor table",
+        review_link,
+        _booking_reason(restaurant_name),
     )
 
 

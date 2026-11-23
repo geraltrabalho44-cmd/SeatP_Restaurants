@@ -5,10 +5,12 @@ No network: httpx.MockTransport answers instead of the real Resend server.
 
 import base64
 import json
+from dataclasses import fields, replace
 
 import httpx
 import pytest
 
+from app.mail.logo import logo_base64
 from app.mail.providers import ConsoleProvider, OutgoingEmail, ProviderError, ResendProvider
 
 FAKE_KEY = "re_test_not_a_real_key_123"
@@ -79,3 +81,41 @@ def test_console_provider_logs_without_the_body(caplog: pytest.LogCaptureFixture
     assert "an***@example.com" in caplog.text
     assert "ana@example.com" not in caplog.text
     assert "secret-link-xyz" not in caplog.text
+
+
+def _attachments_sent(message: OutgoingEmail) -> list[dict[str, str]]:
+    seen: list[httpx.Request] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"id": "abc"})
+
+    _provider(httpx.MockTransport(answer)).send(message)
+    return json.loads(seen[0].content).get("attachments", [])
+
+
+def test_the_logo_is_attached_inline_when_the_html_uses_it() -> None:
+    message = replace(MESSAGE, body_html='<img src="cid:logo" alt="SeatPlan">')
+    logo = [a for a in _attachments_sent(message) if a["filename"] == "logo.png"]
+    assert logo == [{"filename": "logo.png", "content": logo_base64(), "content_id": "logo"}]
+
+
+def test_no_logo_is_attached_when_the_html_does_not_use_it() -> None:
+    assert [a["filename"] for a in _attachments_sent(MESSAGE)] == ["invite.ics"]
+
+
+def test_attachments_go_in_a_fixed_order_invite_map_logo() -> None:
+    message = replace(
+        MESSAGE,
+        body_html='<img src="cid:logo"><img src="cid:seatmap">',
+        image_png="AAAA",
+    )
+    assert [a["filename"] for a in _attachments_sent(message)] == [
+        "invite.ics",
+        "seat-map.png",
+        "logo.png",
+    ]
+
+
+def test_the_logo_is_not_a_field_of_the_outbox_message() -> None:
+    assert "logo" not in {field.name for field in fields(OutgoingEmail)}

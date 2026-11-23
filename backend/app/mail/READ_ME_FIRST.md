@@ -15,10 +15,12 @@ later. Longer design notes, RFC references and the provider comparison are in
 | `templates.py` | `account_seat_email(AccountSeat)`, `account_code`, `password_code`, `account_exists` | Guest account emails: the seat email with the picture (`cid:seatmap`) and the three code emails. None carries a secret link |
 | `seat_picture.py` | `render_seat_picture(room, my_seat_id, seat_label, table_label)` | PNG of the room from above with the guest's seat marked. Pure; its inputs have no field for a person |
 | `restaurant_picture.py` | `render_restaurant_picture(room, tables, seats, table_key, seat_key, room_name)`, `header_text`, `restaurant_layout` | PNG of a restaurant room from above for the confirmation email: real outline (curved or L-shaped), windows as a light blue line, doors as a gap, fixed items with their name, every table alike except the booked one (amber), the chosen chair marked. Inputs are the ambience engine's values (`app.ambience.models`), which have no field for a person. Reuses the event picture's canvas and marker; `seat_picture.py` is unchanged |
-| `restaurant_templates.py` | `booking_email(kind, RestaurantBooking)`, `seat_line`, `picture_alt` | The restaurant booking emails (confirmed, changed, reminder): cover photo (remote image), "You're booked at ...", date/time/party, "Table 4 · Seat 2 (facing the window)", ambience sentences, the mini-map (`cid:seatmap`), address with map link, phone, manage link. Pure: every value arrives formatted from `restaurant_service/email_facts.py` |
+| `restaurant_templates.py` | `booking_email(kind, RestaurantBooking)`, `seat_line`, `picture_alt` | The restaurant booking emails (confirmed, changed, reminder): cover photo (remote image), "You're booked at ...", date/time/party, "Table 4 · Seat 2 (facing the window)", ambience sentences, the mini-map (`cid:seatmap`), address with map link, phone, the two buttons (Change time, Cancel booking) with a fallback phone line. Pure: every value arrives formatted from `restaurant_service/email_facts.py` |
 | `png.py` | `encode_indexed(width, height, pixels, palette)`, `png_width(png)` | A tiny PNG writer (zlib, struct, binascii); no new dependency. `png_width` reads the width back, so the email's `<img width>` is never wider than the picture |
 | `pixel_font.py` | `can_write`, `text_width`, `inked_pixels` | A 5 x 7 pixel font for the picture's labels |
 | `templates.py` | `format_when(moment, timezone)` | UTC datetime to "Sat 14 Mar 2027, 19:30" in the venue's time |
+| `style.py` | `BG`, `CARD`, `INK`, `PRIMARY`, `CTA`, ..., `FONT`, `button_html(href, label, kind='cta'/'danger')`, `with_action(link, 'change'/'cancel')` | The site's restaurants colours and font as email-safe values (a test checks them against `restaurant-theme.css`), the two button looks, and the `?action=` link the manage page understands |
+| `logo.py` | `logo_png()`, `logo_base64()`, `LOGO_CONTENT_ID` | The site's logo as a 300 px PNG read from `assets/seatplan-logo-email.png`; `ResendProvider` attaches it as `cid:logo` |
 | `ics.py` | `build_invite(...)`, `make_uid(kind, public_id)` | The `.ics` calendar invite text |
 | `invites.py` | `calendar_invite(...)` | The invite every seat and booking email carries: sender from `EMAIL_FROM`, SEQUENCE that always grows |
 | `outbox.py` | `enqueue(session, ...)` | Queue one email (does not commit) |
@@ -83,15 +85,16 @@ waiting it is rewritten in place (new seat, new time) instead of adding rows.
 ## Data flow
 
 1. A route calls `enqueue()`, then commits together with its own change.
-2. Every 15 minutes GitHub Actions calls `POST /api/internal/email/process`
-   with the `X-Cron-Secret` header.
+2. `app/scheduler.py` runs `process_due()` right after a change that went through,
+   and on any request at most once a minute per server (no cron). The secret
+   endpoint `POST /api/internal/email/process` still runs it by hand.
 3. `process_due()` picks due rows, claims each one (`queued` to `sending`),
    skips addresses not on `EMAIL_ALLOWLIST`, sends the rest and records the
    result: `sent`, `queued` again with a later time, or `failed` after 5 tries.
    A row that ends `sent`, `skipped` or `failed` has every personal link in
    its words, invite and error replaced by `[personal link removed]` (S9);
    a `queued` row keeps it, because the email still has to work.
-4. The same cron call runs `scrub_expired()`: 30 days after `sent_at` (or
+4. The same chores run `scrub_expired()`: 30 days after `sent_at` (or
    after `next_attempt_at` when never sent) a finished row keeps only subject,
    recipient, status and times.
 5. Organisers read the result at `GET /api/emails/log` (subject and error

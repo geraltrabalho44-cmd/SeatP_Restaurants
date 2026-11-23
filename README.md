@@ -139,18 +139,53 @@ locally `export` the ones you need before starting it.
 | `DEMO_MODE` | `1` turns on `/api/demo/*` (demo links and reset) | off |
 | `DEMO_KEY` | The only way to call `POST /api/demo/reset` (header `X-Demo-Key`); empty means nobody can | empty |
 | `DEMO_ORGANISER_PASSWORD`, `DEMO_STAFF_PASSWORD` | Demo account passwords; required on Postgres and whenever `DEMO_MODE` is off | public demo values (local SQLite only) |
-| `CRON_SECRET` | Header `X-Cron-Secret` for `POST /api/internal/email/process`; empty rejects every call | empty |
+| `SEND_ON_REQUEST` | `0` switches off sending emails and the other scheduled work when the site is used (see below) | on |
+| `CRON_SECRET` | Only for running that work by hand: header `X-Cron-Secret` for `POST /api/internal/email/process`; empty rejects every call | empty |
 | `EMAIL_PROVIDER` | `console` (prints emails) or `resend` | `console` |
 | `RESEND_API_KEY` | Only for `EMAIL_PROVIDER=resend` | empty |
 | `EMAIL_FROM` | Sender, for example `SeatPlan <noreply@example.com>` | as shown |
 | `EMAIL_ALLOWLIST` | Comma-separated addresses that may receive email; everyone else is logged as `skipped`. Empty means nobody | empty |
 
-Emails are never sent from a request. They are queued in the `email_outbox`
-table and sent by `POST /api/internal/email/process`, which
-`.github/workflows/email-cron.yml` calls every 15 minutes. That workflow needs
-two repository secrets: `SEATPLAN_URL` (the deployed site) and `CRON_SECRET`.
-Resend only sends from a domain you own and have verified; without one the demo
-stays on the console provider. Details: [`docs/email.md`](docs/email.md).
+Emails are queued in the `email_outbox` table and sent by `backend/app/scheduler.py`
+when the site is used: right after a booking, change or cancellation goes through, and,
+on any visit, at most once a minute (reminders a day before the booking, retries, clean-up).
+There is no scheduled job and no extra secret to set up. If nobody visits the site, a
+reminder waits for the next visit. Details: [`docs/email.md`](docs/email.md).
+
+## Scope decisions and known limits
+
+This is a university project, so a few things are prepared and shown on purpose but not
+switched on. They are written here so nobody mistakes them for bugs.
+
+**Payments (Stripe): built and tested, not switched on.** A restaurant can ask for a
+deposit that comes off the bill, with a free-cancellation deadline and refunds. The code is
+in `backend/app/payments/` and `backend/app/restaurant_service/booking_payments.py`; the
+owner screen is `frontend/src/pages/owner/PaymentsPage.tsx`. By default a **demo provider**
+is used, which moves no money, so the whole flow can be tried. The Stripe provider is real
+code (plain HTTPS calls, webhook signature check, refunds, idempotency keys). It was tested
+only against a **simulated Stripe** inside the tests (75 tests in
+`test_payments_pure.py` and `test_restaurant_deposits.py`). It has **never been run against
+a real Stripe account**. What is missing is only the setup: a Stripe account, then
+`PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` as environment
+variables and a webhook in the Stripe dashboard (steps in
+[`backend/app/payments/READ_ME_FIRST.md`](backend/app/payments/READ_ME_FIRST.md)). Because of
+our limited experience with payments, the team decided not to finish that part as a working
+feature. We keep it to show that we knew it exists and how it is done.
+
+**Email: no verified domain, so real customers do not receive it.** Emails are sent with
+[Resend](https://resend.com). Without a verified domain, Resend only delivers to the address
+of its own account, from the shared sender `onboarding@resend.dev`. We checked this on
+2026-11-23 with a real request: sending to any other address was refused with HTTP 403
+("You can only send testing emails to your own email address ... verify a domain"). So in the
+deployed demo a confirmation reaches only the account's inbox; a booking made with another
+address is saved, but its email fails and is retried five times (the booking is never
+affected). The team talked to the professor, who said a purchased domain was not needed for
+this project, so we did not buy one. With a verified domain, only `EMAIL_FROM` and
+`EMAIL_ALLOWLIST` would change and the emails would reach everyone.
+
+**Other limits:** the emails and reminders depend on someone using the site (see above);
+sign-in codes and offers follow the same `EMAIL_ALLOWLIST`, so they are limited in the same
+way.
 
 ## Deploying to Vercel
 
@@ -227,7 +262,7 @@ polling.
 | `docs/usability/` | Usability test kit: script, consent form, observer sheet, SUS, empty results template |
 | `docs/report/` | Project report (Markdown and PDF) |
 | `docs/team/` | Team pack: tasks, issues, walkthrough questions, demo script, self-assessment, AI use |
-| `.github/workflows/` | CI (`ci.yml`) and the email cron (`email-cron.yml`) |
+| `.github/workflows/` | CI (`ci.yml`), database and deploy workflows |
 
 Each backend package (`backend/app` and every folder in it) has a
 `READ_ME_FIRST.md` with the key functions, the data flow and likely walkthrough

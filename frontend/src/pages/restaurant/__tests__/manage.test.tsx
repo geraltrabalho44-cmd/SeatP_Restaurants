@@ -1,13 +1,18 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ManageBookingPage from "../ManageBookingPage";
 import { BOOKING, SLOTS, VENUE } from "./fixtures";
 import { apiError, callsTo, mockApi } from "./mockApi";
 
-function renderManage(token = "tok123"): void {
+function SearchProbe() {
+  return <p data-testid="search">{useLocation().search}</p>;
+}
+
+function renderManage(token = "tok123", search = ""): void {
   render(
-    <MemoryRouter initialEntries={[`/b/${token}`]}>
+    <MemoryRouter initialEntries={[`/b/${token}${search}`]}>
+      <SearchProbe />
       <Routes>
         <Route path="/b/:token" element={<ManageBookingPage />} />
       </Routes>
@@ -17,6 +22,68 @@ function renderManage(token = "tok123"): void {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe("Manage booking page opened from an email button", () => {
+  const routes = (booking = BOOKING) => ({
+    "GET /api/b/tok123": () => booking,
+    [`GET /api/r/${VENUE}/slots`]: () => SLOTS,
+    "DELETE /api/b/tok123": () => ({ ...BOOKING, status: "cancelled" }),
+  });
+
+  it("?action=cancel opens the confirmation and cancels nothing by itself", async () => {
+    const calls = mockApi(routes());
+    renderManage("tok123", "?action=cancel");
+    expect(await screen.findByRole("dialog", { name: "Cancel this booking?" })).toBeTruthy();
+    expect(callsTo(calls, "DELETE", "/api/b/tok123")).toHaveLength(0);
+  });
+
+  it("?action=change opens the time form", async () => {
+    mockApi(routes());
+    renderManage("tok123", "?action=change");
+    expect(await screen.findByLabelText("Time")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("opens nothing for a booking that is already cancelled", async () => {
+    mockApi(routes({ ...BOOKING, status: "cancelled" }));
+    renderManage("tok123", "?action=cancel");
+    expect(await screen.findByText(/This booking is cancelled/)).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("opens nothing for a booking that can no longer be changed (it already started)", async () => {
+    mockApi(routes({ ...BOOKING, can_change: false }));
+    renderManage("tok123", "?action=cancel");
+    expect(await screen.findByText(/can no longer be changed online/)).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+  });
+
+  it("?action=change brings the form into view (on a phone it opens below the fold)", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", { value: scrollIntoView, configurable: true });
+    mockApi(routes());
+    renderManage("tok123", "?action=change");
+    await screen.findByLabelText("Time");
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("forgets the action once it has opened, so a reload does not open it again", async () => {
+    mockApi(routes());
+    renderManage("tok123", "?action=cancel");
+    await screen.findByRole("dialog", { name: "Cancel this booking?" });
+    await waitFor(() => expect(screen.getByTestId("search").textContent).toBe(""));
+  });
+
+  it("ignores an action it does not know", async () => {
+    mockApi(routes());
+    renderManage("tok123", "?action=bogus");
+    await screen.findByRole("heading", { name: "Reservation details" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByLabelText("Time")).toBeNull();
+  });
 });
 
 describe("Manage booking page", () => {

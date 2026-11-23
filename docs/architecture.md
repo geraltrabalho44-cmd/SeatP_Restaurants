@@ -47,7 +47,7 @@ flowchart LR
     end
 
     DB[("Database<br/>SQLite locally, Postgres deployed")]
-    CRON["GitHub Actions<br/>email-cron.yml, every 15 min"]
+    SCHED["scheduler.py<br/>runs when the site is used"]
     RESEND["Resend HTTP API<br/>(or console log locally)"]
 
     CLIENT -- "GET static pages" --> STATIC
@@ -65,7 +65,7 @@ flowchart LR
     CORE --> DB
     MAIL --> DB
     SEC --> DB
-    CRON -- "POST /api/internal/email/process<br/>header X-Cron-Secret" --> FN
+    FN --> SCHED
     MAIL -- "HTTPS with httpx" --> RESEND
 ```
 
@@ -204,7 +204,7 @@ back to polling (see [`risk-log.md`](risk-log.md)).
 ## 5. Email outbox
 
 Code: `backend/app/mail/outbox.py`, `backend/app/routers/emails.py`,
-`backend/app/mail/providers.py`, `.github/workflows/email-cron.yml`. More
+`backend/app/mail/providers.py`, `backend/app/scheduler.py`. More
 detail in [`email.md`](email.md).
 
 Emails are never sent during a booking request. The request only writes a row
@@ -215,7 +215,7 @@ booking fail.
 ```mermaid
 flowchart LR
     REQ["A request that changes a seat or booking"] -- "enqueue(), same transaction<br/>ON CONFLICT DO NOTHING on idempotency_key" --> OUT[("email_outbox")]
-    GH["GitHub Actions cron<br/>every 15 minutes"] -- "POST /api/internal/email/process<br/>X-Cron-Secret" --> P["process_due()<br/>up to 20 rows"]
+    GH["scheduler.py<br/>after a change, and once a minute on traffic"] --> P["process_due()<br/>up to 20 rows"]
     P -- "claim with one conditional UPDATE" --> OUT
     P -- "address on EMAIL_ALLOWLIST?" --> PROV{"Provider"}
     PROV -- "EMAIL_PROVIDER=console" --> LOG["Server log, one line, no body"]
@@ -268,7 +268,7 @@ the secret is checked.
 | Backend | `uvicorn app.main:create_app --factory` on port 8000 | `api/index.py` as one Vercel Python function, `maxDuration` 30 s |
 | Database | `backend/seatplan.db` (SQLite), tables made at start-up | Hosted Postgres (Neon through the Vercel Marketplace); tables made by `python -m app.seed.migrate` |
 | Email | Console provider (prints one line) | Resend, only once a sending domain is verified |
-| Cron | Call the endpoint by hand with `curl` | `.github/workflows/email-cron.yml` every 15 minutes |
+| Scheduled work | Call the endpoint by hand with `curl` | `backend/app/scheduler.py`, on traffic (no cron) |
 
 The deployment steps are in [`deployment.md`](deployment.md). Day-to-day
 commands and fixes are in [`runbook.md`](runbook.md).

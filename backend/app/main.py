@@ -17,9 +17,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
+from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import db
+from app import db, scheduler
 from app.config import APP_VERSION, Settings, get_settings
 from app.core import live
 from app.core.errors import ApiError
@@ -149,6 +150,17 @@ async def _add_security_headers(
     return response
 
 
+async def _work_after_request(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Send due emails and run the chores when the site is used (app/scheduler.py): no cron."""
+    response = await call_next(request)
+    await run_in_threadpool(
+        scheduler.after_request, request.method, request.url.path, response.status_code
+    )
+    return response
+
+
 def _register_routers(app: FastAPI) -> None:
     for module in (
         health,
@@ -208,6 +220,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(OverflowError, _out_of_range)
     app.add_exception_handler(Exception, _unexpected_error)
     app.middleware("http")(_add_security_headers)
+    app.middleware("http")(_work_after_request)
     # Only our own frontend may call the API from a browser.
     app.add_middleware(
         CORSMiddleware,
