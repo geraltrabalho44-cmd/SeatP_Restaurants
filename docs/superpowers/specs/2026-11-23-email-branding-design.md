@@ -97,4 +97,4 @@ Exact pixel sizes, the deep-link parameter handling, and the real-send check (se
 
 1. Backend tests stay green and new ones cover: both buttons present, link text fallback, `cid:logo` only when the logo is attached, no cancel by GET, no web address printed in the HTML (the text version keeps them).
 2. `ruff`, `pytest`, `npm run typecheck`, `npm test`, `npm run build`, `npm run contrast`.
-3. One real send through Resend to `the Resend test address`, opened in Gmail on desktop and phone, with a screenshot kept in `docs/`.
+3. One real send through Resend to the Resend test address, opened in Gmail on desktop and phone, with a screenshot kept in `docs/`.

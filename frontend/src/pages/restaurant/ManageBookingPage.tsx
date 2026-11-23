@@ -53,7 +53,7 @@ function ManageError({ error, onRetry }: { error: unknown; onRetry: () => void }
 
 /** Only bookings that have not started yet can be changed or cancelled by the diner. */
 function isEditable(booking: BookingView): boolean {
-  return booking.status === "confirmed";
+  return booking.status === "confirmed" && booking.can_change !== false;
 }
 
 function ManageBooking({ token, booking, onUpdate }: { token: string; booking: BookingView; onUpdate: (b: BookingView) => void }) {

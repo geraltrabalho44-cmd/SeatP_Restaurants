@@ -108,3 +108,28 @@ def test_waitlist_offer_without_a_hold_does_not_promise_one() -> None:
     parts = templates.waitlist_offer("Ana", "Casa Azul", "Sat 14 Mar 2027, 19:30", 2, None, LINK)
     assert "not held" in parts.body_text
     assert "held for you until" not in parts.body_text
+
+
+def test_the_owner_code_email_uses_the_shared_look() -> None:
+    parts = templates.owner_account_code("123456", LINK)
+    assert parts.subject == "Your SeatPlan owner verification code"
+    assert "123456" not in parts.subject  # lock screens show subjects
+    for body in (parts.body_text, parts.body_html):
+        assert "Your code is 123456." in re.sub(r"<[^>]+>", "", body)
+        assert "15 minutes" in body
+    assert 'href="https://seatplan.example.com/b/abc123?x=1&amp;y=2"' in parts.body_html
+    assert 'src="cid:logo"' in parts.body_html
+    assert templates.NO_REPLY_TEXT in parts.body_text
+    assert html.escape(templates.NO_REPLY_TEXT) in parts.body_html
+
+
+def test_the_rain_offer_email_uses_the_shared_look_and_escapes_its_words() -> None:
+    parts = templates.rain_offer("Ana", "Casa <Azul>", "Rain at 20:00 <b>(60%)</b>.", LINK)
+    assert parts.subject == "An indoor table is available at Casa <Azul>"
+    assert "Rain at 20:00 <b>(60%)</b>." in parts.body_text
+    assert "Rain at 20:00 &lt;b&gt;(60%)&lt;/b&gt;." in parts.body_html
+    assert "<b>(60%)</b>" not in parts.body_html and "Casa <Azul>" not in parts.body_html
+    assert ">Review indoor table</a>" in parts.body_html
+    assert 'src="cid:logo"' in parts.body_html
+    assert LINK in parts.body_text
+    assert templates.NO_REPLY_TEXT in parts.body_text

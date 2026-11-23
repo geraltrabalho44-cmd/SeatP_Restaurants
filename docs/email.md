@@ -333,7 +333,12 @@ Added 2026-11-23 (`docs/superpowers/specs/2026-11-23-email-branding-design.md`).
 - **Deposits.** The existing `payment_line` of `RestaurantBooking` still shows
   the deposit row; the Stripe set-up and a refund sentence in the cancellation
   email are a later job.
-- **Not verified yet:** how this look shows in a real inbox. The first version
-  (linen and green) was sent through Resend to the test address on 2026-11-23
-  and rejected; this one is redone in the site's colours. Outlook, Apple Mail
-  and Gmail on a phone are not checked either.
+- **Verified 2026-11-23:** two real sends through Resend to the Resend test
+  address (a confirmation in English and one in Portuguese), opened in Gmail on
+  the web by the project owner: logo, colours, both buttons, the phone line and
+  the no-reply line show as designed. (A first version in linen and green was
+  rejected the same day and redone in the site's colours.) **Not verified yet:**
+  Outlook, Apple Mail and Gmail on a phone.
+- **Owner and rain emails.** The owner verification code and the rain offer now
+  use the same shell (`owner_account_code()` and `rain_offer()` in
+  `templates.py`); before, they were bare HTML.

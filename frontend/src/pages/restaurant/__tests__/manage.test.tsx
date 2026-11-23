@@ -47,6 +47,14 @@ describe("Manage booking page opened from an email button", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("opens nothing for a booking that can no longer be changed (it already started)", async () => {
+    mockApi(routes({ ...BOOKING, can_change: false }));
+    renderManage("tok123", "?action=cancel");
+    expect(await screen.findByText(/can no longer be changed online/)).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+  });
+
   it("ignores an action it does not know", async () => {
     mockApi(routes());
     renderManage("tok123", "?action=bogus");

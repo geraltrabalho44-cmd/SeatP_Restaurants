@@ -480,6 +480,31 @@ def diner_account_exists(name: str, sign_in_link: str) -> EmailParts:
     )
 
 
+def owner_account_code(code: str, sign_in_link: str) -> EmailParts:
+    """The 6-digit code that finishes a restaurant owner's sign-up. Never in the subject."""
+    return _compose(
+        "Your SeatPlan owner verification code",
+        "",
+        [f"Your code is {code}. It expires in 15 minutes."],
+        "Sign in",
+        sign_in_link,
+        _CODE_REASON,
+        _CODE_STOP_TEXT,
+    )
+
+
+def rain_offer(diner_name: str, restaurant_name: str, message: str, review_link: str) -> EmailParts:
+    """Sent when rain is expected and an indoor table is held for the diner (they may accept it)."""
+    return _compose(
+        f"An indoor table is available at {restaurant_name}",
+        diner_name,
+        [message],
+        "Review indoor table",
+        review_link,
+        _booking_reason(restaurant_name),
+    )
+
+
 def password_code(name: str, code: str, sign_in_link: str) -> EmailParts:
     """The 6-digit code for choosing a new password."""
     paragraphs = [
