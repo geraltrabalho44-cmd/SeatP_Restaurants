@@ -12,7 +12,7 @@ export default function NewRestaurantWizard() {
   const { t } = useT();
   const { venueId } = useParams();
   const { state, reload } = useLoad(() => venueId ? getOwnerProfile(venueId) : Promise.resolve(EMPTY_PROFILE), venueId ?? "new");
-  return <PageShell title={t("Add a restaurant")}><Link to="/owner">← {t("My restaurants")}</Link>
+  return <PageShell title={t("Add a restaurant")}><Link className="owner-back" to="/owner">← {t("My restaurants")}</Link>
     {state.status === "loading" && <Skeleton label={t("Loading your setup")} lines={4} />}
     {state.status === "error" && <ErrorState message={t("Could not open your setup. Check your sign-in or retry.")} onRetry={() => reload()} />}
     {state.status === "ready" && <Wizard key={state.data.public_id || "new"} initial={state.data} />}

@@ -29,7 +29,7 @@ for (const width of [1440, 390]) {
     expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
     await page.screenshot({ path: join(tmpdir(), `seatplan-owner-signup-${width}.png`), fullPage: true });
     await page.getByRole("button", { name: "Send verification code" }).click();
-    const code = (await page.getByRole("status").filter({ hasText: "Demo code" }).innerText()).match(/\d{6}/)?.[0];
+    const code = (await page.getByRole("status").filter({ hasText: "Your code" }).innerText()).match(/\d{6}/)?.[0];
     expect(code).toBeTruthy();
     await page.getByLabel("Verification code").fill(code!);
     await page.getByRole("button", { name: "Verify and continue" }).click();

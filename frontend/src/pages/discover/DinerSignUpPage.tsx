@@ -95,10 +95,10 @@ export default function DinerSignUpPage() {
             <p className="acc-lede">{t("We sent a 6-digit code to {email}. It works for 15 minutes.", { email: sent.sent_to })}</p>
             {sent.demo_code && (
               <p className="rb-notice" role="status">
-                {t("Demo: no email is sent. Your code is")} <strong>{sent.demo_code}</strong>.
+                {t("No email is sent to an @example.com address, so your code is")} <strong>{sent.demo_code}</strong>.
               </p>
             )}
-            {!sent.demo_code && <p className="rb-notice">{t("Nothing arrived? This demo site does not send real emails. Go back and use an address ending in @example.com: the code then shows on this screen.")}</p>}
+            {!sent.demo_code && <p className="rb-notice">{t("Nothing arrived? Check your spam folder, or go back and use an address ending in @example.com: the code then shows on this screen.")}</p>}
             <ProblemBox messages={general ? [general] : []} attempt={attempt} />
             <Field label={t("Code from the email")} inputMode="numeric" autoComplete="one-time-code" autoFocus value={code} onChange={(event) => setCode(codeDigits(event.target.value))} />
             <Button type="submit" busy={busy} className="acc-submit">

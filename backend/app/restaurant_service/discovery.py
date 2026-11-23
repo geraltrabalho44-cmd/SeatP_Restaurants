@@ -67,15 +67,37 @@ def distance_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return 2 * EARTH_RADIUS_M * math.asin(min(1.0, math.sqrt(a)))
 
 
+# Kinds of kitchen a guest may ask for by another name: someone typing "sushi" wants the Japanese restaurants,
+# someone typing "peixe" or "fish" wants the seafood ones too.
+RELATED_CUISINES = {
+    "sushi": ("japanese",),
+    "fish": ("seafood",),
+    "seafood": ("fish",),
+    "japanese": ("sushi",),
+}
+SEARCH_WORDS = {
+    "japanese": ("sushi", "sashimi", "ramen"),
+    "seafood": ("fish", "peixe", "marisco", "mariscos"),
+    "fish": ("peixe", "seafood"),
+    "pizza": ("pizzaria", "pizzeria"),
+    "cafe": ("coffee", "cafe", "pastelaria", "pasteis"),
+}
+
+
 def _haystack(venue: Venue) -> str:
-    return fold(" ".join([venue.name, *venue.cuisines]))
+    words = [word for cuisine in venue.cuisines for word in SEARCH_WORDS.get(cuisine, ())]
+    return fold(" ".join([venue.name, *venue.cuisines, *words]))
 
 
 def _matches(venue: Venue, search: Search) -> bool:
     if search.q and not all(token in _haystack(venue) for token in fold(search.q).split(" ")):
         return False
-    if search.cuisines and not set(search.cuisines) & set(venue.cuisines):
-        return False
+    if search.cuisines:
+        wanted = set(search.cuisines)
+        for cuisine in search.cuisines:
+            wanted.update(RELATED_CUISINES.get(cuisine, ()))
+        if not wanted & set(venue.cuisines):
+            return False
     if search.prices and venue.price_level not in search.prices:
         return False
     have = venue.features or {}

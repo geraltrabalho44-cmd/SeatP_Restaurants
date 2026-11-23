@@ -1,5 +1,7 @@
 # SeatPlan
 
+**Live site: <https://seatplan-final.vercel.app>** · Source and documentation: this repository.
+
 SeatPlan lets people choose their own seat on a live 2D map. Two verticals share
 one core:
 
@@ -11,13 +13,40 @@ one core:
   visitor, and makes a **guest account** (checked by an emailed code) to
   choose a seat and get it by email with a picture of the room
   ([`docs/guest-accounts.md`](docs/guest-accounts.md)).
-- **Restaurants:** a diner picks a date, party size, time and table. Staff see a
-  live floor, seat walk-ins, ask "what if" questions and read a dashboard.
+- **Restaurants:** a diner searches 35 restaurants in Lisbon and Porto, sees the room
+  as a plan, picks a date, party size, time and table, and gets a confirmation email
+  with a link to change or cancel. A restaurant owner manages the profile, photos,
+  opening hours, menu, deposits, offers and the floor plan, reads the insights
+  (who books, when, which tables) and publishes the restaurant.
 
 An optimiser recommends seats and tables and explains why. Human choices and
 hard rules (one person per seat, accessibility, reserved seats, table sizes)
 are never broken. The database itself makes double booking impossible: every
 seat, table slot and hold is protected by a UNIQUE constraint.
+
+### Objectives
+
+- Let a guest choose where they sit instead of being assigned a seat or a table.
+- Never double book: the database itself refuses it (UNIQUE constraints), not only the code.
+- Give the people who run an event or a restaurant tools they can use without a manual.
+- Show the reasoning: the optimiser says why it suggests a seat or a table.
+- Be accessible (keyboard, contrast, screen readers) and work on a phone as well as on a desktop.
+
+### Try it without installing anything
+
+Open the live site above and sign in with one of these two accounts (public on purpose, they only hold demo data):
+
+| Who | Email | Password | Where |
+|---|---|---|---|
+| Guest | `consumer@example.com` | `consumer` | `/restaurants/account` (log in), then search and book |
+| Restaurant owner | `owner@example.com` | `owner` | `/owner/sign-in`: four restaurants with plans, insights and offers |
+
+### Team and contributions
+
+The commit history is the record of who did what (`git shortlog -sn`, or the GitHub contributors page). The work was
+split between the team members; [`docs/team/tasks.md`](docs/team/tasks.md) says who owned which part, and
+[`docs/team/ai-use.md`](docs/team/ai-use.md) records how AI coding assistants (Claude Code, Codex) were used: their
+commits carry a `Co-Authored-By` line.
 
 It is a university project (Introduction to Programming, Nova SBE). The design
 agreement between all modules is [`docs/CONTRACT.md`](docs/CONTRACT.md); every
@@ -53,6 +82,16 @@ For the Lisbon demo catalogue, also run `../.venv/bin/python -m app.seed.lisbon_
 from `backend/` with `DEMO_MODE=1`. It adds 20 restaurants and their licensed cover
 photos to the SQLite database. The discovery page marks their bookings as demos.
 
+For the restaurant side, with the same `DEMO_MODE=1`, run these from `backend/` in this order (about ten minutes in all):
+
+```bash
+../.venv/bin/python -m app.seed.lisbon_catalogue      # 20 restaurants in Lisbon
+../.venv/bin/python -m app.seed.porto_catalogue       # 15 restaurants in Porto
+../.venv/bin/python -m app.seed.public_catalogue      # menus, reviews, and hides the five test restaurants
+../.venv/bin/python -m app.seed.access_accounts       # consumer@example.com and owner@example.com
+../.venv/bin/python -m app.seed.owner_demo            # the owner's four restaurants: plans and booking history
+```
+
 Check it works: `curl http://127.0.0.1:8000/api/health` answers
 `{"status":"ok","database":"ok",...}`.
 
@@ -66,7 +105,7 @@ npm ci
 npm run dev
 ```
 
-Open <http://localhost:5173>. The home page lists the demo links. The dev
+Open <http://localhost:5173>. `/` is the restaurant search and `/demo` lists the demo links. The dev
 server forwards `/api` to the backend on port 8000, so the browser only ever
 talks to one address (as on Vercel).
 
@@ -82,6 +121,11 @@ people who need them.
 |---|---|---|
 | Organiser | `organiser@example.com` | `/organiser/<event id>` |
 | Staff | `staff@example.com` | `/staff/<venue id>` |
+| Guest (restaurants) | `consumer@example.com`, password `consumer` | `/restaurants/account` |
+| Restaurant owner | `owner@example.com`, password `owner` | `/owner/sign-in` |
+
+The last two come from `python -m app.seed.access_accounts` (their short passwords are public on purpose; they only
+ever guard demo data). Run it before `python -m app.seed.owner_demo`, which gives the owner four restaurants.
 
 `POST /api/demo/reset` wipes the demo data and seeds it again; it returns
 fresh links for both verticals. Only the header `X-Demo-Key` matching
@@ -298,6 +342,19 @@ questions. On the frontend there is one in `frontend/` and one in each of
 | [`docs/team/`](docs/team/tasks.md) | Who owns what, issues to open, walkthrough questions, demo script, revision plan, self-assessment, AI use |
 
 ## Test report
+
+**Latest run (2026-11-23, final check before the submission):**
+
+| Check | Result |
+|---|---|
+| `pytest` (backend, SQLite) | `1307 passed` |
+| `ruff check .`; `ruff format --check .` | `All checks passed!`; `318 files already formatted` |
+| `npx tsc --noEmit`; `npx vitest run` | no errors; `Test Files  111 passed (111)`, `Tests  810 passed (810)` |
+| `npm run build`; `npm run contrast` | built with no warnings; `182 checks, 0 failures.` |
+| Playwright (desktop and phone) | `117 passed` |
+| `python scripts/check_forbidden_paths.py` | `Protected event paths unchanged.` |
+
+The older runs below are kept as the history of the project.
 
 **Guest accounts and the shared link** (run 2026-11-10 to 11, after the
 review fixes; details in [`docs/test-report.md`](docs/test-report.md)):

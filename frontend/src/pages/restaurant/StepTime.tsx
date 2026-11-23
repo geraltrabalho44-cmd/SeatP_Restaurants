@@ -8,7 +8,7 @@ import { getSlots } from "../../api/restaurant";
 import type { PartyNeeds, RestaurantInfo, TimeSlot } from "../../api/restaurant";
 import { Button, EmptyState, ErrorState, Skeleton } from "../../design/components";
 import { useT } from "../../i18n/I18nProvider";
-import { errorMessage, formatDate, people, toMinutes } from "./format";
+import { errorMessage, formatDate, people, toMinutes, todayIso } from "./format";
 import { WhenFields } from "./StepParty";
 import "./when.css";
 import { SlotButton } from "./SlotButton";
@@ -58,7 +58,13 @@ export function closestTimes(slots: TimeSlot[], wanted: string | null | undefine
 export function StepTime({ venueId, needs, wanted, onPick, onBack, info, onChange }: StepTimeProps) {
   const { t } = useT();
   const context=`${needs.date}|${needs.party}`;
-  const { state, reload } = useLoad(() => getSlots(venueId, needs.date, needs.party).then(answer=>({...answer,requestContext:context})), context);
+  // Without a date there is nothing to ask for (the date field already says so), and a day that has passed has no times at all:
+  // neither is sent to the server, so no raw error text from it can reach the diner.
+  const day = !needs.date ? "none" : needs.date < todayIso() ? "past" : "open";
+  const { state, reload } = useLoad(
+    () => day === "open" ? getSlots(venueId, needs.date, needs.party).then(answer=>({...answer,requestContext:context})) : new Promise<never>(() => {}),
+    context + day,
+  );
   const [waitlistTime, setWaitlistTime] = useState<string | null>(null);
   const [selection, setSelection] = useState<{time:string;context:string}|null>(null);
   const selected=selection?.context===context && state.status==="ready" && state.data.requestContext===context && state.data.slots.some(s=>s.time===selection.time && s.status!=="full" && s.reason!=="past") ? selection.time : null;
@@ -75,18 +81,23 @@ export function StepTime({ venueId, needs, wanted, onPick, onBack, info, onChang
         <span id="rb-time-title">{lost ? t("Pick another time") : t("Choose a time")}</span>
       </StepHeading>
       {info && onChange && <WhenFields info={info} needs={needs} onChange={onChange} />}
-      <WeatherPanel venueId={venueId} needs={needs} onTime={onPick} />
-      <p className="rb-muted">
+      {day === "open" && <WeatherPanel venueId={venueId} needs={needs} onTime={onPick} />}
+      {day !== "none" && <p className="rb-muted">
         {formatDate(needs.date)}, {people(needs.party)}.
-      </p>
-      {(state.status === "loading" || (state.status==="ready" && state.data.requestContext!==context)) && <Skeleton lines={4} label={t("Looking for free times")} />}
-      {state.status === "error" && <ErrorState title={t("We could not load the times")} message={errorMessage(state.error)} onRetry={() => reload()} />}
-      {state.status === "ready" && state.data.requestContext===context && state.data.closed_reason && (
+      </p>}
+      {day === "past" && (
+        <EmptyState title={t("This date has passed")} action={info ? null : back}>
+          <p>{t("Choose today or a later day to see the free times.")}</p>
+        </EmptyState>
+      )}
+      {day === "open" && (state.status === "loading" || (state.status==="ready" && state.data.requestContext!==context)) && <Skeleton lines={4} label={t("Looking for free times")} />}
+      {day === "open" && state.status === "error" && <ErrorState title={t("We could not load the times")} message={errorMessage(state.error)} onRetry={() => reload()} />}
+      {day === "open" && state.status === "ready" && state.data.requestContext===context && state.data.closed_reason && (
         <EmptyState title={t("Closed that day")} action={back}>
           <p>{state.data.closed_reason}</p>
         </EmptyState>
       )}
-      {state.status === "ready" && state.data.requestContext===context && !state.data.closed_reason && <OpenDay slots={state.data.slots} needs={needs} wanted={wanted ?? null} back={info ? null : back} selected={selected} info={info} onPick={pick} />}
+      {day === "open" && state.status === "ready" && state.data.requestContext===context && !state.data.closed_reason && <OpenDay slots={state.data.slots} needs={needs} wanted={wanted ?? null} back={info ? null : back} selected={selected} info={info} onPick={pick} />}
       {selected && <div className="when-continue"><Button onClick={()=>onPick(selected)}>{t("Choose a table at {time}", { time: selected })}</Button><p className="rb-muted">{t("You’ll choose your table next. Nothing is reserved yet.")}</p></div>}
       <WaitlistDialog venueId={venueId} needs={needs} time={waitlistTime} onClose={() => setWaitlistTime(null)} />
     </section>

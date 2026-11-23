@@ -450,3 +450,23 @@ def test_a_nul_in_the_address_is_a_404_before_it_reaches_the_database(client: Te
         got = client.get(path)
         assert got.status_code == 404, (path, got.status_code)
         assert got.headers["x-content-type-options"] == "nosniff"
+
+
+def test_sushi_finds_the_japanese_restaurants_and_fish_the_seafood_ones(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    """A guest types the dish or the word they know, not the name of the cuisine we filed the restaurant under."""
+    venue(session, organiser, "Nori", "nori", cuisines=["japanese"])
+    venue(session, organiser, "Cervejaria Ramiro", "ramiro", cuisines=["seafood", "portuguese"])
+    venue(session, organiser, "Doca Peixe", "doca", cuisines=["fish", "seafood"])
+    venue(session, organiser, "Casa do Alentejo", "alentejo", cuisines=["portuguese"])
+    for text in ("sushi", "ramen", "Sushi"):
+        assert names(search(client, q=text)) == ["Nori"], text
+        assert names(search(client, q=text, understand="true")) == ["Nori"], text
+    for text in ("peixe", "fish", "marisco"):
+        assert set(names(search(client, q=text))) >= {"Cervejaria Ramiro", "Doca Peixe"}, text
+        assert "Casa do Alentejo" not in names(search(client, q=text)), text
+    # The same through the kind-of-food filter chips.
+    assert names(search(client, cuisine=["sushi"])) == ["Nori"]
+    assert set(names(search(client, cuisine=["fish"]))) == {"Cervejaria Ramiro", "Doca Peixe"}
+    assert "Nori" not in names(search(client, cuisine=["portuguese"]))

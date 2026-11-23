@@ -24,7 +24,7 @@ export default function DemoCheckoutPage() {
         {state.status === "loading" && <Skeleton lines={4} label={t("Loading your payment")} />}
         {state.status === "error" && <PaymentError error={state.error} onRetry={() => reload()} />}
         {state.status === "ready" && state.data.mode !== "demo" && (
-          <EmptyState title={t("This is not a demo payment")}>
+          <EmptyState title={t("This payment is not made on this page")}>
             <p>{t("Please use the payment page the restaurant sent you to.")}</p>
           </EmptyState>
         )}
@@ -121,7 +121,7 @@ function DemoCard({ paymentId, restaurant, amountCents, expiresAt, status }: Dem
           {t("Pay {amount}", { amount: formatEuros(amountCents) })}
         </Button>
         <Button variant="secondary" busy={busy === "decline"} disabled={busy !== null && busy !== "decline"} onClick={() => void act("decline")}>
-          {t("Simulate a declined card")}
+          {t("Try a declined card")}
         </Button>
         <Button variant="ghost" busy={busy === "abandon"} disabled={busy !== null && busy !== "abandon"} onClick={() => void act("abandon")}>
           {t("Give up and release the table")}

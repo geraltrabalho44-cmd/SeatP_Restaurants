@@ -1,0 +1,77 @@
+# Puts the owner's four restaurants (plans and booking history) and the two sign-in accounts into the Neon database.
+# Started by hand from the Actions tab ("Run workflow"); nothing runs it on a push.
+#
+#   1. creates any missing tables and columns (`python -m app.seed.migrate`);
+#   2. `python -m app.seed.access_accounts`: consumer@example.com (password consumer) and owner@example.com (password owner);
+#   3. `python -m app.seed.owner_demo`: gives owner@example.com four restaurants with a floor plan each and 90 days of
+#      bookings, and every other restaurant 21 days. Repeatable: a restaurant that already has bookings is left alone.
+#
+# It only writes demo data and deletes nothing it did not make. Never point this at a database that holds real data.
+# Same setup as the `database` workflow: secret NEON_DATABASE_URL_UNPOOLED and variable DEMO_SEED = "true".
+
+name: demo-data
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never together with the `database` workflow.
+concurrency:
+  group: database
+  cancel-in-progress: false
+
+jobs:
+  demo-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_UNPOOLED }}
+      SECRET_KEY: ${{ github.sha }}${{ github.run_id }}${{ github.run_attempt }}-demo-data-workflow
+    steps:
+      - name: Check the secret and the demo switch
+        id: configured
+        working-directory: .
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::NEON_DATABASE_URL_UNPOOLED is not set, so the database was left alone."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif echo "$DATABASE_URL" | grep -q -- '-pooler'; then
+            echo "::error::NEON_DATABASE_URL_UNPOOLED has -pooler in it. Use the unpooled address."
+            exit 1
+          elif [ "${{ vars.DEMO_SEED }}" != "true" ]; then
+            echo "::warning::DEMO_SEED is not true, so this database is not treated as a demo one and was left alone."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.configured.outputs.ready == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.configured.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        if: steps.configured.outputs.ready == 'true'
+        run: pip install -r ../requirements.txt
+
+      - name: Create missing tables and columns
+        if: steps.configured.outputs.ready == 'true'
+        run: python -m app.seed.migrate
+
+      - name: The two sign-in accounts
+        if: steps.configured.outputs.ready == 'true'
+        run: python -m app.seed.access_accounts --allow-remote
+
+      - name: The owner's restaurants, plans and booking history
+        if: steps.configured.outputs.ready == 'true'
+        run: python -m app.seed.owner_demo --allow-remote

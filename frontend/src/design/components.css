@@ -769,3 +769,9 @@
     font-size: max(16px, 1rem);
   }
 }
+
+/* The same 44 px fingertip rule for the small links on the not-found and account pages. */
+@media (pointer: coarse), (max-width: 40rem) {
+  .state-box a:not(.btn) { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+  [data-surface="restaurants"] .acc-page > a:not(.btn) { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+}

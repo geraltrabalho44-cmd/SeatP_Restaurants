@@ -12,14 +12,14 @@ processor. The restaurant may add its own text (contact for data requests, house
 
 from typing import Any
 
-TERMS_VERSION = "2026-11-20"
-OFFERS_VERSION = "2026-11-18"
+TERMS_VERSION = "2026-11-23"
+OFFERS_VERSION = "2026-11-23"
 EXTRA_MAX = 2000
 
 TERMS_LABEL = "I accept the terms and conditions and the privacy notice."
 OFFERS_LABEL = "I'd like to receive offers and news from this restaurant (optional)."
 OFFERS_HINT = (
-    "Only from this restaurant, by email or phone. You can stop at any time with the link in "
+    "Only from this restaurant, by email. You can stop at any time with the link in "
     "every message. Not ticking this changes nothing about your booking."
 )
 
@@ -63,7 +63,7 @@ def document(restaurant_name: str, extra_text: str, demo: bool) -> dict[str, Any
             "paragraphs": [
                 (
                     f"If you tick the optional box, {name} may send you offers, discounts and news "
-                    "by email or phone. This is your choice, it is not needed to book, and you can "
+                    "by email. This is your choice, it is not needed to book, and you can "
                     "withdraw it at any time with the link in every message or on your booking page. "
                     "If you do not tick it, you will not receive offers."
                 ),
@@ -85,7 +85,7 @@ def document(restaurant_name: str, extra_text: str, demo: bool) -> dict[str, Any
             "title": "How long it is kept",
             "paragraphs": [
                 (
-                    "Phone numbers given for reminders are deleted 30 days after your visit. Other "
+                    "A phone number you give is deleted 30 days after your visit. Other "
                     f"booking data is kept by {name} for as long as it needs it to run its service "
                     "and its statistics, and you can ask for it to be deleted."
                 ),

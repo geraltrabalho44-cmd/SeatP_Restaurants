@@ -1,5 +1,20 @@
 # Changelog
 
+## Final QA pass, 2026-11-23 (unreleased)
+
+- Reviews: 445 different reviews written from pieces (food for the kind of kitchen, service, table, price) by 95 guests, scores on the whole 1 to 10 scale, averages from 4.9 to 9.0. The first version wrote 68 sentences into 476 reviews. Its reviews (its own guests, its own sentences) are replaced once by `python -m app.seed.demo_reviews`, which `public_catalogue` runs; a real guest's review is never touched.
+- Booking times: clearing the date no longer shows the server's own error text; a date that has passed says "This date has passed" (no weather, no request). The restaurant card beside the times keeps its own height.
+- "Add a restaurant": the price buttons and cuisine pills were unstyled and the prices overlapped on a phone; the form loads its own styles now.
+- No "demo", "simulate" or "this demo site" on the screens a guest or an owner reads (sign-up code notices, payment page and its decline button), in EN, PT, ES and FR. The footer sentence is the only place that says "Demo data only".
+- Phones: the search field, List and Map, restaurant names, "See available times", back links, the owner's card links, cuisine pills and room tabs are at least 44 px tall.
+- Offers: the ready-made cards always fill their rows (7 left after taking one: 4 and 3 stretched, not 4 and a gap).
+- Search: "sushi" finds the Japanese restaurants and "peixe", "fish" or "marisco" the seafood ones (it returned nothing, or only a restaurant with Peixe in its name); the kind-of-food filters follow the same words.
+- Two accounts to try the site with: `consumer@example.com` (password `consumer`) and `owner@example.com` (password `owner`), from `python -m app.seed.access_accounts`. The owner has four restaurants (Cervejaria Ramiro, Nori, Gambrinus, Casa da Índia) with a plan and 90 days of bookings; the other restaurants get 21 days. The manual `demo-data` workflow puts them in the shared database.
+- The owner's terms page says again that a team of lawyers prepared the terms (decision of the team). Offers and the terms say email only, and their versions advance to 2026-11-23.
+- Plans: a table on the terrace no longer touches the awning.
+- README: live link, objectives, the two accounts, the seed order for the restaurant side, and who did what.
+- New `frontend/e2e/qa-final.spec.ts` with one test for each of the above that can be seen in a browser.
+
 ## Restaurants branch from Sérgio, staff workspace removed, insights for every restaurant (unreleased)
 
 - Sérgio's two commits (the Porto catalogue, the owner workspace, discovery and booking polish, even spacing on the terms, offers and booking pages) are applied on top of the phone and audit work.
